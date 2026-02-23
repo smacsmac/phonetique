@@ -3002,75 +3002,83 @@ const App = {
     const p = APP_DATA.phonemes[phonemeId];
     const passages = this.getPassages(phonemeId);
     let referenceText = mode === 'practice' ? p.targetWord : passages[passageIndex].text;
-    // On fallback, use only the first sentence to improve match rate
+
+    // On fallback: use only first sentence and drop optional params
     if (simpleFallback) {
       referenceText = referenceText.split(/[.!?]/)[0].trim();
     }
 
-    try {
-      const assessmentParams = {
-        ReferenceText: referenceText,
-        GradingSystem: 'HundredMark',
-        Dimension: 'Comprehensive',
-        EnableMiscue: true,
-        PhonemeAlphabet: 'IPA',
-      };
+    // Strip accents/special chars that can confuse Azure matching
+    const cleanRef = referenceText.normalize('NFC');
 
-      const response = await fetch(
-        `https://${this.settings.azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${this.settings.frVariant}&format=detailed`,
-        {
-          method: 'POST',
-          headers: {
-            'Ocp-Apim-Subscription-Key': this.settings.azureKey,
-            'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
-            'Pronunciation-Assessment': btoa(unescape(encodeURIComponent(JSON.stringify(assessmentParams)))),
-          },
-          body: wavBlob,
-        }
-      );
+    const assessmentParams = {
+      ReferenceText: cleanRef,
+      GradingSystem: 'HundredMark',
+      Dimension: 'Comprehensive',
+      EnableMiscue: simpleFallback ? false : true,
+      PhonemeAlphabet: 'IPA',
+    };
+
+    // Azure requires the header to be base64-encoded JSON, ASCII-safe
+    const headerVal = btoa(unescape(encodeURIComponent(JSON.stringify(assessmentParams))));
+
+    const url = `https://${this.settings.azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${this.settings.frVariant}&format=detailed&profanity=raw`;
+
+    console.log('→ Azure request:', { url, refText: cleanRef, fallback: simpleFallback, wavSize: wavBlob.size });
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': this.settings.azureKey,
+          'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
+          'Pronunciation-Assessment': headerVal,
+        },
+        body: wavBlob,
+      });
+
+      const rawText = await response.text();
+      console.log('← Azure raw response:', response.status, rawText);
 
       if (!response.ok) {
-        const errText = await response.text();
-        console.error('Azure HTTP error:', response.status, errText);
         this.showSimpleScore(phonemeId, mode, `Erreur Azure ${response.status} — vérifiez la région et la clé.`);
         return;
       }
 
-      const data = await response.json();
-      console.log('Azure full response:', JSON.stringify(data));
+      let data;
+      try { data = JSON.parse(rawText); }
+      catch(e) {
+        console.error('JSON parse error:', e);
+        this.showSimpleScore(phonemeId, mode, 'Réponse Azure invalide.');
+        return;
+      }
 
-      // Try to extract score — Azure can put it in different places
       const nbest = data?.NBest?.[0];
       const pa = nbest?.PronunciationAssessment;
-      const recognizedText = nbest?.Display || nbest?.Lexical || '';
-      console.log('Recognized:', recognizedText, '| PA:', pa);
+      console.log('RecognitionStatus:', data.RecognitionStatus, '| PronunciationAssessment:', pa);
 
       if (pa && pa.AccuracyScore !== undefined) {
         const score = Math.round(pa.AccuracyScore);
-        if (mode === 'test') {
-          this.recordScore(phonemeId, score);
-        }
+        if (mode === 'test') this.recordScore(phonemeId, score);
         this.showAzureScore(score, pa, mode);
-      } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
-        this.showSimpleScore(phonemeId, mode, "Aucune parole détectée — vérifiez votre micro et réessayez.");
-      } else if (data.RecognitionStatus === 'Success' && !pa) {
-        // Azure transcribed but didn't return pronunciation scores —
-        // this happens when EnableMiscue causes a total mismatch.
-        // Retry without EnableMiscue and with just the first sentence.
-        console.log('Retrying without EnableMiscue...');
-        await this.analyzeWithAzureSimple(phonemeId, mode, passageIndex, wavBlob); return;
-      } else {
-        console.warn('Azure unexpected state:', data.RecognitionStatus, data);
-        this.showSimpleScore(phonemeId, mode, `Statut Azure: ${data.RecognitionStatus || 'inconnu'} — réessayez.`);
-      }
-    } catch (err) {
-      console.error('Azure send error:', err);
-      this.showSimpleScore(phonemeId, mode, 'Erreur de connexion à Azure.');
-    }
-  },
 
-  async analyzeWithAzureSimple(phonemeId, mode, passageIndex, wavBlob) {
-    await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
+      } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
+        this.showSimpleScore(phonemeId, mode, "Aucune parole détectée — parlez plus fort et plus près du micro.");
+
+      } else if (!simpleFallback) {
+        // First attempt failed to get PA — retry with simpler params
+        console.log('No PA scores on first attempt, retrying simplified...');
+        await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
+
+      } else {
+        // Both attempts failed
+        this.showSimpleScore(phonemeId, mode, `Azure n'a pas pu scorer (${data.RecognitionStatus || '?'}). Vérifiez région: "${this.settings.azureRegion}"`);
+      }
+
+    } catch (err) {
+      console.error('Azure fetch error:', err);
+      this.showSimpleScore(phonemeId, mode, 'Erreur réseau — vérifiez votre connexion.');
+    }
   },
 
   // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
