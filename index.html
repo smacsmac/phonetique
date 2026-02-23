@@ -2991,7 +2991,23 @@ const App = {
       // Convert whatever the browser recorded into a proper 16-bit PCM WAV
       // that Azure's REST endpoint reliably accepts.
       const wavBlob = await this.toWav(this.recordingAudioBlob);
+      return await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob);
+    } catch (err) {
+      console.error('Azure toWav error:', err);
+      this.showSimpleScore(phonemeId, mode, 'Erreur de conversion audio.');
+    }
+  },
 
+  async _sendToAzure(phonemeId, mode, passageIndex, wavBlob, simpleFallback = false) {
+    const p = APP_DATA.phonemes[phonemeId];
+    const passages = this.getPassages(phonemeId);
+    let referenceText = mode === 'practice' ? p.targetWord : passages[passageIndex].text;
+    // On fallback, use only the first sentence to improve match rate
+    if (simpleFallback) {
+      referenceText = referenceText.split(/[.!?]/)[0].trim();
+    }
+
+    try {
       const assessmentParams = {
         ReferenceText: referenceText,
         GradingSystem: 'HundredMark',
@@ -3021,21 +3037,40 @@ const App = {
       }
 
       const data = await response.json();
-      const pa = data?.NBest?.[0]?.PronunciationAssessment;
-      if (pa) {
+      console.log('Azure full response:', JSON.stringify(data));
+
+      // Try to extract score — Azure can put it in different places
+      const nbest = data?.NBest?.[0];
+      const pa = nbest?.PronunciationAssessment;
+      const recognizedText = nbest?.Display || nbest?.Lexical || '';
+      console.log('Recognized:', recognizedText, '| PA:', pa);
+
+      if (pa && pa.AccuracyScore !== undefined) {
         const score = Math.round(pa.AccuracyScore);
         if (mode === 'test') {
           this.recordScore(phonemeId, score);
         }
         this.showAzureScore(score, pa, mode);
+      } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
+        this.showSimpleScore(phonemeId, mode, "Aucune parole détectée — vérifiez votre micro et réessayez.");
+      } else if (data.RecognitionStatus === 'Success' && !pa) {
+        // Azure transcribed but didn't return pronunciation scores —
+        // this happens when EnableMiscue causes a total mismatch.
+        // Retry without EnableMiscue and with just the first sentence.
+        console.log('Retrying without EnableMiscue...');
+        await this.analyzeWithAzureSimple(phonemeId, mode, passageIndex, wavBlob); return;
       } else {
-        console.warn('Azure response missing PronunciationAssessment:', data);
-        this.showSimpleScore(phonemeId, mode, "Azure n'a pas pu analyser l'audio — parlez plus fort ou plus longtemps.");
+        console.warn('Azure unexpected state:', data.RecognitionStatus, data);
+        this.showSimpleScore(phonemeId, mode, `Statut Azure: ${data.RecognitionStatus || 'inconnu'} — réessayez.`);
       }
     } catch (err) {
-      console.error('Azure error:', err);
+      console.error('Azure send error:', err);
       this.showSimpleScore(phonemeId, mode, 'Erreur de connexion à Azure.');
     }
+  },
+
+  async analyzeWithAzureSimple(phonemeId, mode, passageIndex, wavBlob) {
+    await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
   },
 
   // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
