@@ -2912,12 +2912,17 @@ const App = {
 
   async startRecording(phonemeId, mode, passageIndex) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
       this.audioChunks = [];
-      this.mediaRecorder = new MediaRecorder(stream);
+      // Prefer audio/wav for Azure compatibility; fall back to webm
+      const mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav'
+                      : MediaRecorder.isTypeSupported('audio/webm;codecs=pcm') ? 'audio/webm;codecs=pcm'
+                      : 'audio/webm';
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      this.recordingMimeType = mimeType;
       this.mediaRecorder.ondataavailable = e => this.audioChunks.push(e.data);
       this.mediaRecorder.onstop = () => {
-        this.recordingAudioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        this.recordingAudioBlob = new Blob(this.audioChunks, { type: mimeType });
         stream.getTracks().forEach(t => t.stop());
         this.onRecordingDone(phonemeId, mode, passageIndex);
       };
@@ -2983,8 +2988,9 @@ const App = {
     const referenceText = mode === 'practice' ? p.targetWord : passages[passageIndex].text;
 
     try {
-      const audioData = await this.recordingAudioBlob.arrayBuffer();
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+      // Convert whatever the browser recorded into a proper 16-bit PCM WAV
+      // that Azure's REST endpoint reliably accepts.
+      const wavBlob = await this.toWav(this.recordingAudioBlob);
 
       const assessmentParams = {
         ReferenceText: referenceText,
@@ -3000,12 +3006,19 @@ const App = {
           method: 'POST',
           headers: {
             'Ocp-Apim-Subscription-Key': this.settings.azureKey,
-            'Content-Type': 'audio/webm',
-            'Pronunciation-Assessment': btoa(JSON.stringify(assessmentParams)),
+            'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
+            'Pronunciation-Assessment': btoa(unescape(encodeURIComponent(JSON.stringify(assessmentParams)))),
           },
-          body: this.recordingAudioBlob,
+          body: wavBlob,
         }
       );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Azure HTTP error:', response.status, errText);
+        this.showSimpleScore(phonemeId, mode, `Erreur Azure ${response.status} — vérifiez la région et la clé.`);
+        return;
+      }
 
       const data = await response.json();
       const pa = data?.NBest?.[0]?.PronunciationAssessment;
@@ -3016,12 +3029,77 @@ const App = {
         }
         this.showAzureScore(score, pa, mode);
       } else {
-        this.showSimpleScore(phonemeId, mode);
+        console.warn('Azure response missing PronunciationAssessment:', data);
+        this.showSimpleScore(phonemeId, mode, "Azure n'a pas pu analyser l'audio — parlez plus fort ou plus longtemps.");
       }
     } catch (err) {
       console.error('Azure error:', err);
-      this.showSimpleScore(phonemeId, mode);
+      this.showSimpleScore(phonemeId, mode, 'Erreur de connexion à Azure.');
     }
+  },
+
+  // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
+  // using the Web Audio API (works on all modern mobile browsers)
+  async toWav(blob) {
+    const arrayBuf = await blob.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    let decoded;
+    try {
+      decoded = await audioCtx.decodeAudioData(arrayBuf);
+    } catch(e) {
+      // If decoding fails (e.g. empty blob), return original
+      console.warn('Audio decode failed, sending raw:', e);
+      audioCtx.close();
+      return blob;
+    }
+    audioCtx.close();
+
+    // Mix down to mono at 16 kHz
+    const numChannels = 1;
+    const sampleRate = 16000;
+    const offlineCtx = new OfflineAudioContext(numChannels, Math.ceil(decoded.duration * sampleRate), sampleRate);
+    const src = offlineCtx.createBufferSource();
+    src.buffer = decoded;
+    src.connect(offlineCtx.destination);
+    src.start(0);
+    const rendered = await offlineCtx.startRendering();
+
+    // Get PCM samples as Int16
+    const pcmFloat = rendered.getChannelData(0);
+    const pcm16 = new Int16Array(pcmFloat.length);
+    for (let i = 0; i < pcmFloat.length; i++) {
+      const s = Math.max(-1, Math.min(1, pcmFloat[i]));
+      pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+
+    // Build WAV file with header
+    const wavBuffer = this.buildWav(pcm16, sampleRate, numChannels);
+    return new Blob([wavBuffer], { type: 'audio/wav' });
+  },
+
+  buildWav(pcm16, sampleRate, numChannels) {
+    const byteRate = sampleRate * numChannels * 2;
+    const blockAlign = numChannels * 2;
+    const dataSize = pcm16.length * 2;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+    const write = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+    write(0,  'RIFF');
+    view.setUint32(4,  36 + dataSize, true);
+    write(8,  'WAVE');
+    write(12, 'fmt ');
+    view.setUint32(16, 16, true);          // PCM chunk size
+    view.setUint16(20, 1,  true);          // PCM format
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);          // 16-bit
+    write(36, 'data');
+    view.setUint32(40, dataSize, true);
+    const samples = new Int16Array(buffer, 44);
+    samples.set(pcm16);
+    return buffer;
   },
 
   showAzureScore(score, pa, mode) {
@@ -3059,7 +3137,7 @@ const App = {
     }
   },
 
-  showSimpleScore(phonemeId, mode) {
+  showSimpleScore(phonemeId, mode, customMsg) {
     const scoreArea = document.getElementById('scoreArea');
     const status = document.getElementById('recordingStatus');
     if (status) status.classList.add('hidden');
@@ -3068,7 +3146,7 @@ const App = {
     scoreArea.innerHTML = `
       <div class="no-azure-msg">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Ajoutez une clé Azure dans les paramètres pour obtenir un score de prononciation.
+        ${customMsg || 'Ajoutez une clé Azure dans les paramètres pour obtenir un score de prononciation.'}
       </div>
       <button class="retry-btn" onclick="App.retryRecording()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
