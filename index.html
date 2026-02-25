@@ -1426,7 +1426,188 @@ body::before {
 .generate-passage-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .generate-passage-btn svg { width: 16px; height: 16px; }
 .bilan-passage-card { background: var(--surface); border: 1px solid color-mix(in srgb, #C084FC 25%, var(--border)); border-radius: var(--radius-lg); padding: 20px; }
+.bilan-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.5;
+  padding: 0 4px;
+}
+
 .bilan-empty { text-align: center; padding: 32px 20px; color: var(--text3); font-size: 14px; line-height: 1.6; }
+/* ── PASSAGE NUMBER STRIP CAROUSEL ──────────────────────────── */
+.read-num-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+  min-height: 40px;
+}
+.pnum-btn {
+  border-radius: 50%;
+  border: 2px solid;
+  font-family: var(--font-display);
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pnum-btn:active { transform: scale(0.88); }
+.pnum-active { box-shadow: 0 0 12px 2px color-mix(in srgb, currentColor 40%, transparent); }
+.pnum-add {
+  width: 26px !important;
+  height: 26px !important;
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  border-color: #F59E0B !important;
+  color: #F59E0B !important;
+  background: transparent !important;
+}
+
+/* ── RECORD RING (side by side with score ring) ─────────────── */
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.record-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.score-ring-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+/* When record ring is present, lay rings side by side */
+.score-display:has(.record-ring-wrap) {
+  flex-direction: row;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.score-display:has(.record-ring-wrap) .score-feedback {
+  width: 100%;
+  text-align: center;
+  order: 10;
+}
+.score-display:has(.record-ring-wrap) .score-sub-row {
+  width: 100%;
+  order: 11;
+}
+.score-display:has(.record-ring-wrap) .score-ring {
+  width: 90px;
+  height: 90px;
+}
+.score-display:has(.record-ring-wrap) .score-ring .score-number {
+  font-size: 22px !important;
+}
+.score-display:has(.record-ring-wrap) .record-ring-wrap .score-ring {
+  width: 80px;
+  height: 80px;
+}
+
+/* ── READ PASSAGE WRAP (card + chevrons inline) ──────────────── */
+.read-passage-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  position: relative;
+}
+.read-chev {
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+}
+.read-chev:active { transform: scale(0.85); }
+.read-chev svg { width: 24px; height: 24px; filter: drop-shadow(0 0 4px currentColor); }
+.read-chev.invisible { visibility: hidden; pointer-events: none; }
+.read-chev-l { padding-right: 6px; }
+.read-chev-r { padding-left: 6px; }
+.read-passage-wrap .passage-card { flex: 1; min-width: 0; }
+
+/* ── NUMBERED PASSAGE/WORD BUTTONS ──────────────────────────── */
+.passage-num-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.passage-num-btn:active { transform: scale(0.9); }
+.passage-add-btn {
+  font-size: 18px !important;
+  font-weight: 400 !important;
+}
+.carousel-num-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.carousel-num-btn:active { transform: scale(0.88); }
+
+/* ── READ CAROUSEL LAYOUT ────────────────────────────────────── */
+/* .read-carousel/.read-center/.read-passage-nums replaced by read-num-strip */
+.passage-best-score {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Bonus passage card */
+.bonus-passage {
+  border-color: rgba(245,158,11,0.35) !important;
+  background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, var(--surface) 100%) !important;
+}
+.bonus-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #F59E0B;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+/* invisible arrow placeholder keeps layout stable */
+.invisible { visibility: hidden; pointer-events: none; }
+
 /* ── WORD ANNOTATION OVERLAY ─────────────────────────────────── */
 .annotate-btn {
   display: flex;
@@ -1499,6 +1680,14 @@ body::before {
 .ann-omission{ background: rgba(156,163,175,0.15); color: #9CA3AF; border-bottom: 2px dashed #9CA3AF; text-decoration: line-through; }
 .ann-neutral { color: var(--text); }
 
+.labo-scores-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .bilan-saved-msg { font-size: 12px; color: var(--text2); text-align: center; padding: 6px 12px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
 
 /* ── BILAN SCORES SECTION ────────────────────────────────────── */
@@ -1517,6 +1706,126 @@ body::before {
 .bilan-score-sep { color: var(--text3); font-size: 12px; }
 .bilan-score-best { font-family: var(--font-display); font-size: 12px; font-weight: 700; opacity: 0.85; }
 .bilan-cat-pill { font-family: var(--font-display); font-size: 11px; font-weight: 700; margin-left: 8px; background: var(--surface); border-radius: 6px; padding: 2px 6px; border: 1px solid var(--border); }
+
+/* ── LABO THEME ──────────────────────────────────────────────── */
+
+/* Beaker button on home — glows teal */
+.labo-btn {
+  color: #00F5D4 !important;
+  position: relative;
+}
+.labo-btn svg {
+  filter: drop-shadow(0 0 6px rgba(0,245,212,0.5));
+}
+
+/* Labo header background wash */
+.labo-header {
+  position: relative;
+}
+.labo-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,245,212,0.07) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Labo logo */
+.labo-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.labo-logo-icon {
+  width: 28px;
+  height: 28px;
+  color: #00F5D4;
+  filter: drop-shadow(0 0 8px rgba(0,245,212,0.6));
+  flex-shrink: 0;
+}
+.labo-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00F5D4 0%, #2DD4BF 50%, #67E8F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+.labo-tagline {
+  font-size: 12px;
+  color: #2DD4BF !important;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+/* Home button inside labo header */
+.labo-home-btn {
+  color: #C084FC !important;
+}
+.labo-home-btn svg {
+  filter: drop-shadow(0 0 6px rgba(192,132,252,0.55));
+}
+.labo-scores-btn {
+  color: #00F5D4 !important;
+}
+.labo-scores-btn svg {
+  filter: drop-shadow(0 0 5px rgba(0,245,212,0.4));
+}
+
+/* Labo grid — same layout as home */
+.labo-grid {
+  /* inherits .category-grid styles */
+}
+
+/* Labo tiles — teal family glow overrides */
+.labo-tile {
+  position: relative;
+  overflow: hidden;
+}
+.labo-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 30%, color-mix(in srgb, var(--cat-accent) 12%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.labo-tile:hover {
+  box-shadow: 0 0 0 1px var(--cat-accent), 0 4px 24px color-mix(in srgb, var(--cat-accent) 20%, transparent);
+}
+.labo-tile .cat-icon {
+  font-size: 28px;
+}
+.labo-tile .cat-label {
+  color: var(--cat-accent);
+}
+
+/* Coming soon tiles */
+.labo-coming-soon {
+  opacity: 0.55;
+  cursor: default;
+}
+.labo-coming-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: color-mix(in srgb, var(--cat-accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cat-accent) 40%, transparent);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cat-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Labo screen headers (for Phrase libre / Bilan sub-screens) */
+.labo-screen-accent { color: #00F5D4; }
 
 /* ── TILE LOCKED ─────────────────────────────────────────────── */
 .tile-locked { opacity: 0.5; filter: grayscale(0.6); cursor: not-allowed; }
@@ -2700,6 +3009,7 @@ const App = {
   generatedPassages: {},
   phonemeShades: {}, // cache of phonemeId → {color, accent}
   bilanPassage: null,
+  passageScores: {},   // phonemeId_passageIdx → best score
   bilanScores: {},      // phonemeId → latest diagnostic score
   bilanBestScores: {},  // phonemeId → all-time best diagnostic score
   phraseLibreText: '',
@@ -2708,6 +3018,7 @@ const App = {
     this.loadSettings();
     this.loadScores();
     this.loadDiagScores();
+    this.loadPassageScores();
     this.applyTheme();
     this.renderHome();
     this.setupSpeechSynthVoices();
@@ -2741,6 +3052,26 @@ const App = {
   saveDiagScores() {
     localStorage.setItem('phonetique_bilan', JSON.stringify({ latest: this.bilanScores, best: this.bilanBestScores, passage: this.bilanPassage }));
   },
+  loadPassageScores() {
+    try {
+      const s = localStorage.getItem('phonetique_passage_scores');
+      if (s) this.passageScores = JSON.parse(s);
+    } catch(e) {}
+  },
+  savePassageScores() {
+    localStorage.setItem('phonetique_passage_scores', JSON.stringify(this.passageScores));
+  },
+  getPassageScore(phonemeId, idx) {
+    return this.passageScores[phonemeId + '_' + idx] ?? null;
+  },
+  recordPassageScore(phonemeId, idx, score) {
+    const key = phonemeId + '_' + idx;
+    // Keep best score for each passage
+    if (this.passageScores[key] === undefined || score > this.passageScores[key]) {
+      this.passageScores[key] = score;
+      this.savePassageScores();
+    }
+  },
   applyTheme() {
     document.documentElement.setAttribute('data-theme', this.settings.darkMode ? 'dark' : 'light');
   },
@@ -2764,6 +3095,8 @@ const App = {
         case 'scores': this.renderScores(); break;
         case 'phrase-libre': this.renderPhraseLibre(); break;
         case 'bilan': this.renderBilan(); break;
+        case 'labo': this.renderLabo(); break;
+        case 'labo-scores': this.renderLaboScores(); break;
         case 'settings': this.renderSettings(); break;
       }
       setTimeout(() => main.classList.remove('screen-enter'), 400);
@@ -2780,6 +3113,13 @@ const App = {
           <div class="logo-tagline">Maîtrisez les sons du français</div>
         </div>
         <div class="header-actions">
+          <button class="icon-btn labo-btn" onclick="App.navigate('labo')" title="Le Labo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+              <path d="M6.5 17.5 c1-1 2 .5 3 0 s2-1 3 0"/>
+              <line x1="9" y1="3" x2="15" y2="3"/>
+            </svg>
+          </button>
           <button class="icon-btn" onclick="App.navigate('scores')" title="Scores">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </button>
@@ -2797,18 +3137,81 @@ const App = {
             <div class="cat-glow"></div>
           </button>
         `).join('')}
-        <button class="category-tile" style="--cat-color:#0F4C75;--cat-accent:#48CAE4" onclick="App.navigate('phrase-libre')">
+      </div>
+    `;
+  },
+
+  renderLabo() {
+    const hasKey = !!this.settings.openrouterKey;
+    document.getElementById('main').innerHTML = `
+      <div class="home-header labo-header">
+        <div class="app-logo">
+          <div class="logo-full labo-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="labo-logo-icon">
+              <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+              <path d="M6.5 17.5 c1-1 2 .5 3 0 s2-1 3 0"/>
+              <line x1="9" y1="3" x2="15" y2="3"/>
+            </svg>
+            <span class="labo-title">Le Labo</span>
+          </div>
+          <div class="logo-tagline labo-tagline">Fonctions expérimentales</div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn labo-home-btn" onclick="App.navigate('home')" title="Accueil">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </button>
+          <button class="icon-btn labo-scores-btn" onclick="App.navigate('labo-scores')" title="Scores Labo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </button>
+          <button class="icon-btn" onclick="App.navigate('settings')" title="Paramètres">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="category-grid labo-grid">
+        <button class="category-tile labo-tile" style="--cat-color:#003D38;--cat-accent:#00F5D4" onclick="App.navigate('phrase-libre')">
           <div class="cat-icon">✏️</div>
           <div class="cat-label">Phrase libre</div>
           <div class="cat-desc">Prononcez votre propre phrase</div>
           <div class="cat-glow"></div>
         </button>
-        <button class="category-tile ${App.settings.openrouterKey ? '' : 'tile-locked'}"
-          style="--cat-color:#3D0066;--cat-accent:#C084FC"
-          onclick="App.settings.openrouterKey ? App.navigate('bilan') : App.showNoKeyMsg()">
-          <div class="cat-icon">${App.settings.openrouterKey ? '🔬' : '🔒'}</div>
+        <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
+          style="--cat-color:#003330;--cat-accent:#2DD4BF"
+          onclick="${hasKey ? "App.navigate('bilan')" : 'App.showNoKeyMsg()'}">
+          <div class="cat-icon">${hasKey ? '🔬' : '🔒'}</div>
           <div class="cat-label">Bilan</div>
-          <div class="cat-desc">${App.settings.openrouterKey ? 'Diagnostic de tous vos sons' : 'Requiert une clé OpenRouter'}</div>
+          <div class="cat-desc">${hasKey ? 'Diagnostic de tous vos sons' : 'Requiert une clé OpenRouter'}</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#002A28;--cat-accent:#14B8A6" disabled>
+          <div class="cat-icon">🎯</div>
+          <div class="cat-label">Défi du jour</div>
+          <div class="cat-desc">Bientôt disponible</div>
+          <div class="labo-coming-badge">Bientôt</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#002220;--cat-accent:#0D9488" disabled>
+          <div class="cat-icon">📊</div>
+          <div class="cat-label">Comparaison</div>
+          <div class="cat-desc">Comparez vos enregistrements</div>
+          <div class="labo-coming-badge">Bientôt</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#001A18;--cat-accent:#0F766E" disabled>
+          <div class="cat-icon">🗣️</div>
+          <div class="cat-label">Conversation IA</div>
+          <div class="cat-desc">Pratiquez en dialoguant</div>
+          <div class="labo-coming-badge">Bientôt</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#001210;--cat-accent:#115E59" disabled>
+          <div class="cat-icon">🎵</div>
+          <div class="cat-label">Chanson</div>
+          <div class="cat-desc">Apprenez par la musique</div>
+          <div class="labo-coming-badge">Bientôt</div>
           <div class="cat-glow"></div>
         </button>
       </div>
@@ -2822,6 +3225,7 @@ const App = {
     msg.id = 'toastMsg';
     msg.className = 'toast-msg';
     msg.textContent = 'Ajoutez une clé OpenRouter dans les Paramètres pour accéder au Bilan.';
+    msg.style.borderColor = 'rgba(0,245,212,0.4)';
     document.body.appendChild(msg);
     setTimeout(() => msg.classList.add('toast-show'), 10);
     setTimeout(() => { msg.classList.remove('toast-show'); setTimeout(() => msg.remove(), 400); }, 3200);
@@ -2948,7 +3352,10 @@ const App = {
                 <div class="practice-word-ipa" id="practiceWordIpa">${words[0][1]}</div>
               </div>
               <div class="carousel-dots">
-                ${words.map((_,i) => '<div class="carousel-dot' + (i===0?' active':'') + '" onclick="App.goToWord(\'' + phonemeId + '\', ' + i + ')"></div>').join('')}
+                ${words.map((_,i) => {
+                  const isActive = i === 0;
+                  return '<button class="carousel-num-btn' + (isActive ? ' active' : '') + '" style="background:' + (isActive ? shade.accent : 'transparent') + ';border-color:' + shade.accent + ';color:' + (isActive ? '#000' : shade.accent) + '" onclick="App.goToWord(\'' + phonemeId + '\', ' + i + ')">' + (i+1) + '</button>';
+                }).join('')}
               </div>
             </div>
             <button class="carousel-arrow carousel-next" onclick="App.nextWord('${phonemeId}')" style="color:${shade.accent}">
@@ -2993,11 +3400,18 @@ const App = {
     this.currentPhoneme = phonemeId;
     this.currentPassageIndex = passageIndex;
     const p = APP_DATA.phonemes[phonemeId];
-    const cat = APP_DATA.categories.find(c => c.id === p.category);
     const shade = this.getPhonemeShade(phonemeId);
     const passages = this.getPassages(phonemeId);
     const passage = passages[passageIndex];
     const total = passages.length;
+    const MAX_PASSAGES = 10; // 5 fixed + 5 AI bonus
+    const BASE_PASSAGES = 5;
+    const canAddMore = this.settings.openrouterKey && total < MAX_PASSAGES;
+    const isBonus = passageIndex >= BASE_PASSAGES;
+
+    // Per-passage record score
+    // Record score is shown in the score display after recording (not above the card)
+    const bestScoreHtml = '';
 
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -3005,23 +3419,75 @@ const App = {
         <button class="back-btn" onclick="App.navigate('phoneme', {phonemeId:'${phonemeId}'})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <div class="screen-title" style="color:${shade.accent}">Passage ${passageIndex + 1}/${total}</div>
+        <div class="screen-title" style="color:${shade.accent}">Lire & Écouter</div>
       </div>
       <div class="read-container">
-        <div class="passage-dots">
-          ${passages.map((_, i) => `<div class="passage-dot ${i === passageIndex ? 'active' : ''}" onclick="App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${i}})"></div>`).join('')}
+
+        <!-- Passage number pill carousel (shows 5 at a time, centred on current) -->
+        <div class="read-num-strip">
+          ${(() => {
+            const showCount = 5;
+            const half = Math.floor(showCount / 2);
+            // Build the visible slot indices: centre on passageIndex, clamp to available
+            const allSlots = [...Array(total).keys()];
+            if (canAddMore) allSlots.push('add');
+            const totalSlots = allSlots.length;
+            let centre = Math.max(half, Math.min(passageIndex, totalSlots - 1 - half));
+            const visible = allSlots.slice(Math.max(0, centre - half), centre - half + showCount);
+            return visible.map(slot => {
+              if (slot === 'add') return `<button class="pnum-btn pnum-add" onclick="App.addBonusPassage('${phonemeId}')">+</button>`;
+              const isActive = slot === passageIndex;
+              const isBonus2 = slot >= BASE_PASSAGES;
+              const accent = isBonus2 ? '#F59E0B' : shade.accent;
+              const size = isActive ? '32px' : '26px';
+              const fontSize = isActive ? '13px' : '11px';
+              const bg = isActive ? accent : 'transparent';
+              const col = isActive ? (isBonus2 ? '#000' : '#000') : accent;
+              return `<button class="pnum-btn ${isActive ? 'pnum-active' : ''}"
+                style="width:${size};height:${size};font-size:${fontSize};background:${bg};border-color:${accent};color:${col}"
+                onclick="App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${slot}})">${slot + 1}</button>`;
+            }).join('');
+          })()}
         </div>
-        <div class="passage-card" style="--cat-color:${shade.color};--cat-accent:${shade.accent}">
-          <div class="passage-text" id="passageText">${this.highlightPassage(passage.text, phonemeId)}</div>
-          <div class="passage-actions">
-            <button class="passage-listen-btn" onclick="App.speakText(\`${passage.text.replace(/`/g, "'")}\`, false)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            </button>
-            ${this.settings.openrouterKey ? `<button class="generate-btn" onclick="App.generateNewPassage('${phonemeId}', ${passageIndex})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            </button>` : ''}
+
+        ${bestScoreHtml}
+
+        <!-- Passage card with integrated chevrons and swipe -->
+        <div class="read-passage-wrap"
+          id="readPassageWrap"
+          data-phoneme="${phonemeId}"
+          data-idx="${passageIndex}"
+          data-total="${total}"
+          data-canadd="${canAddMore}">
+          <button class="read-chev read-chev-l ${passageIndex === 0 ? 'invisible' : ''}"
+            onclick="App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${passageIndex - 1}})"
+            style="color:${shade.accent}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+
+          <div class="passage-card ${isBonus ? 'bonus-passage' : ''}" style="--cat-color:${shade.color};--cat-accent:${shade.accent}">
+            ${isBonus ? `<div class="bonus-badge">✨ Bonus ${passageIndex - BASE_PASSAGES + 1}/5</div>` : ''}
+            <div class="passage-text" id="passageText">${this.highlightPassage(passage.text, phonemeId)}</div>
+            <div class="passage-actions">
+              <button class="passage-listen-btn" onclick="App.speakCurrentPassage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </button>
+              ${(this.settings.openrouterKey && isBonus) ? `
+              <button class="generate-btn" onclick="App.generateNewPassage('${phonemeId}', ${passageIndex})" title="Régénérer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>` : ''}
+            </div>
           </div>
+
+          <button class="read-chev read-chev-r ${passageIndex >= total - 1 && !canAddMore ? 'invisible' : ''}"
+            onclick="${passageIndex < total - 1
+              ? `App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${passageIndex + 1}})`
+              : `App.addBonusPassage('${phonemeId}')`}"
+            style="color:${shade.accent}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
+
         <div class="read-record-section">
           <div class="read-instructions">Lisez ce passage à voix haute — le son cible est <strong style="color:${shade.accent}">${p.ipa}</strong></div>
           <button class="record-btn" id="recordBtn" onclick="App.toggleRecording('${phonemeId}', 'read', ${passageIndex})">
@@ -3032,7 +3498,7 @@ const App = {
           </button>
           <div id="recordingStatus" class="recording-status hidden"></div>
           <div id="playbackArea" class="playback-area hidden">
-            <button class="playback-btn" id="playbackBtn" onclick="App.playRecording()">
+            <button class="playback-btn" onclick="App.playRecording()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Réécouter
             </button>
@@ -3041,6 +3507,61 @@ const App = {
         </div>
       </div>
     `;
+    // Wire up swipe on the passage card
+    this._setupPassageSwipe();
+  },
+
+  _setupPassageSwipe() {
+    const wrap = document.getElementById('readPassageWrap');
+    if (!wrap) return;
+    let startX = 0, startY = 0;
+    wrap.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    wrap.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return; // not a horizontal swipe
+      const phonemeId = wrap.dataset.phoneme;
+      const idx = parseInt(wrap.dataset.idx);
+      const total = parseInt(wrap.dataset.total);
+      const canAdd = wrap.dataset.canadd === 'true';
+      if (dx < 0) {
+        // swipe left → next
+        if (idx < total - 1) App.navigate('mode-read', { phonemeId, passageIndex: idx + 1 });
+        else if (canAdd) App.addBonusPassage(phonemeId);
+      } else {
+        // swipe right → prev
+        if (idx > 0) App.navigate('mode-read', { phonemeId, passageIndex: idx - 1 });
+      }
+    }, { passive: true });
+  },
+
+  async addBonusPassage(phonemeId) {
+    if (!this.settings.openrouterKey) return;
+    const passages = this.getPassages(phonemeId);
+    if (passages.length >= 10) { this.showToast('Maximum 10 passages atteint.'); return; }
+    const p = APP_DATA.phonemes[phonemeId];
+    const newIdx = passages.length;
+    // Show generating state immediately
+    this.navigate('mode-read', { phonemeId, passageIndex: newIdx - 1 });
+    // Generate
+    const difficulty = Math.min(newIdx - 3, 5); // bonus passages get harder
+    const prompt = "Écris un passage en français de 4 à 6 phrases contenant beaucoup d'exemples du son " + p.ipa + " (" + p.label + "). Les graphies courantes pour ce son incluent : " + p.graphies.join(', ') + ". Difficulté : niveau avancé (vocabulaire riche, phrases complexes). IMPORTANT: texte brut uniquement, sans astérisques ni formatage markdown.";
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + this.settings.openrouterKey, 'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
+        body: JSON.stringify({ model: this.settings.openrouterModel, messages: [{ role: 'user', content: prompt }], max_tokens: 300 }),
+      });
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content?.trim().replace(/\*/g, '');
+      if (text) {
+        APP_DATA.phonemes[phonemeId].passages.push({ id: phonemeId + '_bonus_' + newIdx, text, generated: true });
+        this.navigate('mode-read', { phonemeId, passageIndex: newIdx });
+      }
+    } catch(e) { console.error('Bonus passage error:', e); }
   },
 
   // ── COMPARE MODE ─────────────────────────────────────────────
@@ -3234,6 +3755,10 @@ const App = {
         <div class="bilan-passage-card" id="bilanPassageCard">
           <div class="passage-text">${this.bilanPassage}</div>
         </div>
+        <div class="bilan-tip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Lisez tout le passage d'une traite — l'analyse se fait phrase par phrase automatiquement.
+        </div>
         <div class="record-section">
           <button class="record-btn large-record" id="recordBtn" onclick="App.toggleRecording('__bilan__', 'bilan')">
             <div class="record-btn-inner">
@@ -3260,7 +3785,7 @@ const App = {
   async generateBilanPassage() {
     const btn = document.getElementById('genBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Génération...'; }
-    const prompt = `Écris un passage en français de 5 à 7 phrases (environ 80-100 mots) spécialement conçu pour tester un maximum de sons difficiles du français. Le passage doit naturellement contenir: les voyelles nasales (an/en, in, on, un), les voyelles arrondies (u, eu, eux), les contrastes é/è et o/ô, le R uvulaire français, les sons gn et ill/ille, les terminaisons muettes (-ent, -er, -ez), et idéalement des liaisons obligatoires. Le texte doit être cohérent, naturel, et intéressant — pas une liste de mots, mais une vraie histoire courte ou description. Réponds avec UNIQUEMENT le texte, sans titre ni commentaire.`;
+    const prompt = `Écris un passage en français de 3 à 4 phrases courtes (maximum 50 mots au total) conçu pour tester les sons difficiles du français. Inclus naturellement: des voyelles nasales (en/an, in, on), le son U et EU, le R français, et au moins une liaison obligatoire. Le texte doit être simple, cohérent, et facile à lire à voix haute. IMPORTANT: Maximum 50 mots. Réponds avec UNIQUEMENT du texte brut, sans aucun formatage markdown, sans astérisques. Texte simple uniquement.`;
     try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -3276,7 +3801,7 @@ const App = {
         }),
       });
       const data = await response.json();
-      const text = data.choices?.[0]?.message?.content?.trim();
+      const text = data.choices?.[0]?.message?.content?.trim().replace(/\*/g, '').replace(/_{1,2}([^_]+)_{1,2}/g, '$1').trim();
       if (text) {
         this.bilanPassage = text;
         this.saveDiagScores();
@@ -3455,33 +3980,20 @@ const App = {
 
   renderScores() {
     const allPhonemes = Object.entries(APP_DATA.phonemes);
-    const hasBilan = Object.keys(this.bilanScores).length > 0;
 
-    // Column headers
-    const colHeaders = `
-      <div class="scores-col-headers">
-        <span class="scores-col-label">Son</span>
-        <span class="scores-col-label scores-col-test">Tests</span>
-        ${hasBilan ? '<span class="scores-col-label scores-col-bilan">Bilan</span><span class="scores-col-label scores-col-best">Record</span>' : ''}
-      </div>`;
 
     const html = APP_DATA.categories.map(cat => {
       const catPhonemes = allPhonemes.filter(([, p]) => p.category === cat.id);
       // Check if this category has any bilan data
-      const catBilanScore = this.bilanScores[cat.id];
-      const catBilanBest = this.bilanBestScores[cat.id];
       return `
         <div class="scores-category">
-          <div class="scores-cat-header" style="color:${cat.accent}">
-            ${cat.label}
-            ${catBilanScore !== undefined ? `<span class="bilan-cat-pill" style="color:${this.scoreColor(catBilanScore)}">${catBilanScore}%</span>` : ''}
-          </div>
+          <div class="scores-cat-header" style="color:${cat.accent}">${cat.label}</div>
           <div class="scores-phoneme-list">
             ${catPhonemes.map(([id, p]) => {
               const score = this.getPhonemeScore(id);
               const pct = score !== null ? score : null;
               return `
-                <button class="score-phoneme-row ${hasBilan ? 'with-bilan' : ''}" onclick="App.navigate('phoneme',{phonemeId:'${id}'})">
+                <button class="score-phoneme-row" onclick="App.navigate('phoneme',{phonemeId:'${id}'})">
                   <span class="score-ipa" style="color:${cat.accent}">${p.ipa}</span>
                   <span class="score-label">${p.label}</span>
                   <span class="score-bar-wrap">
@@ -3496,21 +4008,37 @@ const App = {
       `;
     }).join('');
 
-    // Bilan summary section (category-level scores from diagnostic)
+    // Bilan scores are shown in labo-scores screen instead
+
+    document.getElementById('main').innerHTML = `
+      <div class="screen-header">
+        <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
+        <div class="screen-title">Mes Scores</div>
+      </div>
+      <div class="scores-container">
+        ${html}
+      </div>
+    `;
+  },
+
+  // ── LABO SCORES ──────────────────────────────────────────────
+  renderLaboScores() {
+    const hasBilan = Object.keys(this.bilanScores).length > 0;
+
     const bilanHtml = hasBilan ? `
       <div class="bilan-summary-section">
         <div class="bilan-summary-header">
           <span class="bilan-summary-title">🔬 Bilan diagnostic</span>
           <button class="bilan-redo-btn" onclick="App.navigate('bilan')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 0-2.12-9.36L23 10"/></svg>
-            Refaire
+            Nouveau Bilan
           </button>
         </div>
         <div class="bilan-summary-note">Scores par catégorie · Dernier résultat · Record personnel</div>
         <div class="bilan-cat-list">
           ${APP_DATA.categories.map(cat => {
             const latest = this.bilanScores[cat.id];
-            const best = this.bilanBestScores[cat.id];
+            const best   = this.bilanBestScores[cat.id];
             if (latest === undefined) return '';
             return `
               <div class="bilan-cat-row">
@@ -3526,15 +4054,21 @@ const App = {
               </div>`;
           }).join('')}
         </div>
-      </div>` : '';
+      </div>` : `
+      <div class="labo-scores-empty">
+        <div style="font-size:48px;margin-bottom:12px">🔬</div>
+        <p>Aucun Bilan effectué pour l'instant.</p>
+        <button class="generate-passage-btn" onclick="App.navigate('bilan')" style="margin-top:8px">
+          Faire un Bilan maintenant
+        </button>
+      </div>`;
 
     document.getElementById('main').innerHTML = `
-      <div class="screen-header">
-        <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <div class="screen-title">Mes Scores</div>
+      <div class="screen-header" style="border-bottom-color:rgba(0,245,212,0.2)">
+        <button class="home-btn" onclick="App.navigate('labo')"><span class="logo-ph" style="color:#00F5D4">Ph</span><span class="logo-onetique" style="color:#2DD4BF">o</span></button>
+        <div class="screen-title" style="color:#00F5D4">Scores · Labo</div>
       </div>
       <div class="scores-container">
-        ${html}
         ${bilanHtml}
       </div>
     `;
@@ -3641,6 +4175,12 @@ const App = {
     }
   },
 
+  speakCurrentPassage() {
+    const passages = this.getPassages(this.currentPhoneme);
+    const passage = passages[this.currentPassageIndex];
+    if (passage) this.speakText(passage.text, false);
+  },
+
   speakCurrentWord() {
     const p = APP_DATA.phonemes[this.currentPhoneme];
     if (!p) return;
@@ -3694,7 +4234,17 @@ const App = {
       }, 150);
     }
 
-    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    // Update numbered buttons (both carousel-dot and carousel-num-btn)
+    document.querySelectorAll('.carousel-dot, .carousel-num-btn').forEach((d, i) => {
+      const isActive = i === idx;
+      d.classList.toggle('active', isActive);
+      if (d.classList.contains('carousel-num-btn')) {
+        const shade = App.getPhonemeShade(App.currentPhoneme);
+        d.style.background = isActive ? shade.accent : 'transparent';
+        d.style.color = isActive ? '#000' : shade.accent;
+        d.style.borderColor = shade.accent;
+      }
+    });
 
     // Reset recording state when word changes
     this.retryRecording();
@@ -3726,7 +4276,6 @@ const App = {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
       this.audioChunks = [];
-      // Prefer audio/wav for Azure compatibility; fall back to webm
       const mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav'
                       : MediaRecorder.isTypeSupported('audio/webm;codecs=pcm') ? 'audio/webm;codecs=pcm'
                       : 'audio/webm';
@@ -3740,6 +4289,15 @@ const App = {
       };
       this.mediaRecorder.start();
       this.recording = true;
+
+      // Azure PA REST API has a 30-second limit. We auto-stop at 29s to prevent hard rejection.
+      if (this.recordingTimeout) clearTimeout(this.recordingTimeout);
+      this.recordingTimeout = setTimeout(() => {
+        if (this.recording) {
+          this.stopRecording(phonemeId, mode, passageIndex);
+          if (this.showToast) this.showToast('Enregistrement arrêté (limite de 30 secondes atteinte).');
+        }
+      }, 29000);
 
       const btn = document.getElementById('recordBtn');
       if (btn) {
@@ -3795,7 +4353,6 @@ const App = {
 
   // ── AZURE PRONUNCIATION ASSESSMENT ───────────────────────────
   async analyzeWithAzure(phonemeId, mode, passageIndex) {
-    // Guard: libre and bilan have no phoneme data
     if (mode === 'libre' && !this.phraseLibreText?.trim()) {
       this.showSimpleScore(phonemeId, mode, "Veuillez écrire une phrase avant d'enregistrer.");
       return;
@@ -3804,7 +4361,6 @@ const App = {
       this.showSimpleScore(phonemeId, mode, "Veuillez d'abord générer un passage.");
       return;
     }
-    // Check Azure key
     if (!this.settings.azureKey || !this.settings.azureRegion) {
       this.showSimpleScore(phonemeId, mode, 'Ajoutez une clé Azure dans les paramètres pour obtenir un score.');
       return;
@@ -3812,6 +4368,9 @@ const App = {
     try {
       const wavBlob = await this.toWav(this.recordingAudioBlob);
       console.log('WAV blob size:', wavBlob.size, 'bytes');
+
+      // Bilan and Read text passages are short enough (<= 50 words) to comfortably 
+      // process within the Azure PA 30-second limit without complex frontend chunking.
       return await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob);
     } catch (err) {
       console.error('Azure toWav error:', err);
@@ -3819,12 +4378,131 @@ const App = {
     }
   },
 
+  async _analyzeBilanChunked(wavBlob) {
+    const passage = this.bilanPassage || '';
+
+    // Split into chunks of ~2 sentences (max ~12 seconds each).
+    // Group by sentence-ending punctuation; avoid splitting on dialogue markers.
+    // Strategy: split on '. ' or '! ' or '? ' but NOT inside « » quotes.
+    const rawSentences = passage
+      .replace(/[«»]/g, '')                       // strip guillemets — keep text
+      .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ö])/u)       // split at sentence boundary before capital
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+
+    // Group into pairs so each chunk is ~2 sentences (safer for audio windowing)
+    const chunks = [];
+    for (let i = 0; i < rawSentences.length; i += 2) {
+      const pair = rawSentences.slice(i, i + 2).join(' ');
+      chunks.push(pair);
+    }
+    if (chunks.length === 0) chunks.push(passage);
+
+    console.log(`Bilan: ${chunks.length} chunks from ${rawSentences.length} sentences`);
+
+    const statusEl = document.getElementById('recordingStatus');
+    if (statusEl) {
+      statusEl.classList.remove('hidden');
+      statusEl.innerHTML = `<div class="pulse-dot"></div> Analyse en cours (0/${chunks.length})...`;
+    }
+
+    // Decode WAV once for slicing
+    const arrayBuf = await wavBlob.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const decoded  = await audioCtx.decodeAudioData(arrayBuf);
+    const sr       = decoded.sampleRate;
+    const fullPcm  = decoded.getChannelData(0);
+    const totalS   = fullPcm.length / sr;
+
+    const allWords  = [];
+    const allScores = [];
+    let audioStartSec = 0;
+    const WINDOW_S = 25;
+    const OVERLAP_S = 1.5;
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      if (statusEl) statusEl.innerHTML =
+        `<div class="pulse-dot"></div> Analyse en cours (${i+1}/${chunks.length})...`;
+
+      // Slice audio window
+      const winStart    = Math.max(0, audioStartSec - OVERLAP_S);
+      const winEnd      = Math.min(totalS, winStart + WINDOW_S);
+      const startSample = Math.floor(winStart * sr);
+      const endSample   = Math.floor(winEnd   * sr);
+      const slicePcm    = fullPcm.slice(startSample, endSample);
+      const slice16     = new Int16Array(slicePcm.length);
+      for (let j = 0; j < slicePcm.length; j++) {
+        const s = Math.max(-1, Math.min(1, slicePcm[j]));
+        slice16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      const chunkBlob = new Blob([this.buildWav(slice16, sr, 1)], { type: 'audio/wav' });
+
+      try {
+        const data  = await this._azureRequest(chunkBlob, chunk, true, 'dictation', 35000);
+        const nbest = data?.NBest?.[0];
+
+        // Unwrap scores — Azure puts them flat on NBest[0] with detailed format
+        const pa = nbest?.PronunciationAssessment
+          || (nbest?.AccuracyScore !== undefined ? nbest : null);
+
+        const acc = pa?.AccuracyScore ?? 0;
+        const pro = pa?.PronScore ?? acc;
+        console.log(`Chunk ${i+1} "${chunk.slice(0,32)}..." → status: ${data?.RecognitionStatus}, words: ${nbest?.Words?.length || 0}, accuracy: ${acc}`);
+
+        if (nbest?.Words?.length) {
+          const offsetTicks = Math.round(winStart * 1e7);
+          nbest.Words.forEach(w => allWords.push({ ...w, Offset: w.Offset + offsetTicks }));
+          if (acc > 0) allScores.push(pro);
+
+          // Advance audio cursor to just after last recognised word
+          const lastW = nbest.Words[nbest.Words.length - 1];
+          audioStartSec = Math.max(0, (lastW.Offset + lastW.Duration) / 1e7 - 0.3);
+        } else {
+          // Nothing recognised — step forward by estimated speaking time
+          audioStartSec += chunk.split(/\s+/).length * 1.8;
+        }
+      } catch(e) {
+        console.warn(`Chunk ${i} error:`, e);
+        audioStartSec += chunk.split(/\s+/).length * 1.8;
+      }
+    }
+
+    if (statusEl) statusEl.classList.add('hidden');
+
+    if (allWords.length === 0) {
+      this.showSimpleScore('__bilan__', 'bilan', 'Aucun mot reconnu — parlez plus lentement et clairement.');
+      return;
+    }
+
+    // Sort by offset and deduplicate (same offset = same word captured twice)
+    allWords.sort((a, b) => a.Offset - b.Offset);
+    const deduped = allWords.filter((w, i) =>
+      i === 0 || Math.abs(w.Offset - allWords[i-1].Offset) > 100000 // >10ms apart
+    );
+
+    const scoredWords = deduped.filter(w => w.AccuracyScore > 0 && w.ErrorType !== 'Omission');
+    const overallScore = allScores.length > 0
+      ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+      : scoredWords.length > 0
+        ? Math.round(scoredWords.reduce((s, w) => s + w.AccuracyScore, 0) / scoredWords.length)
+        : 50;
+
+    const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(overallScore))));
+    console.log(`Bilan merged: ${deduped.length} words (deduped from ${allWords.length}), raw: ${overallScore}, remapped: ${finalScore}`);
+
+    const fakePA = { AccuracyScore: overallScore, PronScore: overallScore };
+    this.showBilanResults(finalScore, fakePA, deduped);
+  },
+
   async _sendToAzure(phonemeId, mode, passageIndex, wavBlob, simpleFallback = false) {
     const p = APP_DATA.phonemes[phonemeId];
     const passages = this.getPassages(phonemeId);
+
+    // Build reference text for this mode
     let referenceText;
     if (mode === 'practice') {
-      referenceText = p.practiceWords[App.currentPracticeWordIndex || 0][0];
+      referenceText = p?.practiceWords?.[App.currentPracticeWordIndex || 0]?.[0] || '';
     } else if (mode === 'libre') {
       referenceText = App.phraseLibreText || '';
     } else if (mode === 'bilan') {
@@ -3832,130 +4510,141 @@ const App = {
     } else {
       referenceText = passages[passageIndex]?.text || '';
     }
-    if (simpleFallback) {
+
+    // On retry for short texts, use just first sentence; for passages keep full text
+    if (simpleFallback && mode !== 'read' && mode !== 'bilan') {
       referenceText = referenceText.split(/[.!?]/)[0].trim();
     }
 
-    const assessmentParams = {
-      ReferenceText: referenceText,
-      GradingSystem: 'HundredMark',
-      Dimension: 'Comprehensive',
-      EnableMiscue: simpleFallback ? false : true,
-      PhonemeAlphabet: 'IPA',
-    };
+    console.log('→ Azure | mode:', mode, '| fallback:', simpleFallback, '| ref:', referenceText.slice(0, 60) + '...', '| wav bytes:', wavBlob.size);
 
-    // Encode header: UTF-8 bytes → base64 (handles accented French chars safely)
-    const jsonStr = JSON.stringify(assessmentParams);
-    const utf8Bytes = new TextEncoder().encode(jsonStr);
-    let binary = '';
-    utf8Bytes.forEach(b => binary += String.fromCharCode(b));
-    const headerVal = btoa(binary);
+    // Use dictation mode for long passages, conversation for single words
+    const recognitionMode = (mode === 'practice') ? 'conversation' : 'dictation';
+    const timeoutMs = (mode === 'bilan' || mode === 'read') ? 90000 : 30000;
 
-    const url = `https://${this.settings.azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${this.settings.frVariant}&format=detailed&profanity=raw`;
+    const data = await this._azureRequest(wavBlob, referenceText, !simpleFallback, recognitionMode, timeoutMs);
 
-    console.log('→ Azure | fallback:', simpleFallback, '| ref:', referenceText, '| wav bytes:', wavBlob.size);
-    console.log('→ PA header JSON:', jsonStr);
+    if (!data) {
+      this.showSimpleScore(phonemeId, mode, 'Erreur réseau ou réponse invalide.');
+      return;
+    }
 
-    // Use XMLHttpRequest — avoids fetch() CORS preflight issues on mobile Chrome
-    return new Promise((resolve) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-      xhr.setRequestHeader('Ocp-Apim-Subscription-Key', this.settings.azureKey);
-      xhr.setRequestHeader('Content-Type', 'audio/wav; codecs=audio/pcm; samplerate=16000');
-      xhr.setRequestHeader('Pronunciation-Assessment', headerVal);
-      xhr.responseType = 'text';
+    const nbest = data?.NBest?.[0];
+    let pa = nbest?.PronunciationAssessment || (nbest?.AccuracyScore !== undefined ? nbest : null);
 
-      xhr.onload = () => {
-        console.log('← Azure status:', xhr.status);
-        console.log('← Azure raw:', xhr.responseText);
+    // If no top-level pa, synthesise from word-level data
+    if (!pa && nbest?.Words?.length > 0) {
+      const words = nbest.Words;
+      // Azure Granularity:Word nests scores under Words[n].PronunciationAssessment
+      const wordPAs = words.map(w => w.PronunciationAssessment || null);
+      const hasWordPA = wordPAs.some(p => p !== null && (p.AccuracyScore ?? 0) > 0);
 
-        if (xhr.status !== 200) {
-          this.showSimpleScore(phonemeId, mode, `Erreur Azure ${xhr.status} — vérifiez la clé et la région.`);
-          resolve(); return;
+      if (hasWordPA) {
+        const scored = wordPAs.filter(p => p && (p.AccuracyScore ?? 0) > 0);
+        const avgAcc = scored.reduce((s, p) => s + p.AccuracyScore, 0) / scored.length;
+        const completeness = Math.round((wordPAs.filter(p => p).length / words.length) * 100);
+        pa = {
+          AccuracyScore: Math.round(avgAcc),
+          FluencyScore: Math.round(avgAcc * 0.9),
+          CompletenessScore: completeness,
+          PronScore: Math.round(avgAcc * 0.5 + completeness * 0.5),
+        };
+        console.log('← Synth from word PAs:', scored.length, '/', words.length, '→ avg:', Math.round(avgAcc), 'PronScore:', pa.PronScore);
+      } else {
+        // AccuracyScore directly on word (fr-CA format)
+        const scored = words.filter(w => (w.AccuracyScore ?? 0) > 0);
+        if (scored.length > 0) {
+          const avgAcc = scored.reduce((s, w) => s + w.AccuracyScore, 0) / scored.length;
+          pa = { AccuracyScore: Math.round(avgAcc), FluencyScore: Math.round(avgAcc * 0.9),
+                 CompletenessScore: Math.round((scored.length / words.length) * 100), PronScore: Math.round(avgAcc) };
+          console.log('← Synth from direct word AccuracyScore → PronScore:', pa.PronScore);
         }
+      }
+      console.log('← Word[0] full:', JSON.stringify(words[0]).slice(0, 300));
+    }
+    console.log('← RecognitionStatus:', data.RecognitionStatus, '| SNR:', data.SNR);
+    console.log('← pa:', pa ? JSON.stringify(pa).slice(0, 300) : 'NULL — no scores');
 
-        let data;
-        try { data = JSON.parse(xhr.responseText); }
-        catch(e) { this.showSimpleScore(phonemeId, mode, 'Réponse invalide.'); resolve(); return; }
+    // Azure heard nothing / silence — only fire when SNR is genuinely zero
+    const snr = data.SNR ?? 0;
+    if (snr < 2 && (!pa || pa.PronScore === 0)) {
+      if (!simpleFallback) {
+        return this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
+      } else {
+        this.showSimpleScore(phonemeId, mode, "Audio non détecté — parlez plus fort et restez proche du micro.");
+        return;
+      }
+    }
 
-        const nbest = data?.NBest?.[0];
-        // Azure returns scores flat on NBest[0], not nested in PronunciationAssessment
-        const pa = nbest?.PronunciationAssessment || (nbest?.AccuracyScore !== undefined ? nbest : null);
-        console.log('← RecognitionStatus:', data.RecognitionStatus);
-        console.log('← PronunciationAssessment:', JSON.stringify(pa));
-        console.log('← Recognized text:', nbest?.Display);
+    if (pa && pa.AccuracyScore !== undefined) {
+      const words = nbest?.Words || [];
 
-        if (pa && pa.AccuracyScore !== undefined) {
-          // Detect Azure "heard nothing" response (SNR=0, all scores=0)
-          if (pa.PronScore === 0 && data.SNR === 0) {
-            if (!simpleFallback) {
-              console.log('SNR=0, retrying...');
-              this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true).then(resolve);
-            } else {
-              this.showSimpleScore(phonemeId, mode, "Audio non détecté — parlez plus fort et attendez la fin du compte à rebours.");
-            }
-            resolve(); return;
-          }
-          const p = APP_DATA.phonemes[phonemeId];
-          const isConnectedSpeech = ['liaison', 'rythme'].includes(p?.category);
-          const rawScore = pa.PronScore ?? pa.AccuracyScore;
-          const fluency = pa.FluencyScore ?? rawScore;
-          const words = data.NBest?.[0]?.Words || [];
+      // For long passages (read mode), Azure may only score part of the text.
+      // If PronScore=0 but words exist with scores, use word-level average instead.
+      let rawScore = pa.PronScore ?? pa.AccuracyScore;
+      let fluency  = pa.FluencyScore ?? rawScore;
 
-          // Bilan mode: special handling
-          if (mode === 'bilan') {
-            const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
-            this.showBilanResults(finalScore, pa, words);
-            resolve(); return;
-          }
-
-          // Libre mode: just score, no category tracking
-          if (mode === 'libre') {
-            const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
-            this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
-            resolve(); return;
-          }
-
-          let finalScore;
-          if (isConnectedSpeech) {
-            const blended = fluency * 0.6 + rawScore * 0.4;
-            const timingPenalty = (p?.category === 'liaison')
-              ? this.calcLiaisonPenalty(words)
-              : 0;
-            finalScore = this.remapScore(blended) - timingPenalty;
-          } else {
-            finalScore = this.remapScore(rawScore);
-          }
-          finalScore = Math.round(Math.max(5, Math.min(100, finalScore)));
-
-          if (mode === 'test') this.recordScore(phonemeId, finalScore);
-          this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
-
-        } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
-          this.showSimpleScore(phonemeId, mode, 'Aucune parole détectée — parlez plus fort.');
-
-        } else if (!simpleFallback) {
-          console.log('No PA on first attempt, retrying simplified...');
-          this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true).then(resolve);
-
-        } else {
-          // Show exactly what Azure recognized so we can debug
-          this.showSimpleScore(phonemeId, mode, `Score indisponible. Azure a reconnu: "${nbest?.Display || 'rien'}"`);
+      if (rawScore === 0 && words.length > 0) {
+        const scoredWords = words.filter(w => w.AccuracyScore > 0 && w.ErrorType !== 'Insertion');
+        if (scoredWords.length > 0) {
+          rawScore = scoredWords.reduce((s, w) => s + w.AccuracyScore, 0) / scoredWords.length;
+          fluency  = pa.FluencyScore ?? rawScore;
+          console.log('PronScore=0 override: using word avg', rawScore.toFixed(1), 'from', scoredWords.length, 'words');
         }
-        resolve();
-      };
+      }
 
-      xhr.onerror = (e) => {
-        console.error('XHR error:', e);
-        this.showSimpleScore(phonemeId, mode, 'Erreur réseau.');
-        resolve();
-      };
+      if (mode === 'bilan') {
+        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
+        this.showBilanResults(finalScore, pa, words);
+        return;
+      }
 
-      xhr.send(wavBlob);
-    });
+      if (mode === 'libre') {
+        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
+        this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
+        return;
+      }
+
+      const ph = APP_DATA.phonemes[phonemeId];
+      const isConnectedSpeech = ['liaison', 'rythme'].includes(ph?.category);
+      let finalScore;
+      if (isConnectedSpeech) {
+        const blended = fluency * 0.6 + rawScore * 0.4;
+        const timingPenalty = ph?.category === 'liaison' ? this.calcLiaisonPenalty(words) : 0;
+        finalScore = this.remapScore(blended) - timingPenalty;
+      } else {
+        finalScore = this.remapScore(rawScore);
+      }
+      finalScore = Math.round(Math.max(5, Math.min(100, finalScore)));
+
+      if (mode === 'test') this.recordScore(phonemeId, finalScore);
+      if (mode === 'read') this.recordPassageScore(phonemeId, this.currentPassageIndex, finalScore);
+      this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
+
+    } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
+      this.showSimpleScore(phonemeId, mode, 'Aucune parole détectée — parlez plus fort.');
+
+    } else if (!simpleFallback) {
+      return this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
+
+    } else {
+      // Last resort: if we have word-level data, use average word accuracy
+      const fallbackWords = nbest?.Words?.filter(w => (w.AccuracyScore ?? 0) > 0 && w.ErrorType !== 'Insertion') || [];
+      if (fallbackWords.length >= 3) {
+        const avgAcc = fallbackWords.reduce((s, w) => s + w.AccuracyScore, 0) / fallbackWords.length;
+        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(avgAcc))));
+        console.log('Last-resort word avg score:', avgAcc.toFixed(1), '→', finalScore);
+        if (mode === 'test') this.recordScore(phonemeId, finalScore);
+        if (mode === 'read') this.recordPassageScore(phonemeId, this.currentPassageIndex, finalScore);
+        const fakePa = { AccuracyScore: avgAcc, FluencyScore: nbest?.FluencyScore ?? avgAcc, PronScore: avgAcc };
+        this.showAzureScore(finalScore, fakePa, mode, avgAcc, fakePa.FluencyScore);
+      } else {
+        this.showSimpleScore(phonemeId, mode, `Score indisponible. Azure a reconnu : "${nbest?.Display?.slice(0,60) || 'rien'}"`);
+      }
+    }
   },
 
-    // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
+  // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
   // using the Web Audio API (works on all modern mobile browsers)
   async toWav(blob) {
     const arrayBuf = await blob.arrayBuffer();
@@ -4026,6 +4715,70 @@ const App = {
     return buffer;
   },
 
+  // Split a PCM Int16Array into chunks of ~maxSeconds each
+  splitPcmChunks(pcm16, sampleRate, maxSeconds = 12) {
+    const chunkSamples = sampleRate * maxSeconds;
+    const chunks = [];
+    for (let i = 0; i < pcm16.length; i += chunkSamples) {
+      chunks.push(pcm16.slice(i, i + chunkSamples));
+    }
+    return chunks;
+  },
+
+  // Split reference text into ~equal sentence groups matching chunk count
+  splitRefTextChunks(text, count) {
+    // Split on sentence boundaries
+    const sentences = text.match(/[^.!?«»]+[.!?]*/g) || [text];
+    if (count <= 1 || sentences.length <= 1) return [text];
+    // Distribute sentences across chunks as evenly as possible
+    const chunks = [];
+    const perChunk = Math.ceil(sentences.length / count);
+    for (let i = 0; i < sentences.length; i += perChunk) {
+      chunks.push(sentences.slice(i, i + perChunk).join(' ').trim());
+    }
+    // Pad or trim to exactly count
+    while (chunks.length < count) chunks.push(chunks[chunks.length - 1]);
+    return chunks.slice(0, count);
+  },
+
+  // Send a single WAV blob to Azure and return the parsed response data
+  _azureRequest(wavBlob, referenceText, enableMiscue = true, recognitionMode = 'dictation', timeoutMs = 30000) {
+    const isFrCA = this.settings.frVariant === 'fr-CA';
+    
+    const assessmentParams = {
+      ReferenceText: referenceText,
+      GradingSystem: 'HundredMark',
+      Granularity: 'Word',
+      Dimension: 'Comprehensive',
+      EnableMiscue: isFrCA ? false : enableMiscue,
+      ...(isFrCA ? {} : { PhonemeAlphabet: 'IPA' }),
+    };
+    
+    const jsonStr = JSON.stringify(assessmentParams);
+    const headerVal = btoa(unescape(encodeURIComponent(jsonStr)));
+
+    // &format=detailed is removed from this URL
+    const url = `https://${this.settings.azureRegion}.stt.speech.microsoft.com/speech/recognition/${recognitionMode}/cognitiveservices/v1?language=${this.settings.frVariant}&profanity=raw`;
+
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.timeout = timeoutMs;
+      xhr.setRequestHeader('Ocp-Apim-Subscription-Key', this.settings.azureKey);
+      xhr.setRequestHeader('Content-Type', 'audio/wav; codecs=audio/pcm; samplerate=16000');
+      xhr.setRequestHeader('Pronunciation-Assessment', headerVal);
+      xhr.responseType = 'text';
+      xhr.onload = () => {
+        if (xhr.status !== 200) { console.error('Azure HTTP', xhr.status); resolve(null); return; }
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch(e) { console.error('Azure JSON parse error'); resolve(null); }
+      };
+      xhr.ontimeout = () => { console.error('Azure timeout after', timeoutMs, 'ms'); resolve(null); };
+      xhr.onerror  = () => { console.error('Azure XHR error'); resolve(null); };
+      xhr.send(wavBlob);
+    });
+  },
+
   showAzureScore(score, pa, mode, rawAzure, fluency) {
     const scoreArea = document.getElementById('scoreArea');
     const status = document.getElementById('recordingStatus');
@@ -4069,6 +4822,30 @@ const App = {
     if (btn) {
       btn.disabled = false;
       btn.querySelector('.record-label').textContent = 'Enregistrer à nouveau';
+    }
+    // For read mode: inject a purple "Record" ring next to the main score ring
+    if (mode === 'read') {
+      document.querySelectorAll('.passage-best-score').forEach(el => el.remove());
+      const best = this.getPassageScore(this.currentPhoneme, this.currentPassageIndex);
+      if (best !== null) {
+        const scoreDisplay = scoreArea.querySelector('.score-display');
+        if (scoreDisplay) {
+          const dash = Math.round(2.51 * best);
+          const wrap = document.createElement('div');
+          wrap.className = 'record-ring-wrap';
+          wrap.innerHTML =
+            '<div class="score-ring-label">Record</div>' +
+            '<div class="score-ring" style="--score-color:#A78BFA;--score-pct:' + best + '">' +
+              '<svg viewBox="0 0 100 100">' +
+                '<circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>' +
+                '<circle cx="50" cy="50" r="40" fill="none" stroke="#A78BFA" stroke-width="8"' +
+                  ' stroke-dasharray="' + dash + ' 251" stroke-linecap="round" transform="rotate(-90 50 50)"/>' +
+              '</svg>' +
+              '<div class="score-number" style="font-size:18px">' + best + '<span class="score-pct-sym">%</span></div>' +
+            '</div>';
+          scoreDisplay.appendChild(wrap);
+        }
+      }
     }
   },
 
@@ -4125,9 +4902,28 @@ const App = {
     const btn = document.querySelector('.generate-btn');
     if (btn) btn.disabled = true;
 
-    try {
-      const prompt = `Écris un court passage en français (3-4 phrases, environ 40-60 mots) contenant beaucoup d'exemples du son ${p.ipa} (${p.label}). Les graphies courantes pour ce son incluent : ${p.graphies.join(', ')}. Le passage doit être naturel, varié, et ne PAS répéter les mêmes prénoms ou mots clés du passage précédent. Réponds avec UNIQUEMENT le texte du passage, sans titre ni explication.`;
+    // Difficulty levels 0-9 mapped to passage slots 0-9
+    const difficultyInstructions = [
+      // Slot 0 (passage 1) — 1 sentence only, very simple
+      "1 seule phrase courte (12-16 mots maximum) avec 1-2 exemples du son. Vocabulaire de base uniquement.",
+      // Slot 1 (passage 2) — 2 short sentences
+      "2 phrases très courtes (20-28 mots au total) avec 2-3 exemples du son. Vocabulaire simple et courant.",
+      // Slots 2-9 — all same standard length as existing passages
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, style légèrement plus soutenu.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire riche, registre formel ou littéraire.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Style journalistique ou narratif soutenu.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Expressions idiomatiques bienvenues.",
+      "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Niveau natif : diversité lexicale maximale.",
+    ];
+    const diffLevel = Math.min(slotIndex, difficultyInstructions.length - 1);
+    const diffInstruction = difficultyInstructions[diffLevel];
 
+    const prompt = "Écris un passage en français sur le son " + p.ipa + " (" + p.label + "). Graphies cibles : " + p.graphies.join(', ') + ". Consignes de difficulté : " + diffInstruction + " Le texte doit être cohérent et naturel, ne PAS répéter les mots clés du passage précédent. IMPORTANT: Réponds avec UNIQUEMENT du texte brut, sans astérisques ni formatage markdown.";
+
+    try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -4172,12 +4968,100 @@ const App = {
       return this.highlightLiaison(text, phonemeId);
     }
 
-    // Standard graphie highlighting
-    const graphies = p.graphies.filter(g => g.length <= 4 && /^[a-z\u00C0-\u017Eéèêëàâùûîïôœæç\-]+$/i.test(g));
+    // Context-aware graphie highlighting.
+    // Problem: naive substring matching hits false positives like
+    // 'um' in 'costume' (which is /y/, not /œ̃/) or 'in' in 'inviter'.
+    // Solution: for each graphie, we apply a phonetic position rule
+    // based on where that graphie actually produces the target sound.
+    const GRAPHIE_RULES = {
+      // Nasal vowels — graphie is nasal only before consonant or at end of word
+      // NOT before a vowel (which would denasalise it), NOT doubled
+      'an': /(?<![aeo])an(?![aeiouéèêëàâùûîïôœh])/gi,
+      'en': /(?<![aeo])en(?![aeiouéèêëàâùûîïôœh])/gi,
+      'am': /am(?![aeiouéèêëàâùûîïôœh])/gi,
+      'em': /em(?![aeiouéèêëàâùûîïôœh])/gi,
+      'in': /(?<![aeo])in(?![aeiouéèêëàâùûîïôœh])/gi,
+      'im': /im(?![aeiouéèêëàâùûîïôœh])/gi,
+      'ain': /ain(?![aeiouéèêëàâùûîïôœh])/gi,
+      'ein': /ein(?![aeiouéèêëàâùûîïôœh])/gi,
+      'on': /(?<![aeo])on(?![aeiouéèêëàâùûîïôœh])/gi,
+      'om': /om(?![aeiouéèêëàâùûîïôœh])/gi,
+      // 'un'/'um' nasal — only at word-end or before consonant, NOT in middle of word after vowel
+      'un': /un(?=[^aeiouéèêëàâùûîïôœh\s]|)/gi,
+      'um': /um(?=[^aeiouéèêëàâùûîïôœh]|)/gi,
+      // Rounded vowels — these are mostly unambiguous in position
+      'u':  /(?<=[bcdfghjklmnpqrstvwxyz])u(?=[^aeiouéèêëàâùûîïôœ]|$|\s)/gi,
+      'eu': /eu(?!x)/gi,
+      'eux': /eux/gi,
+      'oe': /oe/gi,
+      'œ': /œ/gi,
+      // é è ê sounds
+      'é': /é/gi,
+      'er': /er/gi,   // only at word end
+      'ez': /ez/gi,
+      'ée': /ée/gi,
+      'è': /è/gi,
+      'ê': /ê/gi,
+      'ai': /ai/gi,
+      'ei': /ei/gi,
+      // o sounds — 'o' is common and mostly unambiguous
+      'o': /o\B|\Bo/gi,
+      'au': /au/gi,
+      'eau': /eau/gi,
+      'ô': /ô/gi,
+      'î': /î/gi,
+      'â': /â/gi,
+      'à': /à/gi,
+      'ù': /ù/gi,
+      'û': /û/gi,
+      'ç': /ç/gi,
+      // Consonnes — full graphie is fairly unambiguous
+      'gn': /gn/gi,
+      'ill': /ill/gi,
+      'il': /il/gi,
+      'ille': /ille/gi,
+      'ail': /ail/gi,
+      'eil': /eil/gi,
+      'euil': /euil/gi,
+      'r': null, // 'r' alone is too common — skip, rely on context in passage
+      // Terminaisons — only at word end
+      'ent': /ent/gi,
+      'er': /er/gi,
+      'ez': /ez/gi,
+      'tion': /tion/gi,
+      // Liaison consonants — handled by highlightLiaison
+    };
+
+    // Allow 1-char graphies only if they're accented/special French chars (unambiguous)
+    const SAFE_SINGLE = new Set(['é','è','ê','ë','à','â','ô','î','ï','û','ù','œ','æ','ç','ñ']);
+    const graphies = p.graphies.filter(g => g.length >= 2 || SAFE_SINGLE.has(g));
     if (graphies.length === 0) return text;
-    const escaped = graphies.map(g => g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const pattern = new RegExp('(' + escaped.join('|') + ')', 'gi');
-    return text.replace(pattern, '<mark>$1</mark>');
+
+    let result = text;
+    // Apply each graphie's specific pattern, or fall back to word-boundary match
+    graphies.forEach(g => {
+      const rule = GRAPHIE_RULES[g.toLowerCase()];
+      let pattern;
+      if (rule) {
+        pattern = rule;
+        // Reset lastIndex in case flag is /g
+        pattern.lastIndex = 0;
+      } else if (g.length >= 3) {
+        // For longer graphies (3+ chars), simple match is usually safe
+        const esc = g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        pattern = new RegExp('(' + esc + ')', 'gi');
+      } else {
+        return; // skip short ambiguous graphies without a rule
+      }
+      if (rule) {
+        // GRAPHIE_RULES patterns have no capture group → use $& (full match)
+        result = result.replace(pattern, '<mark>$&</mark>');
+      } else {
+        // Fallback patterns have a capture group → use $1
+        result = result.replace(pattern, '<mark>$1</mark>');
+      }
+    });
+    return result;
   },
 
   highlightLiaison(text, phonemeId) {
