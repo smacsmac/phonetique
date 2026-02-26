@@ -2,6 +2,7 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2985,7 +2986,7 @@ const APP_DATA = {
 // PHONÉTIQUE APP — CORE APP LOGIC
 // ============================================================
 
-const App = {
+  const App = {
   currentScreen: 'home',
   currentCategory: null,
   currentPhoneme: null,
@@ -3005,14 +3006,16 @@ const App = {
   mediaRecorder: null,
   audioChunks: [],
   recordingAudioBlob: null,
+  wavAudioBlob: null, // Stores the exact WAV sent to Azure for accurate playback testing
   ttsAudio: null,
   generatedPassages: {},
-  phonemeShades: {}, // cache of phonemeId → {color, accent}
+  phonemeShades: {}, 
   bilanPassage: null,
-  passageScores: {},   // phonemeId_passageIdx → best score
-  bilanScores: {},      // phonemeId → latest diagnostic score
-  bilanBestScores: {},  // phonemeId → all-time best diagnostic score
+  passageScores: {},   
+  bilanScores: {},     
+  bilanBestScores: {},  
   phraseLibreText: '',
+  recordingTimeout: null,
 
   init() {
     this.loadSettings();
@@ -3022,6 +3025,19 @@ const App = {
     this.applyTheme();
     this.renderHome();
     this.setupSpeechSynthVoices();
+  },
+
+  showToast(msgText) {
+    const old = document.getElementById('toastMsg');
+    if (old) old.remove();
+    const msg = document.createElement('div');
+    msg.id = 'toastMsg';
+    msg.className = 'toast-msg';
+    msg.textContent = msgText;
+    msg.style.borderColor = 'rgba(96,165,250,0.4)';
+    document.body.appendChild(msg);
+    setTimeout(() => msg.classList.add('toast-show'), 10);
+    setTimeout(() => { msg.classList.remove('toast-show'); setTimeout(() => msg.remove(), 400); }, 3200);
   },
 
   // ── SETTINGS ────────────────────────────────────────────────
@@ -3066,7 +3082,6 @@ const App = {
   },
   recordPassageScore(phonemeId, idx, score) {
     const key = phonemeId + '_' + idx;
-    // Keep best score for each passage
     if (this.passageScores[key] === undefined || score > this.passageScores[key]) {
       this.passageScores[key] = score;
       this.savePassageScores();
@@ -3219,16 +3234,7 @@ const App = {
   },
 
   showNoKeyMsg() {
-    const old = document.getElementById('toastMsg');
-    if (old) old.remove();
-    const msg = document.createElement('div');
-    msg.id = 'toastMsg';
-    msg.className = 'toast-msg';
-    msg.textContent = 'Ajoutez une clé OpenRouter dans les Paramètres pour accéder au Bilan.';
-    msg.style.borderColor = 'rgba(0,245,212,0.4)';
-    document.body.appendChild(msg);
-    setTimeout(() => msg.classList.add('toast-show'), 10);
-    setTimeout(() => { msg.classList.remove('toast-show'); setTimeout(() => msg.remove(), 400); }, 3200);
+    this.showToast('Ajoutez une clé OpenRouter dans les Paramètres pour accéder au Bilan.');
   },
 
   // ── CATEGORY ────────────────────────────────────────────────
@@ -3236,9 +3242,7 @@ const App = {
     this.currentCategory = categoryId;
     const cat = APP_DATA.categories.find(c => c.id === categoryId);
     const phonemes = cat.phonemes.map(id => ({ id, ...APP_DATA.phonemes[id] }));
-    // Generate distinct shades for each phoneme tile based on category hue
     const shades = this.generatePhonemeShades(cat.color, cat.accent, phonemes.length);
-    // Cache shades so other screens can look them up by phonemeId
     phonemes.forEach((p, i) => { this.phonemeShades[p.id] = shades[i]; });
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -3269,7 +3273,6 @@ const App = {
   renderPhoneme(phonemeId) {
     this.currentPhoneme = phonemeId;
     const p = APP_DATA.phonemes[phonemeId];
-    const cat = APP_DATA.categories.find(c => c.id === p.category);
     const shade = this.getPhonemeShade(phonemeId);
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -3326,7 +3329,6 @@ const App = {
   renderPractice(phonemeId) {
     this.currentPhoneme = phonemeId;
     const p = APP_DATA.phonemes[phonemeId];
-    const cat = APP_DATA.categories.find(c => c.id === p.category);
     const shade = this.getPhonemeShade(phonemeId);
     this.currentPracticeWordIndex = 0;
     const words = p.practiceWords;
@@ -3404,14 +3406,10 @@ const App = {
     const passages = this.getPassages(phonemeId);
     const passage = passages[passageIndex];
     const total = passages.length;
-    const MAX_PASSAGES = 10; // 5 fixed + 5 AI bonus
+    const MAX_PASSAGES = 10;
     const BASE_PASSAGES = 5;
     const canAddMore = this.settings.openrouterKey && total < MAX_PASSAGES;
     const isBonus = passageIndex >= BASE_PASSAGES;
-
-    // Per-passage record score
-    // Record score is shown in the score display after recording (not above the card)
-    const bestScoreHtml = '';
 
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -3423,12 +3421,10 @@ const App = {
       </div>
       <div class="read-container">
 
-        <!-- Passage number pill carousel (shows 5 at a time, centred on current) -->
         <div class="read-num-strip">
           ${(() => {
             const showCount = 5;
             const half = Math.floor(showCount / 2);
-            // Build the visible slot indices: centre on passageIndex, clamp to available
             const allSlots = [...Array(total).keys()];
             if (canAddMore) allSlots.push('add');
             const totalSlots = allSlots.length;
@@ -3450,9 +3446,6 @@ const App = {
           })()}
         </div>
 
-        ${bestScoreHtml}
-
-        <!-- Passage card with integrated chevrons and swipe -->
         <div class="read-passage-wrap"
           id="readPassageWrap"
           data-phoneme="${phonemeId}"
@@ -3507,7 +3500,6 @@ const App = {
         </div>
       </div>
     `;
-    // Wire up swipe on the passage card
     this._setupPassageSwipe();
   },
 
@@ -3522,17 +3514,15 @@ const App = {
     wrap.addEventListener('touchend', e => {
       const dx = e.changedTouches[0].clientX - startX;
       const dy = e.changedTouches[0].clientY - startY;
-      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return; // not a horizontal swipe
+      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
       const phonemeId = wrap.dataset.phoneme;
       const idx = parseInt(wrap.dataset.idx);
       const total = parseInt(wrap.dataset.total);
       const canAdd = wrap.dataset.canadd === 'true';
       if (dx < 0) {
-        // swipe left → next
         if (idx < total - 1) App.navigate('mode-read', { phonemeId, passageIndex: idx + 1 });
         else if (canAdd) App.addBonusPassage(phonemeId);
       } else {
-        // swipe right → prev
         if (idx > 0) App.navigate('mode-read', { phonemeId, passageIndex: idx - 1 });
       }
     }, { passive: true });
@@ -3544,10 +3534,8 @@ const App = {
     if (passages.length >= 10) { this.showToast('Maximum 10 passages atteint.'); return; }
     const p = APP_DATA.phonemes[phonemeId];
     const newIdx = passages.length;
-    // Show generating state immediately
     this.navigate('mode-read', { phonemeId, passageIndex: newIdx - 1 });
-    // Generate
-    const difficulty = Math.min(newIdx - 3, 5); // bonus passages get harder
+    const difficulty = Math.min(newIdx - 3, 5);
     const prompt = "Écris un passage en français de 4 à 6 phrases contenant beaucoup d'exemples du son " + p.ipa + " (" + p.label + "). Les graphies courantes pour ce son incluent : " + p.graphies.join(', ') + ". Difficulté : niveau avancé (vocabulaire riche, phrases complexes). IMPORTANT: texte brut uniquement, sans astérisques ni formatage markdown.";
     try {
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -3567,7 +3555,6 @@ const App = {
   // ── COMPARE MODE ─────────────────────────────────────────────
   renderCompare(phonemeId) {
     const p = APP_DATA.phonemes[phonemeId];
-    const cat = APP_DATA.categories.find(c => c.id === p.category);
     const shade = this.getPhonemeShade(phonemeId);
     const confused = (p.confusedWith || []).filter(id => APP_DATA.phonemes[id]);
 
@@ -3623,7 +3610,6 @@ const App = {
   renderTest(phonemeId) {
     this.currentPhoneme = phonemeId;
     const p = APP_DATA.phonemes[phonemeId];
-    const cat = APP_DATA.categories.find(c => c.id === p.category);
     const shade = this.getPhonemeShade(phonemeId);
     const passages = this.getPassages(phonemeId);
     const idx = Math.floor(Math.random() * passages.length);
@@ -3665,7 +3651,6 @@ const App = {
     `;
   },
 
-  // ── SCORES ───────────────────────────────────────────────────
   // ── PHRASE LIBRE ─────────────────────────────────────────────
   renderPhraseLibre() {
     const saved = this.phraseLibreText || '';
@@ -3735,7 +3720,6 @@ const App = {
   // ── BILAN ─────────────────────────────────────────────────────
   renderBilan() {
     const hasPassage = !!this.bilanPassage;
-    const hasKey = !!this.settings.openrouterKey;
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
@@ -3757,7 +3741,7 @@ const App = {
         </div>
         <div class="bilan-tip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Lisez tout le passage d'une traite — l'analyse se fait phrase par phrase automatiquement.
+          Lisez tout le passage d'une traite !
         </div>
         <div class="record-section">
           <button class="record-btn large-record" id="recordBtn" onclick="App.toggleRecording('__bilan__', 'bilan')">
@@ -3814,142 +3798,121 @@ const App = {
   },
 
   processBilanResults(words) {
-    // Map recognised words back to phoneme categories using graphie matching.
-    // We match each word's text against the graphies/exemples of each phoneme,
-    // then accumulate its AccuracyScore into that category.
     const catScores = {};
     const catCounts = {};
 
-    // Build a lookup: word (lowercase) → category id
-    // from all phoneme exemples and practiceWords
-    const wordToCat = {};
-    Object.entries(APP_DATA.phonemes).forEach(([id, p]) => {
-      const cat = p.category;
-      // exemples
-      (p.exemples || []).forEach(w => { wordToCat[w.toLowerCase()] = cat; });
-      // practiceWords
-      (p.practiceWords || []).forEach(([w]) => {
-        w.split(/\s+/).forEach(part => { wordToCat[part.toLowerCase()] = cat; });
-      });
-    });
-
-    // Also do a graphie-based match: if a word contains a graphie, tag it
     const graphieToCat = {};
     Object.entries(APP_DATA.phonemes).forEach(([id, p]) => {
-      (p.graphies || []).forEach(g => {
-        if (g.length >= 2) graphieToCat[g.toLowerCase()] = p.category;
-      });
+      p.graphies.forEach(g => { if (g.length >= 2) graphieToCat[g.toLowerCase()] = p.category; });
     });
 
     words.forEach(w => {
-      const wText = (w.Word || '').toLowerCase().replace(/[^a-zàâäéèêëîïôœùûüç]/g, '');
-      const acc = w.AccuracyScore ?? 100;
-      if (acc === 0 && w.ErrorType === 'Omission') return; // skip truly missed words
-
-      // Try direct word match first
-      let cat = wordToCat[wText];
-
-      // Try graphie match
-      if (!cat) {
-        for (const [g, c] of Object.entries(graphieToCat)) {
-          if (wText.includes(g)) { cat = c; break; }
+      const wText = (w.Word || '').toLowerCase();
+      const score = w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      
+      let cat = 'moyennes'; 
+      for (const [graphie, category] of Object.entries(graphieToCat)) {
+        if (wText.includes(graphie)) {
+          cat = category;
+          break;
         }
       }
 
-      // Fallback: assign to 'moyennes' (catches most French vowels)
-      if (!cat) cat = 'moyennes';
-
       if (!catScores[cat]) { catScores[cat] = 0; catCounts[cat] = 0; }
-      catScores[cat] += acc;
+      catScores[cat] += score;
       catCounts[cat]++;
     });
 
-    console.log('Bilan category scores (raw):', catScores, catCounts);
-
-    // Compute remapped scores per category
-    // Only update categories that had enough words (≥2) for reliability
-    Object.keys(catScores).forEach(cat => {
-      if (catCounts[cat] >= 1) {
-        const raw = catScores[cat] / catCounts[cat];
-        const remapped = Math.round(this.remapScore(raw));
-        this.bilanScores[cat] = remapped;
-        this.bilanBestScores[cat] = Math.max(remapped, this.bilanBestScores[cat] || 0);
+    APP_DATA.categories.forEach(c => {
+      if (catCounts[c.id] > 0) {
+        const final = Math.round(this.remapScore(catScores[c.id] / catCounts[c.id]));
+        this.bilanScores[c.id] = final;
+        this.bilanBestScores[c.id] = Math.max(final, this.bilanBestScores[c.id] || 0);
       }
     });
 
-    // If we have an overall score but no category breakdown, store it as overall
-    if (Object.keys(catScores).length === 0) {
-      // Distribute overall score to all cats as a placeholder
-      const overall = words.reduce((s, w) => s + (w.AccuracyScore || 0), 0) / Math.max(1, words.length);
-      APP_DATA.categories.forEach(c => {
-        this.bilanScores[c.id] = Math.round(this.remapScore(overall));
-        this.bilanBestScores[c.id] = Math.max(this.bilanScores[c.id], this.bilanBestScores[c.id] || 0);
-      });
-    }
-
     this.saveDiagScores();
-    console.log('Bilan scores saved:', this.bilanScores);
   },
 
   showBilanResults(score, pa, words) {
     this.processBilanResults(words);
-    // Store words for the annotation overlay
     this._bilanWords = words;
+    // Store for goBackToBilanResults
+    this._lastBilanScore = score;
+    this._lastBilanPa = pa;
+    this._lastBilanWords = words; 
 
     const scoreArea = document.getElementById('scoreArea');
-    const status = document.getElementById('recordingStatus');
-    if (status) status.classList.add('hidden');
-    if (!scoreArea) return;
-    scoreArea.classList.remove('hidden');
-    const color = this.scoreColor(score);
+    if (scoreArea) {
+      scoreArea.classList.remove('hidden');
+      const color = this.scoreColor(score);
+      const matchedCount = words.filter(w => (w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0) > 0).length;
+      const warningMsg = matchedCount === 0 
+        ? `<div style="color:#F87171;font-size:12px;margin-top:8px;">⚠️ Azure n'a pas pu aligner votre voix. Parlez plus distinctement.</div>` 
+        : '';
 
-    scoreArea.innerHTML = `
-      <div class="score-display">
-        <div class="score-ring" style="--score-color:${color}">
-          <svg viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="8"
-              stroke-dasharray="${2.51 * score} 251" stroke-linecap="round" transform="rotate(-90 50 50)"/>
-          </svg>
-          <div class="score-number">${score}<span class="score-pct-sym">%</span></div>
+      scoreArea.innerHTML = `
+        <div class="score-display">
+          <div class="score-ring" style="--score-color:${color}">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="8"
+                stroke-dasharray="${2.51 * score} 251" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="score-number">${score}<span class="score-pct-sym">%</span></div>
+          </div>
+          <div class="score-feedback">${this.scoreFeedback(score)}</div>
+          ${warningMsg}
+          <button class="annotate-btn" onclick="App.toggleBilanAnnotation()">Voir les détails par mot</button>
         </div>
-        <div class="score-feedback">${this.scoreFeedback(score)}</div>
-        <div class="bilan-saved-msg">✓ Scores enregistrés — consultez <strong>Mes Scores</strong>.</div>
-        <button class="annotate-btn" onclick="App.toggleBilanAnnotation()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          Voir les détails mot par mot
-        </button>
-      </div>
-      <button class="next-btn" onclick="App.navigate('scores')" style="margin-top:8px">Voir le Bilan complet →</button>
-      <button class="retry-btn" onclick="App.retryRecording()" style="margin-top:8px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-        Réessayer
-      </button>
-    `;
+        <button class="next-btn" onclick="App.navigate('labo-scores')" style="margin-top:12px">Consulter mon Bilan complet →</button>
+      `;
+    }
+    
+    const _pba = document.getElementById('playbackArea');
+    const _st = document.getElementById('recordingStatus');
+    if (_pba) _pba.classList.add('hidden');
+    if (_st) { _st.classList.add('hidden'); _st.innerHTML = ''; }
     const btn = document.getElementById('recordBtn');
-    if (btn) { btn.disabled = false; btn.querySelector('.record-label').textContent = 'Recommencer'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.querySelector('.record-label').textContent = 'Relancer le diagnostic';
+    }
   },
-
+      
   toggleBilanAnnotation() {
     const card = document.getElementById('bilanPassageCard');
     if (!card) return;
     const existing = card.querySelector('.annotation-overlay');
-    if (existing) { existing.remove(); return; }
+    if (existing) { existing.remove(); this._lastBilanAnnotationOpen = false; return; }
+    this._lastBilanAnnotationOpen = true;
 
     const words = this._bilanWords || [];
-    // Build a map of word → score for quick lookup
     const wordScores = {};
     words.forEach(w => {
       const key = (w.Word || '').toLowerCase();
-      wordScores[key] = { score: w.AccuracyScore ?? 100, error: w.ErrorType };
+      // SDK nests scores under w.PronunciationAssessment; REST API puts them directly on w
+      const pa = w.PronunciationAssessment;
+      const score = pa?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      const error = pa?.ErrorType ?? w.ErrorType ?? 'None';
+      wordScores[key] = { score, error };
     });
 
-    // Annotate the passage text word by word
     const passage = this.bilanPassage || '';
     const annotated = passage.split(/(\s+)/).map(token => {
       if (/^\s+$/.test(token)) return token;
-      const clean = token.toLowerCase().replace(/[^a-zàâäéèêëîïôœùûüç']/gi, '');
-      const data = wordScores[clean] || wordScores[clean.replace(/'/g, "'")] ;
+      // Strip ALL leading/trailing punctuation (quotes, dashes, «», ?, !, . etc)
+      const stripped = token.replace(/^[^a-zÀ-ÿ]+/gi, '').replace(/[^a-zÀ-ÿ]+$/gi, '');
+      const clean = stripped.toLowerCase();
+      // Try multiple key variants to handle apostrophe encoding differences and hyphenated words
+      const variants = [
+        clean,
+        clean.replace(/’/g, "'"),        // curly -> straight apostrophe
+        clean.replace(/'/g, '’'),          // straight -> curly
+        clean.replace(/-/g, ' '),            // hyphen -> space (murmure-t-il -> murmure t il)
+        ...clean.split('-'),                 // split hyphenated: match first part
+      ];
+      const data = variants.reduce((found, v) => found || wordScores[v], null);
       if (!data) return `<span class="ann-word ann-neutral">${token}</span>`;
       const s = data.score;
       const cls = data.error === 'Omission' ? 'ann-omission'
@@ -3972,7 +3935,6 @@ const App = {
       </div>
       <div class="ann-text">${annotated}</div>
     `;
-    // Replace the plain passage text with annotated version
     const passageDiv = card.querySelector('.passage-text');
     if (passageDiv) card.replaceChild(overlay, passageDiv);
     else card.prepend(overlay);
@@ -3980,11 +3942,8 @@ const App = {
 
   renderScores() {
     const allPhonemes = Object.entries(APP_DATA.phonemes);
-
-
     const html = APP_DATA.categories.map(cat => {
       const catPhonemes = allPhonemes.filter(([, p]) => p.category === cat.id);
-      // Check if this category has any bilan data
       return `
         <div class="scores-category">
           <div class="scores-cat-header" style="color:${cat.accent}">${cat.label}</div>
@@ -4008,8 +3967,6 @@ const App = {
       `;
     }).join('');
 
-    // Bilan scores are shown in labo-scores screen instead
-
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
@@ -4021,7 +3978,6 @@ const App = {
     `;
   },
 
-  // ── LABO SCORES ──────────────────────────────────────────────
   renderLaboScores() {
     const hasBilan = Object.keys(this.bilanScores).length > 0;
 
@@ -4054,6 +4010,9 @@ const App = {
               </div>`;
           }).join('')}
         </div>
+        <button class="next-btn" onclick="App.goBackToBilanResults()" style="margin-top:16px;width:100%">
+          ← Retour aux résultats
+        </button>
       </div>` : `
       <div class="labo-scores-empty">
         <div style="font-size:48px;margin-bottom:12px">🔬</div>
@@ -4074,7 +4033,6 @@ const App = {
     `;
   },
 
-  // ── SETTINGS ────────────────────────────────────────────────
   renderSettings() {
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -4082,7 +4040,6 @@ const App = {
         <div class="screen-title">Paramètres</div>
       </div>
       <div class="settings-container">
-
         <div class="settings-group">
           <div class="settings-group-title">Apparence</div>
           <div class="settings-row">
@@ -4142,6 +4099,11 @@ const App = {
             <input class="settings-input" type="text" placeholder="eastus" id="azRegion" value="${this.settings.azureRegion}" oninput="App.settings.azureRegion=this.value;App.saveSettings()">
           </div>
         </div>
+
+        <button class="settings-btn" style="margin:8px 0 4px;background:rgba(99,179,237,0.15);color:#63B3ED;border:1px solid rgba(99,179,237,0.3);border-radius:8px;padding:10px 16px;width:100%;cursor:pointer;font-size:13px" onclick="App.testAzureConnection()">
+          🔍 Tester la connexion Azure
+        </button>
+        <div id="azureTestResult" style="font-size:12px;padding:6px 8px;border-radius:6px;margin-bottom:8px;display:none"></div>
 
         <button class="reset-scores-btn" onclick="App.confirmResetScores()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
@@ -4218,10 +4180,8 @@ const App = {
     const wrap = document.getElementById('carouselWordWrap');
     const wordEl = document.getElementById('practiceWord');
     const ipaEl = document.getElementById('practiceWordIpa');
-    const dots = document.querySelectorAll('.carousel-dot');
 
     if (wrap) {
-      // Slide animation
       const exitClass = direction === 'next' ? 'slide-exit-left' : direction === 'prev' ? 'slide-exit-right' : 'slide-exit-left';
       const enterClass = direction === 'next' ? 'slide-enter-right' : direction === 'prev' ? 'slide-enter-left' : 'slide-enter-right';
       wrap.classList.add(exitClass);
@@ -4234,7 +4194,6 @@ const App = {
       }, 150);
     }
 
-    // Update numbered buttons (both carousel-dot and carousel-num-btn)
     document.querySelectorAll('.carousel-dot, .carousel-num-btn').forEach((d, i) => {
       const isActive = i === idx;
       d.classList.toggle('active', isActive);
@@ -4246,7 +4205,6 @@ const App = {
       }
     });
 
-    // Reset recording state when word changes
     this.retryRecording();
   },
 
@@ -4290,7 +4248,6 @@ const App = {
       this.mediaRecorder.start();
       this.recording = true;
 
-      // Azure PA REST API has a 30-second limit. We auto-stop at 29s to prevent hard rejection.
       if (this.recordingTimeout) clearTimeout(this.recordingTimeout);
       this.recordingTimeout = setTimeout(() => {
         if (this.recording) {
@@ -4315,6 +4272,7 @@ const App = {
   },
 
   stopRecording(phonemeId, mode, passageIndex) {
+    if (this.recordingTimeout) clearTimeout(this.recordingTimeout);
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
       this.recording = false;
@@ -4343,15 +4301,6 @@ const App = {
     }
   },
 
-  playRecording() {
-    if (this.recordingAudioBlob) {
-      const url = URL.createObjectURL(this.recordingAudioBlob);
-      const audio = new Audio(url);
-      audio.play();
-    }
-  },
-
-  // ── AZURE PRONUNCIATION ASSESSMENT ───────────────────────────
   async analyzeWithAzure(phonemeId, mode, passageIndex) {
     if (mode === 'libre' && !this.phraseLibreText?.trim()) {
       this.showSimpleScore(phonemeId, mode, "Veuillez écrire une phrase avant d'enregistrer.");
@@ -4361,333 +4310,176 @@ const App = {
       this.showSimpleScore(phonemeId, mode, "Veuillez d'abord générer un passage.");
       return;
     }
+    if (!window.SpeechSDK) {
+      el.style.background = 'rgba(248,113,113,0.15)';
+      el.style.color = '#F87171';
+      el.textContent = '❌ Speech SDK non chargé - vérifiez votre connexion internet';
+      return;
+    }
     if (!this.settings.azureKey || !this.settings.azureRegion) {
       this.showSimpleScore(phonemeId, mode, 'Ajoutez une clé Azure dans les paramètres pour obtenir un score.');
       return;
     }
     try {
-      const wavBlob = await this.toWav(this.recordingAudioBlob);
-      console.log('WAV blob size:', wavBlob.size, 'bytes');
+      const { blob: wavBlob, sampleRate } = await this.toWav(this.recordingAudioBlob);
+      this.wavAudioBlob = wavBlob; 
+      console.log(`WAV blob ready: ${wavBlob.size} bytes at ${sampleRate}Hz`);
 
-      // Bilan and Read text passages are short enough (<= 50 words) to comfortably 
-      // process within the Azure PA 30-second limit without complex frontend chunking.
-      return await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob);
+      return await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, false, sampleRate);
     } catch (err) {
-      console.error('Azure toWav error:', err);
-      this.showSimpleScore(phonemeId, mode, 'Erreur de conversion audio.');
+      console.error('Azure analysis error:', err);
+      this.showSimpleScore(phonemeId, mode, 'Erreur lors de l\'analyse de la prononciation.');
     }
   },
 
-  async _analyzeBilanChunked(wavBlob) {
-    const passage = this.bilanPassage || '';
-
-    // Split into chunks of ~2 sentences (max ~12 seconds each).
-    // Group by sentence-ending punctuation; avoid splitting on dialogue markers.
-    // Strategy: split on '. ' or '! ' or '? ' but NOT inside « » quotes.
-    const rawSentences = passage
-      .replace(/[«»]/g, '')                       // strip guillemets — keep text
-      .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ö])/u)       // split at sentence boundary before capital
-      .map(s => s.trim())
-      .filter(s => s.length > 5);
-
-    // Group into pairs so each chunk is ~2 sentences (safer for audio windowing)
-    const chunks = [];
-    for (let i = 0; i < rawSentences.length; i += 2) {
-      const pair = rawSentences.slice(i, i + 2).join(' ');
-      chunks.push(pair);
+  playRecording() {
+    // FIX: Play the exact WAV file generated for Azure, so you hear what Azure hears!
+    if (this.wavAudioBlob) {
+      const url = URL.createObjectURL(this.wavAudioBlob);
+      const audio = new Audio(url);
+      audio.play();
+    } else if (this.recordingAudioBlob) {
+      const url = URL.createObjectURL(this.recordingAudioBlob);
+      const audio = new Audio(url);
+      audio.play();
     }
-    if (chunks.length === 0) chunks.push(passage);
-
-    console.log(`Bilan: ${chunks.length} chunks from ${rawSentences.length} sentences`);
-
-    const statusEl = document.getElementById('recordingStatus');
-    if (statusEl) {
-      statusEl.classList.remove('hidden');
-      statusEl.innerHTML = `<div class="pulse-dot"></div> Analyse en cours (0/${chunks.length})...`;
-    }
-
-    // Decode WAV once for slicing
-    const arrayBuf = await wavBlob.arrayBuffer();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    const decoded  = await audioCtx.decodeAudioData(arrayBuf);
-    const sr       = decoded.sampleRate;
-    const fullPcm  = decoded.getChannelData(0);
-    const totalS   = fullPcm.length / sr;
-
-    const allWords  = [];
-    const allScores = [];
-    let audioStartSec = 0;
-    const WINDOW_S = 25;
-    const OVERLAP_S = 1.5;
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      if (statusEl) statusEl.innerHTML =
-        `<div class="pulse-dot"></div> Analyse en cours (${i+1}/${chunks.length})...`;
-
-      // Slice audio window
-      const winStart    = Math.max(0, audioStartSec - OVERLAP_S);
-      const winEnd      = Math.min(totalS, winStart + WINDOW_S);
-      const startSample = Math.floor(winStart * sr);
-      const endSample   = Math.floor(winEnd   * sr);
-      const slicePcm    = fullPcm.slice(startSample, endSample);
-      const slice16     = new Int16Array(slicePcm.length);
-      for (let j = 0; j < slicePcm.length; j++) {
-        const s = Math.max(-1, Math.min(1, slicePcm[j]));
-        slice16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-      const chunkBlob = new Blob([this.buildWav(slice16, sr, 1)], { type: 'audio/wav' });
-
-      try {
-        const data  = await this._azureRequest(chunkBlob, chunk, true, 'dictation', 35000);
-        const nbest = data?.NBest?.[0];
-
-        // Unwrap scores — Azure puts them flat on NBest[0] with detailed format
-        const pa = nbest?.PronunciationAssessment
-          || (nbest?.AccuracyScore !== undefined ? nbest : null);
-
-        const acc = pa?.AccuracyScore ?? 0;
-        const pro = pa?.PronScore ?? acc;
-        console.log(`Chunk ${i+1} "${chunk.slice(0,32)}..." → status: ${data?.RecognitionStatus}, words: ${nbest?.Words?.length || 0}, accuracy: ${acc}`);
-
-        if (nbest?.Words?.length) {
-          const offsetTicks = Math.round(winStart * 1e7);
-          nbest.Words.forEach(w => allWords.push({ ...w, Offset: w.Offset + offsetTicks }));
-          if (acc > 0) allScores.push(pro);
-
-          // Advance audio cursor to just after last recognised word
-          const lastW = nbest.Words[nbest.Words.length - 1];
-          audioStartSec = Math.max(0, (lastW.Offset + lastW.Duration) / 1e7 - 0.3);
-        } else {
-          // Nothing recognised — step forward by estimated speaking time
-          audioStartSec += chunk.split(/\s+/).length * 1.8;
-        }
-      } catch(e) {
-        console.warn(`Chunk ${i} error:`, e);
-        audioStartSec += chunk.split(/\s+/).length * 1.8;
-      }
-    }
-
-    if (statusEl) statusEl.classList.add('hidden');
-
-    if (allWords.length === 0) {
-      this.showSimpleScore('__bilan__', 'bilan', 'Aucun mot reconnu — parlez plus lentement et clairement.');
-      return;
-    }
-
-    // Sort by offset and deduplicate (same offset = same word captured twice)
-    allWords.sort((a, b) => a.Offset - b.Offset);
-    const deduped = allWords.filter((w, i) =>
-      i === 0 || Math.abs(w.Offset - allWords[i-1].Offset) > 100000 // >10ms apart
-    );
-
-    const scoredWords = deduped.filter(w => w.AccuracyScore > 0 && w.ErrorType !== 'Omission');
-    const overallScore = allScores.length > 0
-      ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-      : scoredWords.length > 0
-        ? Math.round(scoredWords.reduce((s, w) => s + w.AccuracyScore, 0) / scoredWords.length)
-        : 50;
-
-    const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(overallScore))));
-    console.log(`Bilan merged: ${deduped.length} words (deduped from ${allWords.length}), raw: ${overallScore}, remapped: ${finalScore}`);
-
-    const fakePA = { AccuracyScore: overallScore, PronScore: overallScore };
-    this.showBilanResults(finalScore, fakePA, deduped);
   },
 
-  async _sendToAzure(phonemeId, mode, passageIndex, wavBlob, simpleFallback = false) {
+  // ── AZURE PRONUNCIATION ASSESSMENT ───────────────────────────
+  async _sendToAzure(phonemeId, mode, passageIndex, wavBlob, simpleFallback = false, sampleRate = 16000) {
     const p = APP_DATA.phonemes[phonemeId];
     const passages = this.getPassages(phonemeId);
 
-    // Build reference text for this mode
-    let referenceText;
-    if (mode === 'practice') {
-      referenceText = p?.practiceWords?.[App.currentPracticeWordIndex || 0]?.[0] || '';
-    } else if (mode === 'libre') {
-      referenceText = App.phraseLibreText || '';
-    } else if (mode === 'bilan') {
-      referenceText = App.bilanPassage || '';
-    } else {
-      referenceText = passages[passageIndex]?.text || '';
-    }
+    let rawText;
+    if (mode === 'practice') rawText = p?.practiceWords?.[App.currentPracticeWordIndex || 0]?.[0] || '';
+    else if (mode === 'libre') rawText = App.phraseLibreText || '';
+    else if (mode === 'bilan') rawText = App.bilanPassage || '';
+    else rawText = passages[passageIndex]?.text || '';
 
-    // On retry for short texts, use just first sentence; for passages keep full text
-    if (simpleFallback && mode !== 'read' && mode !== 'bilan') {
-      referenceText = referenceText.split(/[.!?]/)[0].trim();
-    }
+    const referenceText = rawText
+      .replace(/’/g, "'")
+      .replace(/[….]+/g, ' ')
+      .replace(/[^a-zA-ZÀ-ÿ\s']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    console.log('→ Azure | mode:', mode, '| fallback:', simpleFallback, '| ref:', referenceText.slice(0, 60) + '...', '| wav bytes:', wavBlob.size);
+    console.log(`→ Azure Request | Mode: ${mode} | Cleaned Ref: "${referenceText.slice(0, 50)}..."`);
 
-    // Use dictation mode for long passages, conversation for single words
     const recognitionMode = (mode === 'practice') ? 'conversation' : 'dictation';
     const timeoutMs = (mode === 'bilan' || mode === 'read') ? 90000 : 30000;
+    const enableMiscue = (mode === 'bilan') ? false : !simpleFallback;
 
-    const data = await this._azureRequest(wavBlob, referenceText, !simpleFallback, recognitionMode, timeoutMs);
+    const data = await this._azureRequest(wavBlob, referenceText, enableMiscue, recognitionMode, timeoutMs, sampleRate);
 
-    if (!data) {
-      this.showSimpleScore(phonemeId, mode, 'Erreur réseau ou réponse invalide.');
+    if (!data || data.RecognitionStatus === 'Error') {
+      this.showSimpleScore(phonemeId, mode, 'Erreur de communication avec Azure.');
       return;
     }
 
+    App._lastAzureData = data;
     const nbest = data?.NBest?.[0];
-    let pa = nbest?.PronunciationAssessment || (nbest?.AccuracyScore !== undefined ? nbest : null);
+    const words = nbest?.Words || [];
 
-    // If no top-level pa, synthesise from word-level data
-    if (!pa && nbest?.Words?.length > 0) {
-      const words = nbest.Words;
-      // Azure Granularity:Word nests scores under Words[n].PronunciationAssessment
-      const wordPAs = words.map(w => w.PronunciationAssessment || null);
-      const hasWordPA = wordPAs.some(p => p !== null && (p.AccuracyScore ?? 0) > 0);
-
-      if (hasWordPA) {
-        const scored = wordPAs.filter(p => p && (p.AccuracyScore ?? 0) > 0);
-        const avgAcc = scored.reduce((s, p) => s + p.AccuracyScore, 0) / scored.length;
-        const completeness = Math.round((wordPAs.filter(p => p).length / words.length) * 100);
-        pa = {
-          AccuracyScore: Math.round(avgAcc),
-          FluencyScore: Math.round(avgAcc * 0.9),
-          CompletenessScore: completeness,
-          PronScore: Math.round(avgAcc * 0.5 + completeness * 0.5),
-        };
-        console.log('← Synth from word PAs:', scored.length, '/', words.length, '→ avg:', Math.round(avgAcc), 'PronScore:', pa.PronScore);
-      } else {
-        // AccuracyScore directly on word (fr-CA format)
-        const scored = words.filter(w => (w.AccuracyScore ?? 0) > 0);
-        if (scored.length > 0) {
-          const avgAcc = scored.reduce((s, w) => s + w.AccuracyScore, 0) / scored.length;
-          pa = { AccuracyScore: Math.round(avgAcc), FluencyScore: Math.round(avgAcc * 0.9),
-                 CompletenessScore: Math.round((scored.length / words.length) * 100), PronScore: Math.round(avgAcc) };
-          console.log('← Synth from direct word AccuracyScore → PronScore:', pa.PronScore);
-        }
-      }
-      console.log('← Word[0] full:', JSON.stringify(words[0]).slice(0, 300));
+    // Azure PA scores can appear in multiple places depending on API version/region:
+    // 1. Directly on nbest: nbest.PronScore, nbest.AccuracyScore etc.
+    // 2. Nested: nbest.PronunciationAssessment.PronScore etc.
+    // 3. Not present at all if PA header was ignored (plain STT response)
+    const directPA = (nbest?.PronScore ?? nbest?.AccuracyScore) != null;
+    const nestedPA = nbest?.PronunciationAssessment != null;
+    let pa = null;
+    if (directPA) {
+      pa = { PronScore: nbest.PronScore, AccuracyScore: nbest.AccuracyScore,
+             FluencyScore: nbest.FluencyScore, CompletenessScore: nbest.CompletenessScore };
+    } else if (nestedPA) {
+      pa = nbest.PronunciationAssessment;
     }
-    console.log('← RecognitionStatus:', data.RecognitionStatus, '| SNR:', data.SNR);
-    console.log('← pa:', pa ? JSON.stringify(pa).slice(0, 300) : 'NULL — no scores');
+    console.log('🔍 directPA:', directPA, '| nestedPA:', nestedPA, '| pa:', JSON.stringify(pa));
+    console.log('🔍 words[0]:', JSON.stringify(words[0]));
 
-    // Azure heard nothing / silence — only fire when SNR is genuinely zero
-    const snr = data.SNR ?? 0;
-    if (snr < 2 && (!pa || pa.PronScore === 0)) {
-      if (!simpleFallback) {
-        return this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
-      } else {
-        this.showSimpleScore(phonemeId, mode, "Audio non détecté — parlez plus fort et restez proche du micro.");
-        return;
-      }
+    if (!pa && words.length > 0) {
+      console.warn('⚠️ No PA scores found. Calculating from word-level AccuracyScore.');
+      const getScore = w => w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      const validWords = words.filter(w => getScore(w) > 0);
+      const avg = validWords.length > 0
+        ? validWords.reduce((s, w) => s + getScore(w), 0) / validWords.length : 0;
+      pa = { AccuracyScore: avg, PronScore: avg, CompletenessScore: (validWords.length / words.length) * 100 };
     }
 
-    if (pa && pa.AccuracyScore !== undefined) {
-      const words = nbest?.Words || [];
-
-      // For long passages (read mode), Azure may only score part of the text.
-      // If PronScore=0 but words exist with scores, use word-level average instead.
-      let rawScore = pa.PronScore ?? pa.AccuracyScore;
-      let fluency  = pa.FluencyScore ?? rawScore;
-
-      if (rawScore === 0 && words.length > 0) {
-        const scoredWords = words.filter(w => w.AccuracyScore > 0 && w.ErrorType !== 'Insertion');
-        if (scoredWords.length > 0) {
-          rawScore = scoredWords.reduce((s, w) => s + w.AccuracyScore, 0) / scoredWords.length;
-          fluency  = pa.FluencyScore ?? rawScore;
-          console.log('PronScore=0 override: using word avg', rawScore.toFixed(1), 'from', scoredWords.length, 'words');
-        }
-      }
-
-      if (mode === 'bilan') {
-        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
-        this.showBilanResults(finalScore, pa, words);
-        return;
-      }
-
-      if (mode === 'libre') {
-        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(rawScore))));
-        this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
-        return;
-      }
-
-      const ph = APP_DATA.phonemes[phonemeId];
-      const isConnectedSpeech = ['liaison', 'rythme'].includes(ph?.category);
-      let finalScore;
-      if (isConnectedSpeech) {
-        const blended = fluency * 0.6 + rawScore * 0.4;
-        const timingPenalty = ph?.category === 'liaison' ? this.calcLiaisonPenalty(words) : 0;
-        finalScore = this.remapScore(blended) - timingPenalty;
-      } else {
-        finalScore = this.remapScore(rawScore);
-      }
-      finalScore = Math.round(Math.max(5, Math.min(100, finalScore)));
-
-      if (mode === 'test') this.recordScore(phonemeId, finalScore);
-      if (mode === 'read') this.recordPassageScore(phonemeId, this.currentPassageIndex, finalScore);
-      this.showAzureScore(finalScore, pa, mode, rawScore, fluency);
-
-    } else if (data.RecognitionStatus === 'NoMatch' || data.RecognitionStatus === 'InitialSilenceTimeout') {
-      this.showSimpleScore(phonemeId, mode, 'Aucune parole détectée — parlez plus fort.');
-
-    } else if (!simpleFallback) {
-      return this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, true);
-
+    if (mode === 'bilan') {
+      const finalScore = Math.round(this.remapScore(pa?.PronScore || pa?.AccuracyScore || 0));
+      this.showBilanResults(finalScore, pa, words);
     } else {
-      // Last resort: if we have word-level data, use average word accuracy
-      const fallbackWords = nbest?.Words?.filter(w => (w.AccuracyScore ?? 0) > 0 && w.ErrorType !== 'Insertion') || [];
-      if (fallbackWords.length >= 3) {
-        const avgAcc = fallbackWords.reduce((s, w) => s + w.AccuracyScore, 0) / fallbackWords.length;
-        const finalScore = Math.round(Math.max(5, Math.min(100, this.remapScore(avgAcc))));
-        console.log('Last-resort word avg score:', avgAcc.toFixed(1), '→', finalScore);
-        if (mode === 'test') this.recordScore(phonemeId, finalScore);
-        if (mode === 'read') this.recordPassageScore(phonemeId, this.currentPassageIndex, finalScore);
-        const fakePa = { AccuracyScore: avgAcc, FluencyScore: nbest?.FluencyScore ?? avgAcc, PronScore: avgAcc };
-        this.showAzureScore(finalScore, fakePa, mode, avgAcc, fakePa.FluencyScore);
-      } else {
-        this.showSimpleScore(phonemeId, mode, `Score indisponible. Azure a reconnu : "${nbest?.Display?.slice(0,60) || 'rien'}"`);
-      }
+      const rawScore = pa?.PronScore || pa?.AccuracyScore || 0;
+      const finalScore = Math.round(this.remapScore(rawScore));
+      if (mode === 'test') this.recordScore(phonemeId, finalScore);
+      this.showAzureScore(finalScore, pa, mode, rawScore, pa?.FluencyScore || rawScore);
     }
   },
 
-  // Convert any recorded Blob → 16-bit PCM WAV at 16 kHz mono
-  // using the Web Audio API (works on all modern mobile browsers)
+
   async toWav(blob) {
     const arrayBuf = await blob.arrayBuffer();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
     let decoded;
     try {
       decoded = await audioCtx.decodeAudioData(arrayBuf);
-    } catch(e) {
-      // If decoding fails (e.g. empty blob), return original
-      console.warn('Audio decode failed, sending raw:', e);
+    } catch (e) {
+      console.error("Decoding failed", e);
       audioCtx.close();
-      return blob;
+      return { blob, sampleRate: 16000 };
     }
+
+    const nativeSR = decoded.sampleRate;
+    const targetSR = 16000;
+    const rawData = decoded.getChannelData(0);
     audioCtx.close();
 
-    // Mix down to mono at 16 kHz
-    const numChannels = 1;
-    const sampleRate = 16000;
-    const offlineCtx = new OfflineAudioContext(numChannels, Math.ceil(decoded.duration * sampleRate), sampleRate);
-    const src = offlineCtx.createBufferSource();
-    src.buffer = decoded;
-    src.connect(offlineCtx.destination);
-    src.start(0);
-    const rendered = await offlineCtx.startRendering();
+    // 1. MANUAL LINEAR INTERPOLATION RESAMPLING
+    // This bypasses the bugged browser OfflineAudioContext resampling
+    const ratio = nativeSR / targetSR;
+    const newLength = Math.round(rawData.length / ratio);
+    const resampledData = new Float32Array(newLength);
 
-    // Get PCM samples as Int16, trimming leading silence
-    const pcmFloatRaw = rendered.getChannelData(0);
-    // Find first sample above noise floor to skip mic warmup silence
+    for (let i = 0; i < newLength; i++) {
+      const pos = i * ratio;
+      const index = Math.floor(pos);
+      const frac = pos - index;
+      
+      if (index + 1 < rawData.length) {
+        // Interpolate between the current sample and the next
+        resampledData[i] = rawData[index] * (1 - frac) + rawData[index + 1] * frac;
+      } else {
+        resampledData[i] = rawData[index];
+      }
+    }
+
+    // 2. NOISE GATE & TRIMMING (Optional but helpful for Azure)
     const noiseFloor = 0.002;
     let startIdx = 0;
-    for (let i = 0; i < pcmFloatRaw.length; i++) {
-      if (Math.abs(pcmFloatRaw[i]) > noiseFloor) { startIdx = Math.max(0, i - 160); break; }
+    for (let i = 0; i < resampledData.length; i++) {
+      if (Math.abs(resampledData[i]) > noiseFloor) {
+        startIdx = Math.max(0, i - Math.floor(targetSR * 0.1)); // Keep 100ms padding
+        break;
+      }
     }
-    const pcmFloat = pcmFloatRaw.slice(startIdx);
-    const pcm16 = new Int16Array(pcmFloat.length);
-    for (let i = 0; i < pcmFloat.length; i++) {
-      const s = Math.max(-1, Math.min(1, pcmFloat[i]));
+    const finalData = resampledData.slice(startIdx);
+
+    // 3. CONVERT FLOAT32 TO PCM16
+    const pcm16 = new Int16Array(finalData.length);
+    for (let i = 0; i < finalData.length; i++) {
+      const s = Math.max(-1, Math.min(1, finalData[i]));
       pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
 
-    // Build WAV file with header
-    const wavBuffer = this.buildWav(pcm16, sampleRate, numChannels);
-    return new Blob([wavBuffer], { type: 'audio/wav' });
+    // 4. BUILD THE WAV HEADER
+    const wavBuffer = this.buildWav(pcm16, targetSR, 1);
+    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+    
+    // Log for debugging
+    console.log(`Resampled from ${nativeSR}Hz to ${targetSR}Hz. Final size: ${wavBlob.size} bytes.`);
+    
+    return { blob: wavBlob, sampleRate: targetSR };
   },
 
   buildWav(pcm16, sampleRate, numChannels) {
@@ -4701,13 +4493,13 @@ const App = {
     view.setUint32(4,  36 + dataSize, true);
     write(8,  'WAVE');
     write(12, 'fmt ');
-    view.setUint32(16, 16, true);          // PCM chunk size
-    view.setUint16(20, 1,  true);          // PCM format
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1,  true);
     view.setUint16(22, numChannels, true);
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, byteRate, true);
     view.setUint16(32, blockAlign, true);
-    view.setUint16(34, 16, true);          // 16-bit
+    view.setUint16(34, 16, true);
     write(36, 'data');
     view.setUint32(40, dataSize, true);
     const samples = new Int16Array(buffer, 44);
@@ -4715,67 +4507,75 @@ const App = {
     return buffer;
   },
 
-  // Split a PCM Int16Array into chunks of ~maxSeconds each
-  splitPcmChunks(pcm16, sampleRate, maxSeconds = 12) {
-    const chunkSamples = sampleRate * maxSeconds;
-    const chunks = [];
-    for (let i = 0; i < pcm16.length; i += chunkSamples) {
-      chunks.push(pcm16.slice(i, i + chunkSamples));
-    }
-    return chunks;
-  },
+  _azureRequest(wavBlob, referenceText, enableMiscue = true, recognitionMode = 'dictation', timeoutMs = 30000, sampleRate = 16000) {
+    return new Promise(async (resolve) => {
+      try {
+        const SpeechSDK = window.SpeechSDK;
+        if (!SpeechSDK) { console.error('❌ Speech SDK not loaded'); resolve(null); return; }
 
-  // Split reference text into ~equal sentence groups matching chunk count
-  splitRefTextChunks(text, count) {
-    // Split on sentence boundaries
-    const sentences = text.match(/[^.!?«»]+[.!?]*/g) || [text];
-    if (count <= 1 || sentences.length <= 1) return [text];
-    // Distribute sentences across chunks as evenly as possible
-    const chunks = [];
-    const perChunk = Math.ceil(sentences.length / count);
-    for (let i = 0; i < sentences.length; i += perChunk) {
-      chunks.push(sentences.slice(i, i + perChunk).join(' ').trim());
-    }
-    // Pad or trim to exactly count
-    while (chunks.length < count) chunks.push(chunks[chunks.length - 1]);
-    return chunks.slice(0, count);
-  },
+        const isFrCA = this.settings.frVariant === 'fr-CA';
+        const cleanRef = referenceText
+          .replace(/’/g, "'")
+          .replace(/[^a-zA-ZÀ-ÿ\s']/g, ' ')
+          .replace(/\s+/g, ' ').trim();
 
-  // Send a single WAV blob to Azure and return the parsed response data
-  _azureRequest(wavBlob, referenceText, enableMiscue = true, recognitionMode = 'dictation', timeoutMs = 30000) {
-    const isFrCA = this.settings.frVariant === 'fr-CA';
-    
-    const assessmentParams = {
-      ReferenceText: referenceText,
-      GradingSystem: 'HundredMark',
-      Granularity: 'Word',
-      Dimension: 'Comprehensive',
-      EnableMiscue: isFrCA ? false : enableMiscue,
-      ...(isFrCA ? {} : { PhonemeAlphabet: 'IPA' }),
-    };
-    
-    const jsonStr = JSON.stringify(assessmentParams);
-    const headerVal = btoa(unescape(encodeURIComponent(jsonStr)));
+        // Convert WAV blob to ArrayBuffer for the SDK push stream
+        const arrayBuf = await wavBlob.arrayBuffer();
 
-    // &format=detailed is removed from this URL
-    const url = `https://${this.settings.azureRegion}.stt.speech.microsoft.com/speech/recognition/${recognitionMode}/cognitiveservices/v1?language=${this.settings.frVariant}&profanity=raw`;
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(this.settings.azureKey, this.settings.azureRegion);
+        speechConfig.speechRecognitionLanguage = this.settings.frVariant;
+        speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
 
-    return new Promise((resolve) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-      xhr.timeout = timeoutMs;
-      xhr.setRequestHeader('Ocp-Apim-Subscription-Key', this.settings.azureKey);
-      xhr.setRequestHeader('Content-Type', 'audio/wav; codecs=audio/pcm; samplerate=16000');
-      xhr.setRequestHeader('Pronunciation-Assessment', headerVal);
-      xhr.responseType = 'text';
-      xhr.onload = () => {
-        if (xhr.status !== 200) { console.error('Azure HTTP', xhr.status); resolve(null); return; }
-        try { resolve(JSON.parse(xhr.responseText)); }
-        catch(e) { console.error('Azure JSON parse error'); resolve(null); }
-      };
-      xhr.ontimeout = () => { console.error('Azure timeout after', timeoutMs, 'ms'); resolve(null); };
-      xhr.onerror  = () => { console.error('Azure XHR error'); resolve(null); };
-      xhr.send(wavBlob);
+        const pronunciationConfig = new SpeechSDK.PronunciationAssessmentConfig(
+          cleanRef,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Word,
+          !isFrCA && enableMiscue
+        );
+        pronunciationConfig.phonemeAlphabet = isFrCA ? 'SAPI' : 'IPA';
+
+        const pushStream = SpeechSDK.AudioInputStream.createPushStream();
+        pushStream.write(arrayBuf);
+        pushStream.close();
+
+        const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+        pronunciationConfig.applyTo(recognizer);
+
+        const timer = setTimeout(() => { recognizer.stopContinuousRecognitionAsync(); resolve(null); }, timeoutMs);
+
+        recognizer.recognizeOnceAsync(
+          result => {
+            clearTimeout(timer);
+            recognizer.close();
+            console.log('🔍 SDK result reason:', result.reason, SpeechSDK.ResultReason[result.reason]);
+            if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech ||
+                result.reason === SpeechSDK.ResultReason.NoMatch) {
+              try {
+                const detailed = JSON.parse(result.json);
+                console.log('🔍 SDK NBest[0] keys:', Object.keys(detailed?.NBest?.[0] || {}));
+                console.log('🔍 SDK response:', JSON.stringify(detailed).slice(0, 600));
+                resolve(detailed);
+              } catch(e) {
+                console.error('❌ SDK JSON parse:', e, result.json);
+                resolve(null);
+              }
+            } else {
+              console.error('❌ SDK recognition failed:', result.reason, result.errorDetails);
+              resolve(null);
+            }
+          },
+          err => {
+            clearTimeout(timer);
+            recognizer.close();
+            console.error('❌ SDK error:', err);
+            resolve(null);
+          }
+        );
+      } catch(e) {
+        console.error('❌ _azureRequest exception:', e);
+        resolve(null);
+      }
     });
   },
 
@@ -4788,7 +4588,6 @@ const App = {
     const color = this.scoreColor(score);
     const feedback = this.scoreFeedback(score);
 
-    // Sub-score pills — show remapped accuracy + fluency if available
     const accRemapped = rawAzure !== undefined ? Math.round(this.remapScore(rawAzure)) : null;
     const fluRemapped = fluency !== undefined ? Math.round(this.remapScore(fluency)) : null;
     const subScores = (accRemapped !== null && fluRemapped !== null && accRemapped !== score)
@@ -4823,7 +4622,6 @@ const App = {
       btn.disabled = false;
       btn.querySelector('.record-label').textContent = 'Enregistrer à nouveau';
     }
-    // For read mode: inject a purple "Record" ring next to the main score ring
     if (mode === 'read') {
       document.querySelectorAll('.passage-best-score').forEach(el => el.remove());
       const best = this.getPassageScore(this.currentPhoneme, this.currentPassageIndex);
@@ -4896,19 +4694,14 @@ const App = {
     }
   },
 
-  // ── OPENROUTER PASSAGE GENERATION ────────────────────────────
   async generateNewPassage(phonemeId, slotIndex) {
     const p = APP_DATA.phonemes[phonemeId];
     const btn = document.querySelector('.generate-btn');
     if (btn) btn.disabled = true;
 
-    // Difficulty levels 0-9 mapped to passage slots 0-9
     const difficultyInstructions = [
-      // Slot 0 (passage 1) — 1 sentence only, very simple
       "1 seule phrase courte (12-16 mots maximum) avec 1-2 exemples du son. Vocabulaire de base uniquement.",
-      // Slot 1 (passage 2) — 2 short sentences
       "2 phrases très courtes (20-28 mots au total) avec 2-3 exemples du son. Vocabulaire simple et courant.",
-      // Slots 2-9 — all same standard length as existing passages
       "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
       "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
       "3-4 phrases (45-60 mots) avec 4-6 exemples du son. Vocabulaire varié, phrases naturelles.",
@@ -4954,7 +4747,6 @@ const App = {
     if (btn) btn.disabled = false;
   },
 
-  // ── HELPERS ──────────────────────────────────────────────────
   getPassages(phonemeId) {
     return APP_DATA.phonemes[phonemeId]?.passages || [];
   },
@@ -4963,19 +4755,11 @@ const App = {
     const p = APP_DATA.phonemes[phonemeId];
     if (!p) return text;
 
-    // Special liaison highlighting
     if (p.category === 'liaison') {
       return this.highlightLiaison(text, phonemeId);
     }
 
-    // Context-aware graphie highlighting.
-    // Problem: naive substring matching hits false positives like
-    // 'um' in 'costume' (which is /y/, not /œ̃/) or 'in' in 'inviter'.
-    // Solution: for each graphie, we apply a phonetic position rule
-    // based on where that graphie actually produces the target sound.
     const GRAPHIE_RULES = {
-      // Nasal vowels — graphie is nasal only before consonant or at end of word
-      // NOT before a vowel (which would denasalise it), NOT doubled
       'an': /(?<![aeo])an(?![aeiouéèêëàâùûîïôœh])/gi,
       'en': /(?<![aeo])en(?![aeiouéèêëàâùûîïôœh])/gi,
       'am': /am(?![aeiouéèêëàâùûîïôœh])/gi,
@@ -4986,26 +4770,22 @@ const App = {
       'ein': /ein(?![aeiouéèêëàâùûîïôœh])/gi,
       'on': /(?<![aeo])on(?![aeiouéèêëàâùûîïôœh])/gi,
       'om': /om(?![aeiouéèêëàâùûîïôœh])/gi,
-      // 'un'/'um' nasal — only at word-end or before consonant, NOT in middle of word after vowel
-      'un': /un(?=[^aeiouéèêëàâùûîïôœh\s]|)/gi,
-      'um': /um(?=[^aeiouéèêëàâùûîïôœh]|)/gi,
-      // Rounded vowels — these are mostly unambiguous in position
+      'un': / un(?=[^aeiouéèêëàâùûîïôœh\s]| )/gi,
+      'um': / um(?=[^aeiouéèêëàâùûîïôœh]| )/gi,
       'u':  /(?<=[bcdfghjklmnpqrstvwxyz])u(?=[^aeiouéèêëàâùûîïôœ]|$|\s)/gi,
-      'eu': /eu(?!x)/gi,
-      'eux': /eux/gi,
+      'eu': /eu(?!x )/gi,
+      'eux': /eux /gi,
       'oe': /oe/gi,
       'œ': /œ/gi,
-      // é è ê sounds
       'é': /é/gi,
-      'er': /er/gi,   // only at word end
-      'ez': /ez/gi,
+      'er': /er /gi,
+      'ez': /ez /gi,
       'ée': /ée/gi,
       'è': /è/gi,
       'ê': /ê/gi,
       'ai': /ai/gi,
       'ei': /ei/gi,
-      // o sounds — 'o' is common and mostly unambiguous
-      'o': /o\B|\Bo/gi,
+      'o': / o\B|\Bo /gi,
       'au': /au/gi,
       'eau': /eau/gi,
       'ô': /ô/gi,
@@ -5015,49 +4795,40 @@ const App = {
       'ù': /ù/gi,
       'û': /û/gi,
       'ç': /ç/gi,
-      // Consonnes — full graphie is fairly unambiguous
       'gn': /gn/gi,
       'ill': /ill/gi,
-      'il': /il/gi,
+      'il ': /il /gi,
       'ille': /ille/gi,
       'ail': /ail/gi,
       'eil': /eil/gi,
       'euil': /euil/gi,
-      'r': null, // 'r' alone is too common — skip, rely on context in passage
-      // Terminaisons — only at word end
-      'ent': /ent/gi,
-      'er': /er/gi,
-      'ez': /ez/gi,
+      'r': null,
+      'ent': /ent /gi,
+      'er ': /er /gi,
+      'ez ': /ez /gi,
       'tion': /tion/gi,
-      // Liaison consonants — handled by highlightLiaison
     };
 
-    // Allow 1-char graphies only if they're accented/special French chars (unambiguous)
     const SAFE_SINGLE = new Set(['é','è','ê','ë','à','â','ô','î','ï','û','ù','œ','æ','ç','ñ']);
     const graphies = p.graphies.filter(g => g.length >= 2 || SAFE_SINGLE.has(g));
     if (graphies.length === 0) return text;
 
     let result = text;
-    // Apply each graphie's specific pattern, or fall back to word-boundary match
     graphies.forEach(g => {
       const rule = GRAPHIE_RULES[g.toLowerCase()];
       let pattern;
       if (rule) {
         pattern = rule;
-        // Reset lastIndex in case flag is /g
         pattern.lastIndex = 0;
       } else if (g.length >= 3) {
-        // For longer graphies (3+ chars), simple match is usually safe
         const esc = g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         pattern = new RegExp('(' + esc + ')', 'gi');
       } else {
-        return; // skip short ambiguous graphies without a rule
+        return; 
       }
       if (rule) {
-        // GRAPHIE_RULES patterns have no capture group → use $& (full match)
         result = result.replace(pattern, '<mark>$&</mark>');
       } else {
-        // Fallback patterns have a capture group → use $1
         result = result.replace(pattern, '<mark>$1</mark>');
       }
     });
@@ -5065,8 +4836,6 @@ const App = {
   },
 
   highlightLiaison(text, phonemeId) {
-    // Colour the linking consonant orange, the vowel it links to in blue
-    // Pattern: word-final s/z/n/t/d/r/x at end of a word, followed by space, then vowel-initial word
     const result = text.replace(/\b([szntdrx])(\s+)([aâàáeéèêëiîïoôœùûu])/gi,
       (m, cons, sp, vowel) => '<span class="liaison-cons">' + cons + '</span>' + sp + '<span class="liaison-vowel">' + vowel + '</span>'
     );
@@ -5082,7 +4851,6 @@ const App = {
   recordScore(phonemeId, score) {
     if (!this.scores[phonemeId]) this.scores[phonemeId] = [];
     this.scores[phonemeId].push(score);
-    // Keep last 10 scores
     if (this.scores[phonemeId].length > 10) this.scores[phonemeId].shift();
     this.saveScores();
   },
@@ -5090,7 +4858,6 @@ const App = {
   getPhonemeShade(phonemeId) {
     const p = APP_DATA.phonemes[phonemeId];
     if (this.phonemeShades[phonemeId]) return this.phonemeShades[phonemeId];
-    // Not cached yet — generate all shades for this category now
     const cat = APP_DATA.categories.find(c => c.id === p.category);
     const catPhonemes = cat.phonemes;
     const shades = this.generatePhonemeShades(cat.color, cat.accent, catPhonemes.length);
@@ -5099,8 +4866,6 @@ const App = {
   },
 
   generatePhonemeShades(baseColor, baseAccent, count) {
-    // Parse the base hex colour and generate 'count' visually distinct but related shades
-    // We shift hue slightly and vary lightness/saturation for each phoneme
     function hexToHsl(hex) {
       let r = parseInt(hex.slice(1,3),16)/255;
       let g = parseInt(hex.slice(3,5),16)/255;
@@ -5132,12 +4897,11 @@ const App = {
     }
     const [h, s, l] = hexToHsl(baseColor);
     const [ah, as_, al] = hexToHsl(baseAccent);
-    // Shift hue by up to ±40deg across the set, vary lightness slightly
     const shades = [];
     for (let i = 0; i < count; i++) {
       const t = count === 1 ? 0 : i / (count - 1);
-      const hueShift = (t - 0.5) * 60; // -30 to +30 degrees
-      const lightShift = (t - 0.5) * 12; // slight lightness variation
+      const hueShift = (t - 0.5) * 60; 
+      const lightShift = (t - 0.5) * 12; 
       const color = hslToHex((h + hueShift + 360) % 360, Math.min(100, s + 5), Math.min(70, Math.max(15, l + lightShift)));
       const accent = hslToHex((ah + hueShift + 360) % 360, Math.min(100, as_), Math.min(90, Math.max(40, al + lightShift * 1.5)));
       shades.push({ color, accent });
@@ -5145,30 +4909,14 @@ const App = {
     return shades;
   },
 
-  // ── SCORE REMAPPING ─────────────────────────────────────────
-  // Azure clusters real-world scores between ~55 (barely intelligible)
-  // and ~95 (near-native). We remap that range to a more discriminating
-  // 0-100 scale using a smooth curve so differences feel meaningful.
-  //
-  //  Azure  →  Our score
-  //   95+   →  100  (native)
-  //   88    →  75   (good, light accent)
-  //   80    →  55   (noticeable accent)
-  //   70    →  32   (strong accent — like an Anglo R)
-  //   60    →  18   (barely recognizable)
-  //   ≤50   →  8    (floor — something was said)
   remapScore(azureScore) {
-    // Clamp input
     const s = Math.max(0, Math.min(100, azureScore));
-    // Control points: [azure, ours]
     const pts = [[0,0],[50,12],[60,25],[70,42],[78,57],[85,72],[90,85],[95,94],[100,100]];
-    // Find surrounding segment and lerp
     for (let i = 1; i < pts.length; i++) {
       const [ax, ay] = pts[i-1];
       const [bx, by] = pts[i];
       if (s <= bx) {
         const t = (s - ax) / (bx - ax);
-        // Ease-in-out within segment
         const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
         return ay + e * (by - ay);
       }
@@ -5176,14 +4924,8 @@ const App = {
     return 100;
   },
 
-  // ── LIAISON TIMING PENALTY ──────────────────────────────────
-  // Azure gives us word-level timing offsets (in 100ns ticks).
-  // A native liaison creates a very short gap (<30ms) between
-  // specific word pairs. We check known liaison pairs and penalize
-  // gaps that are suspiciously long (>120ms = liaison likely skipped).
   calcLiaisonPenalty(words) {
     if (!words || words.length < 2) return 0;
-    // Words that should trigger liaison when followed by a vowel-initial word
     const liaisonTriggers = /^(les|des|ces|mes|tes|ses|nos|vos|leurs|ils|elles|nous|vous|on|un|en|mon|ton|son|bien|très|fort|grand|petit|premier|dernier|tout|aux|quand)$/i;
     const vowelStart = /^[aâàeéèêëiîïoôœùûuhy]/i;
 
@@ -5198,25 +4940,140 @@ const App = {
       if (!vowelStart.test(w2.Word)) continue;
 
       liaisonOpportunities++;
-      // Gap in 100ns ticks → ms
       const w1End = (w1.Offset + w1.Duration) / 10000;
       const w2Start = w2.Offset / 10000;
       const gapMs = w2Start - w1End;
 
       console.log(`Liaison check: "${w1.Word}" → "${w2.Word}" gap: ${gapMs.toFixed(0)}ms`);
 
-      // Native liaison: gap < 40ms. Missed liaison: gap > 120ms.
-      if (gapMs > 180) totalPenalty += 14;       // clearly skipped
-      else if (gapMs > 120) totalPenalty += 8;   // probably skipped
-      else if (gapMs > 60)  totalPenalty += 3;   // borderline
-      // < 60ms = good, no penalty
+      if (gapMs > 180) totalPenalty += 14;       
+      else if (gapMs > 120) totalPenalty += 8;   
+      else if (gapMs > 60)  totalPenalty += 3;   
     }
 
     if (liaisonOpportunities === 0) return 0;
-    // Scale penalty by how many opportunities existed (don't over-penalize short passages)
     const scaledPenalty = totalPenalty * Math.min(1, 3 / liaisonOpportunities);
     console.log(`Liaison: ${liaisonOpportunities} opportunities, penalty: ${scaledPenalty.toFixed(1)} pts`);
-    return Math.min(35, scaledPenalty); // cap at -35 pts
+    return Math.min(35, scaledPenalty);
+  },
+
+  goBackToBilanResults() {
+    if (this._lastBilanScore == null) {
+      // No stored result, just navigate normally
+      this.navigate('bilan');
+      return;
+    }
+    // Bypass navigate() animation so we can render + inject results synchronously
+    this.currentScreen = 'bilan';
+    const main = document.getElementById('main');
+    main.classList.add('screen-exit');
+    setTimeout(() => {
+      main.classList.remove('screen-exit');
+      main.classList.add('screen-enter');
+      // 1. Render the bilan screen (creates fresh scoreArea)
+      this.renderBilan();
+      // 2. Immediately inject the last result into that fresh scoreArea
+      this.showBilanResults(this._lastBilanScore, this._lastBilanPa, this._lastBilanWords);
+      // 3. Re-open annotation overlay if it was open
+      if (this._lastBilanAnnotationOpen) this.toggleBilanAnnotation();
+      setTimeout(() => main.classList.remove('screen-enter'), 400);
+    }, 150);
+  },
+
+  async testAzureConnection() {
+    const el = document.getElementById('azureTestResult');
+    el.style.display = 'block';
+    el.style.background = 'rgba(99,179,237,0.1)';
+    el.style.color = '#63B3ED';
+    el.textContent = 'Test en cours...';
+
+    if (!window.SpeechSDK) {
+      el.style.background = 'rgba(248,113,113,0.15)';
+      el.style.color = '#F87171';
+      el.textContent = '❌ Speech SDK non chargé - vérifiez votre connexion internet';
+      return;
+    }
+    if (!this.settings.azureKey || !this.settings.azureRegion) {
+      el.style.background = 'rgba(248,113,113,0.15)';
+      el.style.color = '#F87171';
+      el.textContent = '❌ Clé ou région manquante';
+      return;
+    }
+
+    try {
+      const SpeechSDK = window.SpeechSDK;
+      const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(this.settings.azureKey, this.settings.azureRegion);
+      speechConfig.speechRecognitionLanguage = this.settings.frVariant;
+      speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
+
+      const silenceWav = this._makeSilenceWav();
+      const arrayBuf = await silenceWav.arrayBuffer();
+      const pushStream = SpeechSDK.AudioInputStream.createPushStream();
+      pushStream.write(arrayBuf);
+      pushStream.close();
+
+      const paConfig = new SpeechSDK.PronunciationAssessmentConfig('Bonjour',
+        SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SpeechSDK.PronunciationAssessmentGranularity.Word, false);
+
+      const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+      const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+      paConfig.applyTo(recognizer);
+
+      recognizer.recognizeOnceAsync(result => {
+        recognizer.close();
+        console.log('Test result:', result.reason, result.json);
+        if (result.reason === SpeechSDK.ResultReason.Canceled) {
+          const details = SpeechSDK.CancellationDetails.fromResult(result);
+          el.style.background = 'rgba(248,113,113,0.15)';
+          el.style.color = '#F87171';
+          el.textContent = `❌ ${details.errorDetails || details.reason}`;
+          return;
+        }
+        try {
+          const d = JSON.parse(result.json);
+          const nbest = d?.NBest?.[0];
+          const keys = nbest ? Object.keys(nbest) : [];
+          const hasPa = keys.some(k => ['PronScore','AccuracyScore','PronunciationAssessment'].includes(k));
+          console.log('Test NBest keys:', keys);
+          if (hasPa) {
+            el.style.background = 'rgba(52,211,153,0.15)';
+            el.style.color = '#34D399';
+            el.textContent = '✅ Azure OK + Pronunciation Assessment actif!';
+          } else {
+            el.style.background = 'rgba(251,191,36,0.15)';
+            el.style.color = '#FBBF24';
+            el.textContent = `⚠️ SDK OK mais pas de scores PA. Clés: ${keys.join(', ') || 'aucun'}. Vérifiez que la ressource Speech Azure supporte la PA.`;
+          }
+        } catch(e) {
+          el.style.background = 'rgba(52,211,153,0.15)';
+          el.style.color = '#34D399';
+          el.textContent = '✅ Azure connecté (résultat vide - silence envoyé)';
+        }
+      }, err => {
+        recognizer.close();
+        el.style.background = 'rgba(248,113,113,0.15)';
+        el.style.color = '#F87171';
+        el.textContent = `❌ Erreur: ${err}`;
+      });
+    } catch(e) {
+      el.style.background = 'rgba(248,113,113,0.15)';
+      el.style.color = '#F87171';
+      el.textContent = `❌ Exception: ${e.message}`;
+    }
+  },
+  _makeSilenceWav() {
+    // 0.5s of silence at 16kHz mono 16-bit
+    const sr = 16000, dur = 0.5, nc = 1;
+    const samples = Math.floor(sr * dur);
+    const buf = new ArrayBuffer(44 + samples * 2);
+    const v = new DataView(buf);
+    const w = (off, s) => { for(let i=0;i<s.length;i++) v.setUint8(off+i, s.charCodeAt(i)); };
+    w(0,'RIFF'); v.setUint32(4, 36+samples*2, true); w(8,'WAVE'); w(12,'fmt ');
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nc,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*nc*2,true); v.setUint16(32,nc*2,true);
+    v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,samples*2,true);
+    return new Blob([buf], { type: 'audio/wav' });
   },
 
   scoreColor(score) {
@@ -5237,9 +5094,8 @@ const App = {
   },
 };
 
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => App.init());
+// Démarrer l'application
+    App.init();
   </script>
 </body>
 </html>
