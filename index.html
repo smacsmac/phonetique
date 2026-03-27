@@ -11,7 +11,7 @@
   <title>Phonétique</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
   <style>
 /* ============================================================
    PHONÉTIQUE APP — STYLES
@@ -39,7 +39,7 @@
   --neon-purple: #7C3AED;
   --glow-blue: rgba(79, 142, 247, 0.3);
   --glow-purple: rgba(139, 92, 246, 0.3);
-  --font-display: 'Space Mono', monospace;
+  --font-display: 'Space Mono', 'Noto Sans', monospace;
   --font-body: 'DM Sans', sans-serif;
   --radius: 16px;
   --radius-sm: 10px;
@@ -1437,8 +1437,376 @@ body::before {
 .libre-chars { font-size: 11px; color: var(--text3); text-align: right; }
 .libre-actions { display: flex; justify-content: center; }
 
+/* ── RÉPERTOIRE ─────────────────────────────────────────────── */
+.repertoire-container {
+  padding: 8px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rep-section-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin-bottom: 2px;
+}
+
+/* ── Recent words strip ── */
+.rep-recent-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.rep-recent-strip::-webkit-scrollbar { display: none; }
+
+.rep-recent-card {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  min-width: 110px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.rep-recent-card::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; right: -20px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #14B8A6 0%, transparent 70%);
+  opacity: 0.12;
+}
+.rep-recent-card:hover { border-color: #14B8A6; transform: translateY(-2px); }
+.rep-recent-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.rep-recent-ipa {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: #14B8A6;
+}
+.rep-recent-date {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+.rep-empty-recent {
+  color: var(--text3);
+  font-size: 13px;
+  padding: 16px 0;
+  font-style: italic;
+}
+
+/* ── Folder system ── */
+.rep-folders-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rep-folder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.rep-folder:hover { border-color: var(--border-bright); }
+
+.rep-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.rep-folder-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.rep-folder-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.rep-folder-count {
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg3);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+.rep-folder-chev {
+  color: var(--text3);
+  transition: transform 0.25s;
+  width: 16px; height: 16px;
+}
+.rep-folder-chev.open { transform: rotate(90deg); }
+
+.rep-folder-body {
+  display: none;
+  border-top: 1px solid var(--border);
+}
+.rep-folder-body.open { display: block; }
+
+.rep-word-list {
+  padding: 8px 0;
+}
+.rep-word-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 0;
+}
+.rep-word-row:hover { background: var(--surface2); }
+.rep-word-text {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.rep-word-ipa {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--text2);
+}
+.rep-word-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.rep-word-delete {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0;
+}
+.rep-word-row:hover .rep-word-delete { opacity: 1; }
+.rep-word-delete:hover { color: #F87171; background: rgba(248,113,113,0.1); }
+.rep-word-delete svg { width: 14px; height: 14px; }
+
+.rep-move-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0;
+}
+.rep-word-row:hover .rep-move-btn { opacity: 1; }
+.rep-move-btn:hover { color: #14B8A6; background: rgba(20,184,166,0.1); }
+.rep-move-btn svg { width: 14px; height: 14px; }
+
+.rep-folder-empty {
+  padding: 14px 16px;
+  color: var(--text3);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── New folder button ── */
+.rep-new-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px dashed var(--border-bright);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 13px;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+  width: 100%;
+}
+.rep-new-folder-btn:hover { border-color: #14B8A6; color: #14B8A6; background: rgba(20,184,166,0.04); }
+.rep-new-folder-btn svg { width: 16px; height: 16px; }
+
+/* ── Export / Import bar ── */
+.rep-data-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+}
+.rep-data-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--text2);
+  transition: all 0.2s;
+}
+.rep-data-btn:hover { border-color: #14B8A6; color: #14B8A6; }
+.rep-data-btn svg { width: 14px; height: 14px; }
+
+/* ── Save-to-workbook button on Mot en Focus ── */
+.wf-save-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(20,184,166,0.12);
+  border: 1px solid rgba(20,184,166,0.3);
+  border-radius: 10px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #14B8A6;
+}
+.wf-save-btn:hover { background: rgba(20,184,166,0.25); border-color: rgba(20,184,166,0.6); transform: scale(1.08); }
+.wf-save-btn.saved { background: rgba(20,184,166,0.3); border-color: #14B8A6; color: #14B8A6; }
+.wf-save-btn svg { width: 18px; height: 18px; }
+
+/* ── Move-to-folder overlay ── */
+.rep-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5,6,15,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px;
+}
+.rep-overlay-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rep-overlay-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #14B8A6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.rep-overlay-subtitle {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+.rep-overlay-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.rep-overlay-folder-btn:hover { border-color: #14B8A6; color: #14B8A6; }
+.rep-overlay-folder-btn span { font-size: 18px; }
+.rep-overlay-cancel {
+  background: none;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text3);
+  font-family: var(--font-body);
+  text-align: center;
+  width: 100%;
+  transition: color 0.15s;
+}
+.rep-overlay-cancel:hover { color: var(--text); }
+.rep-overlay-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.rep-overlay-input:focus { border-color: #14B8A6; }
+.rep-overlay-confirm {
+  background: #14B8A6;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 11px 20px;
+  color: #05060F;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+.rep-overlay-confirm:hover { opacity: 0.85; }
+
 /* ── BILAN ───────────────────────────────────────────────────── */
-.bilan-container { padding: 8px 20px 32px; display: flex; flex-direction: column; gap: 16px; }
+.bilan-num-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+  min-height: 40px;
+}
+
+
 .bilan-intro { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .bilan-icon { font-size: 36px; }
 .bilan-intro p { font-size: 13px; color: var(--text2); line-height: 1.6; max-width: 320px; }
@@ -2125,8 +2493,17 @@ const APP_DATA = {
       icon: 'ʁ',
       color: '#DC2626',
       accent: '#F87171',
-      description: 'Le R français, gn, ll',
-      phonemes: ['r_français', 'gn', 'ill']
+      description: 'Le R français et gn',
+      phonemes: ['r_français', 'gn']
+    },
+    {
+      id: 'semi_voyelles',
+      label: 'Semi-voyelles',
+      icon: '◌̯',
+      color: '#7E22CE',
+      accent: '#C084FC',
+      description: 'Sons en -ille, -ail, -eil, -uil, -ien',
+      phonemes: ['ill', 'ail', 'eil', 'uil', 'ien']
     },
     {
       id: 'liaison',
@@ -2896,17 +3273,17 @@ const APP_DATA = {
 
     'ill': {
       label: 'ILL / -IL',
-      ipa: '/j/',
-      category: 'consonnes',
-      description: 'La suite -ill- ou -il final se prononce /j/ (consonne), pas /il/.',
+      ipa: '/ij/',
+      category: 'semi_voyelles',
+      description: 'La suite -ill- ou -il final se prononce /j/ (yod), pas /il/. Son de glissement vocalique.',
       graphies: ['-ill-', '-il (final)', '-ille'],
-      exemples: ['fille', 'famille', 'travail', 'mille', 'briller'],
+      exemples: ['fille', 'famille', 'briller', 'griller', 'sillon'],
       practiceWords: [
         ['famille', '/famij/'],
         ['fille', '/fij/'],
-        ['travail', '/tʁavaj/'],
         ['briller', '/bʁije/'],
-        ['mille', '/mil/']
+        ['griller', '/ɡʁije/'],
+        ['sillon', '/sijɔ̃/']
       ],
       confusedWith: [],
       passages: [
@@ -2933,6 +3310,182 @@ const APP_DATA = {
         {
           id: 'ill_p5',
           text: "Il fouille dans les détails avec minutie. Ce travail de tailleur demande des milliers d'heures d'attention. Mais le résultat final brille d'un éclat unique.",
+          highlight: null
+        }
+      ]
+    },
+
+    'ail': {
+      label: 'AIL / AILLE',
+      ipa: '/aj/',
+      category: 'semi_voyelles',
+      description: 'Le son /aj/ : la bouche s\'ouvre sur /a/ puis glisse vers /j/. Graphies : -ail, -aille, -aill-.',
+      graphies: ['ail', 'aille', 'aill'],
+      exemples: ['travail', 'taille', 'paille', 'muraille', 'ail'],
+      practiceWords: [
+        ['travail', '/tʁavaj/'],
+        ['taille', '/taj/'],
+        ['paille', '/paj/'],
+        ['muraille', '/myʁaj/'],
+        ['ail', '/aj/']
+      ],
+      confusedWith: [],
+      passages: [
+        {
+          id: 'ail_p1',
+          text: "Le travail de taille de la paille demande du soin. Sans faille, l'artisan taille, ajuste, retaille. Son travail sans pareil finit par briller comme de l'ail doré.",
+          highlight: null
+        },
+        {
+          id: 'ail_p2',
+          text: "La muraille de la vieille ville résiste sans faille aux assauts du temps. Les gens du pays la taillent, la réparent avec acharnement, travail après travail, saison après saison.",
+          highlight: null
+        },
+        {
+          id: 'ail_p3',
+          text: "Elle caille dehors mais elle rit quand même. Sa taille fine sous l'anorak, elle ramasse de la paille et de l'ail sauvage dans le champ. Un travail simple, un plaisir sans pareil.",
+          highlight: null
+        },
+        {
+          id: 'ail_p4',
+          text: "Le portail de la ferme grince. Le bétail rentre sans faille chaque soir. On prépare la soupe à l'ail, on taille le pain, on s'installe autour de la table sans détail superflu.",
+          highlight: null
+        },
+        {
+          id: 'ail_p5',
+          text: "Son chapeau de paille, son tablier, ses mains qui travaillent : l'épouvan-tail au milieu du champ surveille tout. Rien ne l'émeut, pas même le vent qui mord et qui taille.",
+          highlight: null
+        }
+      ]
+    },
+
+    'eil': {
+      label: 'EIL / EILLE',
+      ipa: '/ɛj/',
+      category: 'semi_voyelles',
+      description: 'Le son /ɛj/ : bouche mi-ouverte sur /ɛ/ puis glisse vers /j/. Graphies : -eil, -eille, -eill-.',
+      graphies: ['eil', 'eille', 'eill'],
+      exemples: ['soleil', 'oreille', 'abeille', 'merveille', 'veille'],
+      practiceWords: [
+        ['soleil', '/sɔlɛj/'],
+        ['oreille', '/ɔʁɛj/'],
+        ['abeille', '/abɛj/'],
+        ['merveille', '/mɛʁvɛj/'],
+        ['veille', '/vɛj/']
+      ],
+      confusedWith: [],
+      passages: [
+        {
+          id: 'eil_p1',
+          text: "La veille du soleil, les abeilles s'éveillent tôt. Quelle merveille de les voir tournoyer ! Leur travail sans pareil réveille la forêt entière.",
+          highlight: null
+        },
+        {
+          id: 'eil_p2',
+          text: "Il se réveille au premier rayon de soleil. Dans son oreille, un murmure de merveille. Les abeilles bourdonnent sur la treille en fleur. C'est une veille douce et sans pareille.",
+          highlight: null
+        },
+        {
+          id: 'eil_p3',
+          text: "La groseille et l'oseille poussent à merveille sous ce soleil. La vieille dame surveille sa treille depuis la veille. Elle s'éveille chaque matin pour cueillir ce que la nature lui offre.",
+          highlight: null
+        },
+        {
+          id: 'eil_p4',
+          text: "Son oreille fine perçoit le chant du soleil dans chaque abeille. Merveille des merveilles, dit-il en s'éveillant. La treille embaume, la veille recommence, douce et pareille.",
+          highlight: null
+        },
+        {
+          id: 'eil_p5',
+          text: "La bouteille de miel d'abeille brille sous le soleil. On la débouche la veille d'un repas de merveille. L'oreille reconnaît ce son doux : le bouchon qui saute, la fête qui s'éveille.",
+          highlight: null
+        }
+      ]
+    },
+
+    'uil': {
+      label: 'UIL / UILLE',
+      ipa: '/ɥi/',
+      category: 'semi_voyelles',
+      description: 'Le son /ɥi/ : lèvres arrondies puis glissement vers /i/. Graphies : -ui, -uil, -uille, -uy.',
+      graphies: ['uil', 'uille', 'ui', 'uy'],
+      exemples: ['nuit', 'bruit', 'juillet', 'fruit', 'puis'],
+      practiceWords: [
+        ['nuit', '/nɥi/'],
+        ['bruit', '/bʁɥi/'],
+        ['juillet', '/ʒɥijɛ/'],
+        ['fruit', '/fʁɥi/'],
+        ['puis', '/pɥi/']
+      ],
+      confusedWith: [],
+      passages: [
+        {
+          id: 'uil_p1',
+          text: "La nuit de juillet, les grenouilles chantent sous les feuilles. Le bruit de la pluie mouille tout. Puis minuit sonne, et le silence recueille la forêt endormie.",
+          highlight: null
+        },
+        {
+          id: 'uil_p2',
+          text: "En juillet, sous la feuille de vigne, une grenouille se recueille. Le bruit de la nuit l'entoure : gouttelettes, murmures, bruits doux. Elle ne fuit pas — elle s'ébroue.",
+          highlight: null
+        },
+        {
+          id: 'uil_p3',
+          text: "La grenouille saute de feuille en feuille sans bruit dans la nuit de juillet. Elle recueille l'eau de pluie sur sa langue. Minuit passe. Elle s'enfuit sans déranger personne.",
+          highlight: null
+        },
+        {
+          id: 'uil_p4',
+          text: "Il cueille des feuilles de basilic dans la nuit. Le bruit de ses pas mouille à peine le sol. En juillet, tout pousse, tout foisonne. Il recueille ce que la terre offre en bruits discrets.",
+          highlight: null
+        },
+        {
+          id: 'uil_p5',
+          text: "La citrouille et le fenouil poussent côte à côte. La nuit de juillet apporte un bruit d'orage. Les feuilles s'agitent, la grenouille se tait. Tout se recueille sous la pluie qui mouille.",
+          highlight: null
+        }
+      ]
+    },
+
+    'ien': {
+      label: 'IEN / -IENNE',
+      ipa: '/jɛ̃/',
+      category: 'semi_voyelles',
+      description: 'Le son /jɛ̃/ : glissement /j/ suivi d\'une voyelle nasale /ɛ̃/. Graphies : -ien, -ienne, -yen.',
+      graphies: ['ien', 'ienne', 'yen'],
+      exemples: ['bien', 'chien', 'ancien', 'vient', 'parisien'],
+      practiceWords: [
+        ['bien', '/bjɛ̃/'],
+        ['chien', '/ʃjɛ̃/'],
+        ['ancien', '/ɑ̃sjɛ̃/'],
+        ['vient', '/vjɛ̃/'],
+        ['parisien', '/paʁizjɛ̃/']
+      ],
+      confusedWith: [],
+      passages: [
+        {
+          id: 'ien_p1',
+          text: "Mon chien revient bien chaque soir. Il tient sa laisse, il vient s'asseoir. Rien ne l'empêche — il maintient son rythme ancien, fidèle à son vieux parisien de maître.",
+          highlight: null
+        },
+        {
+          id: 'ien_p2',
+          text: "Le musicien vient de loin. Il tient son instrument avec soin. Rien ne vaut un bien ancien, dit-il. Son chien l'accompagne — il revient toujours vers ce son qui le retient.",
+          highlight: null
+        },
+        {
+          id: 'ien_p3',
+          text: "Elle maintient un lien bien ancien avec ce quartier parisien. Son chien vient chaque matin. Elle tient à ce rien quotidien — ce café, ce coin, ce rituel qui la retient.",
+          highlight: null
+        },
+        {
+          id: 'ien_p4',
+          text: "Le pharmacien vient chercher son chien. Le gardien lui dit : il va bien, il revient souvent. Rien d'ancien dans ces liens-là — juste une amitié qui se maintient, tranquillement.",
+          highlight: null
+        },
+        {
+          id: 'ien_p5',
+          text: "Combien de fois vient-il ? Souvent, bien souvent. Son lien avec cet ancien quartier tient bon. Son chien le suit. Rien ne les sépare — ils maintiennent leur rituel quotidien.",
           highlight: null
         }
       ]
@@ -3212,6 +3765,38 @@ const APP_DATA = {
 // PHONÉTIQUE APP — CORE APP LOGIC
 // ============================================================
 
+// ── BILAN PASSAGES ──────────────────────────────────────────
+// Curated passages (slots 0–4). Slot 5 is the AI-generated one.
+// Avoid words Azure fr-CA scores poorly (souffle, brûle, etc.).
+const BILAN_PASSAGES = [
+  {
+    id: 0,
+    label: 'Passage 1',
+    text: `\u00ab\u00a0Un vieux juge qu\u00e9b\u00e9cois boit du vin brun pendant que Guillaume \u00e9tudie la physique, cueille une feuille bleue pr\u00e8s du fleuve et dit\u00a0: \u201cTu prends du pain chaud, huit oignons et une vieille vigne.\u201d\u00a0\u00bb`
+  },
+  {
+    id: 1,
+    label: 'Passage 2',
+    text: `\u00ab\u00a0Tu dis \u00e0 Didier que tu \u00e9tudies du th\u00e9 et du sucre, que tu d\u00eenes t\u00f4t dans une petite rue du Vieux-Qu\u00e9bec, pr\u00e8s du fleuve.\u00a0\u00bb`
+  },
+  {
+    id: 2,
+    label: 'Passage 3',
+    text: `\u00ab\u00a0Jean prend un bon repas en plein air\u00a0: du poulet r\u00f4ti, des l\u00e9gumes frais et un verre de lait froid. Il mange lentement, puis il dit merci en souriant \u00e0 son vieux voisin.\u00a0\u00bb`
+  },
+  {
+    id: 3,
+    label: 'Passage 4',
+    text: `\u00ab\u00a0Chaque matin, ma s\u0153ur pr\u00e9pare du caf\u00e9 chaud, deux \u0153ufs et du pain grill\u00e9. Elle lit son journal en fran\u00e7ais, puis elle part travailler dans le vieux quartier pr\u00e8s du port.\u00a0\u00bb`
+  },
+  {
+    id: 4,
+    label: 'Passage 5',
+    text: `\u00ab\u00a0Mon neveu apprend \u00e0 jouer du piano deux fois par semaine. Il pr\u00e9f\u00e8re les pi\u00e8ces lentes, car il dit que la musique douce lui permet de bien r\u00e9fl\u00e9chir le soir.\u00a0\u00bb`
+  },
+];
+// Slot index 5 is reserved for the AI-generated passage (stored in localStorage).
+
   const App = {
   currentScreen: 'home',
   navHistory: [],
@@ -3236,8 +3821,11 @@ const APP_DATA = {
   wavAudioBlob: null, // Stores the exact WAV sent to Azure for accurate playback testing
   ttsAudio: null,
   generatedPassages: {},
+  aiPassages: {},        // phonemeId → AI-generated passage text (slot 5)
   phonemeShades: {}, 
-  bilanPassage: null,
+  bilanPassage: null,        // legacy – kept for backwards compat with old localStorage
+  bilanPassageIndex: 0,      // 0–4 = curated; 5 = AI slot
+  bilanAiPassage: null,      // text of the AI-generated passage (slot 5)
   passageScores: {},   
   bilanScores: {},     
   bilanBestScores: {},  
@@ -3249,6 +3837,7 @@ const APP_DATA = {
     this.loadScores();
     this.loadDiagScores();
     this.loadPassageScores();
+    this.loadRepertoire();
     this.applyTheme();
     this.renderHome();
     this.setupSpeechSynthVoices();
@@ -3325,20 +3914,58 @@ const APP_DATA = {
   loadDiagScores() {
     try {
       const b = localStorage.getItem('phonetique_bilan');
-      if (b) { const d = JSON.parse(b); this.bilanScores = d.latest || {}; this.bilanBestScores = d.best || {}; this.bilanPassage = d.passage || null; }
+      if (b) {
+        const d = JSON.parse(b);
+        this.bilanScores = d.latest || {};
+        this.bilanBestScores = d.best || {};
+        this.bilanPassageIndex = d.passageIndex ?? 0;
+        this.bilanAiPassage = d.aiPassage || null;
+        // Migrate legacy: old save had a single custom passage text
+        if (!this.bilanAiPassage && d.passage) {
+          this.bilanAiPassage = d.passage;
+          this.bilanPassageIndex = 5;
+        }
+      }
     } catch(e) {}
   },
   saveDiagScores() {
-    localStorage.setItem('phonetique_bilan', JSON.stringify({ latest: this.bilanScores, best: this.bilanBestScores, passage: this.bilanPassage }));
+    localStorage.setItem('phonetique_bilan', JSON.stringify({
+      latest: this.bilanScores,
+      best: this.bilanBestScores,
+      passageIndex: this.bilanPassageIndex,
+      aiPassage: this.bilanAiPassage,
+    }));
+  },
+  getActiveBilanPassage() {
+    if (this.bilanPassageIndex === 5) return this.bilanAiPassage || null;
+    return BILAN_PASSAGES[this.bilanPassageIndex]?.text || BILAN_PASSAGES[0].text;
+  },
+  selectBilanPassage(idx) {
+    this.bilanPassageIndex = idx;
+    this.saveDiagScores();
+    // Clear previous recording results when switching passages
+    this._lastBilanScore = null;
+    this._lastBilanPa = null;
+    this._lastBilanWords = null;
+    this._lastBilanAnnotationOpen = false;
+    this._bilanWords = null;
+    this.renderBilan();
   },
   loadPassageScores() {
     try {
       const s = localStorage.getItem('phonetique_passage_scores');
       if (s) this.passageScores = JSON.parse(s);
     } catch(e) {}
+    try {
+      const a = localStorage.getItem('phonetique_ai_passages');
+      if (a) this.aiPassages = JSON.parse(a);
+    } catch(e) {}
   },
   savePassageScores() {
     localStorage.setItem('phonetique_passage_scores', JSON.stringify(this.passageScores));
+  },
+  saveAiPassages() {
+    localStorage.setItem('phonetique_ai_passages', JSON.stringify(this.aiPassages));
   },
   getPassageScore(phonemeId, idx) {
     return this.passageScores[phonemeId + '_' + idx] ?? null;
@@ -3365,15 +3992,16 @@ const APP_DATA = {
   goBack() {
     if (this.navHistory.length > 1) {
       this.navHistory.pop();
-      const prev = this.navHistory.pop();
-      this.navigate(prev.screen, prev.params);
+      const prev = this.navHistory[this.navHistory.length - 1];
+      this.navigate(prev.screen, prev.params, true);
     } else {
-      this.navigate('home');
+      this.navHistory = [];
+      this.navigate('home', {}, true);
     }
   },
 
-  navigate(screen, params = {}) {
-    this.navHistory.push({ screen, params });
+  navigate(screen, params = {}, skipHistory = false) {
+    if (!skipHistory) this.navHistory.push({ screen, params });
     if (this.navHistory.length > 20) this.navHistory.shift();
     this.currentScreen = screen;
     const main = document.getElementById('main');
@@ -3391,11 +4019,21 @@ const APP_DATA = {
         case 'mode-test': this.renderTest(params.phonemeId); break;
         case 'scores': this.renderScores(); break;
         case 'phrase-libre': this.renderPhraseLibre(); break;
-        case 'bilan': this.renderBilan(); break;
+        case 'bilan':
+          if (this._lastBilanScore != null) {
+            // Restore previous results rather than showing blank screen
+            this.renderBilan();
+            this.showBilanResults(this._lastBilanScore, this._lastBilanPa, this._lastBilanWords);
+            if (this._lastBilanAnnotationOpen) this.toggleBilanAnnotation();
+          } else {
+            this.renderBilan();
+          }
+          break;
         case 'labo': this.renderLabo(); break;
         case 'labo-scores': this.renderLaboScores(); break;
         case 'settings': this.renderSettings(); break;
         case 'word-focus': this.renderWordFocus(params?.word || ''); break;
+        case 'repertoire': this.renderRepertoire(); break;
       }
       setTimeout(() => main.classList.remove('screen-enter'), 400);
     }, 150);
@@ -3490,6 +4128,12 @@ const APP_DATA = {
           <div class="cat-desc">Prononcez n'importe quel mot</div>
           <div class="cat-glow"></div>
         </button>
+        <button class="category-tile labo-tile" style="--cat-color:#002A28;--cat-accent:#14B8A6" onclick="App.navigate('repertoire')">
+          <div class="cat-icon">📖</div>
+          <div class="cat-label">Le Répertoire</div>
+          <div class="cat-desc">Vos mots &amp; expressions sauvegardés</div>
+          <div class="cat-glow"></div>
+        </button>
         <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#002220;--cat-accent:#0D9488" disabled>
           <div class="cat-icon">📊</div>
           <div class="cat-label">Comparaison</div>
@@ -3525,7 +4169,7 @@ const APP_DATA = {
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <button class="back-btn" onclick="App.navigate('labo')" title="Retour">
+        <button class="back-btn" onclick="${this._wfFromBilan ? 'App._wfGoBackToBilan()' : 'App.goBack()'}" title="Retour">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div class="lang-flags">${this.flagsHTML()}</div>
@@ -3543,6 +4187,12 @@ const APP_DATA = {
         </div>
 
         <div id="wfWordCard" class="wf-word-card" style="${preloadWord ? '' : 'display:none'}">
+          <button class="wf-save-btn" id="wfSaveBtn" onclick="App.wfToggleSaveToRepertoire()" title="Sauvegarder dans Le Répertoire" ${preloadWord ? '' : 'style="display:none"'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20l-7-4-7 4V2z"/>
+            </svg>
+          </button>
           <div class="wf-word-display" id="wfWordDisplay">${preloadWord}</div>
           <div class="wf-ipa wf-ipa-loading" id="wfIpa">${preloadWord ? 'Chargement IPA…' : ''}</div>
           <div class="wf-listen-row">
@@ -3608,6 +4258,9 @@ const APP_DATA = {
     if (ipaEl) { ipaEl.textContent = 'Chargement IPA…'; ipaEl.className = 'wf-ipa wf-ipa-loading'; }
     if (listenBtn) listenBtn.disabled = false;
     if (recordBtn) recordBtn.disabled = false;
+    // Show save button and update its state
+    const saveBtn = document.getElementById('wfSaveBtn');
+    if (saveBtn) { saveBtn.style.display = ''; App._wfUpdateSaveBtn(); }
     // Reset score/playback
     this.retryRecording();
     const relistenBtn = document.getElementById('wfRelistenBtn');
@@ -3715,6 +4368,9 @@ const APP_DATA = {
     this.retryRecording();
     const relistenBtn = document.getElementById('wfRelistenBtn');
     if (relistenBtn) { relistenBtn.disabled = true; }
+    // Update save button state
+    const saveBtn2 = document.getElementById('wfSaveBtn');
+    if (saveBtn2) { saveBtn2.style.display = ''; App._wfUpdateSaveBtn(); }
   },
 
   wfRecordComplete(score, color) {
@@ -3744,6 +4400,426 @@ const APP_DATA = {
     // Ensure the annotation overlay will be re-opened on return
     this._lastBilanAnnotationOpen = true;
     this.goBackToBilanResults();
+  },
+
+  // ── RÉPERTOIRE — DATA ────────────────────────────────────────
+  // Schema: { folders: [{id, name, emoji, createdAt}], words: [{id, word, ipa, folderId, addedAt, source}] }
+  _repertoire: { folders: [], words: [] },
+
+  loadRepertoire() {
+    try {
+      const r = localStorage.getItem('phonetique_repertoire');
+      if (r) this._repertoire = JSON.parse(r);
+    } catch(e) {}
+    // Ensure default folder exists
+    if (!this._repertoire.folders) this._repertoire.folders = [];
+    if (!this._repertoire.words) this._repertoire.words = [];
+    if (!this._repertoire.folders.find(f => f.id === 'default')) {
+      this._repertoire.folders.unshift({ id: 'default', name: 'Mes mots', emoji: '📚', createdAt: Date.now() });
+    }
+  },
+
+  saveRepertoire() {
+    localStorage.setItem('phonetique_repertoire', JSON.stringify(this._repertoire));
+  },
+
+  repIsWordSaved(word) {
+    return this._repertoire.words.some(w => w.word.toLowerCase() === word.toLowerCase());
+  },
+
+  repAddWord(word, ipa, folderId = 'default') {
+    // Remove existing entry if present (re-add fresh)
+    this._repertoire.words = this._repertoire.words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
+    this._repertoire.words.unshift({
+      id: Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      word, ipa: ipa || '',
+      folderId,
+      addedAt: Date.now(),
+      source: 'mot-en-focus'
+    });
+    this.saveRepertoire();
+  },
+
+  repRemoveWord(wordId) {
+    this._repertoire.words = this._repertoire.words.filter(w => w.id !== wordId);
+    this.saveRepertoire();
+    this.renderRepertoire();
+  },
+
+  repMoveWord(wordId, newFolderId) {
+    const w = this._repertoire.words.find(w => w.id === wordId);
+    if (w) { w.folderId = newFolderId; this.saveRepertoire(); }
+    this.renderRepertoire();
+  },
+
+  repCreateFolder(name, emoji) {
+    const id = 'folder_' + Date.now();
+    this._repertoire.folders.push({ id, name, emoji: emoji || '📁', createdAt: Date.now() });
+    this.saveRepertoire();
+    return id;
+  },
+
+  repDeleteFolder(folderId) {
+    // Move words to default
+    this._repertoire.words.forEach(w => { if (w.folderId === folderId) w.folderId = 'default'; });
+    this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folderId);
+    this.saveRepertoire();
+    this.renderRepertoire();
+  },
+
+  repExport() {
+    const data = JSON.stringify(this._repertoire, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'repertoire_phonetique_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Répertoire exporté ✓');
+  },
+
+  repImport() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.folders && data.words) {
+            // Merge: keep existing words not in import, add new ones
+            const existingIds = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
+            const newWords = data.words.filter(w => !existingIds.has(w.word.toLowerCase()));
+            // Merge folders
+            const existingFolderIds = new Set(this._repertoire.folders.map(f => f.id));
+            const newFolders = data.folders.filter(f => !existingFolderIds.has(f.id) && f.id !== 'default');
+            this._repertoire.folders.push(...newFolders);
+            this._repertoire.words.unshift(...newWords);
+            this.saveRepertoire();
+            this.renderRepertoire();
+            this.showToast(`${newWords.length} mot(s) importé(s) ✓`);
+          } else {
+            this.showToast('Format de fichier invalide.');
+          }
+        } catch(e) { this.showToast('Erreur lors de l\'importation.'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
+  // ── RÉPERTOIRE — UI ──────────────────────────────────────────
+  _repOpenFolders: new Set(['default']),
+
+  renderRepertoire() {
+    // Ensure 'repertoire' is in navHistory so goBack() works from word-focus
+    if (this.navHistory.length === 0 || this.navHistory[this.navHistory.length - 1].screen !== 'repertoire') {
+      this.navHistory.push({ screen: 'repertoire', params: {} });
+    }
+    const words = this._repertoire.words;
+    const folders = this._repertoire.folders;
+    const totalWords = words.length;
+
+    // Recent words (last 5 added across all folders)
+    const recent = [...words].slice(0, 5);
+    const recentHtml = recent.length
+      ? recent.map(w => `
+          <div class="rep-recent-card" onclick="App._wfFromBilan=false;App.navigate('word-focus',{word:'${w.word.replace(/'/g,"\\'")}'})" title="Ouvrir dans Mot en Focus">
+            <div class="rep-recent-word">${w.word}</div>
+            ${w.ipa ? `<div class="rep-recent-ipa">${w.ipa}</div>` : ''}
+            <div class="rep-recent-date">${this._repFormatDate(w.addedAt)}</div>
+          </div>`).join('')
+      : `<div class="rep-empty-recent">Aucun mot encore sauvegardé.<br>Utilisez Mot en Focus pour commencer.</div>`;
+
+    // Folder sections
+    const foldersHtml = folders.map(folder => {
+      const folderWords = words.filter(w => w.folderId === folder.id);
+      const isOpen = this._repOpenFolders.has(folder.id);
+      const isDefault = folder.id === 'default';
+      return `
+        <div class="rep-folder" id="repFolder_${folder.id}">
+          <div class="rep-folder-header" onclick="App._repToggleFolder('${folder.id}')">
+            <span class="rep-folder-icon">${folder.emoji}</span>
+            <span class="rep-folder-name">${folder.name}</span>
+            <span class="rep-folder-count">${folderWords.length}</span>
+            ${!isDefault ? `<button onclick="event.stopPropagation();App._repDeleteFolderConfirm('${folder.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:6px;display:flex;align-items:center;" title="Supprimer le dossier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>` : ''}
+            <svg class="rep-folder-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="rep-folder-body ${isOpen ? 'open' : ''}">
+            <div class="rep-word-list">
+              ${folderWords.length ? folderWords.map(w => `
+                <div class="rep-word-row">
+                  <span class="rep-word-text" onclick="App._wfFromBilan=false;App.navigate('word-focus',{word:'${w.word.replace(/'/g,"\\'")}'})">${w.word}</span>
+                  <span class="rep-word-ipa">${w.ipa || ''}</span>
+                  <div class="rep-word-actions">
+                    <button class="rep-move-btn" onclick="App._repShowMoveOverlay('${w.id}')" title="Déplacer dans un dossier">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button class="rep-word-delete" onclick="App.repRemoveWord('${w.id}')" title="Supprimer">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>`).join('')
+              : `<div class="rep-folder-empty">Ce dossier est vide.</div>`}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('main').innerHTML = `
+      <div class="screen-header">
+        <button class="home-btn" onclick="App.navigate('labo')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:#14B8A6">
+            <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+            <line x1="9" y1="3" x2="15" y2="3"/>
+          </svg>
+        </button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+          <span style="font-size:11px;color:var(--text3)">${totalWords} mot${totalWords !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="screen-title" style="color:#14B8A6;flex:0">Le Répertoire</div>
+      </div>
+      <div class="repertoire-container">
+
+        <div>
+          <div class="rep-section-title">Ajouts récents</div>
+          <div class="rep-recent-strip">${recentHtml}</div>
+        </div>
+
+        <div>
+          <div class="rep-section-title">Dossiers</div>
+          <div class="rep-folders-area">
+            ${foldersHtml}
+            <button class="rep-new-folder-btn" onclick="App._repShowNewFolderOverlay()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              Nouveau dossier…
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="rep-section-title">Données</div>
+          <div class="rep-data-bar">
+            <button class="rep-data-btn" onclick="App.repExport()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exporter
+            </button>
+            <button class="rep-data-btn" onclick="App.repImport()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importer
+            </button>
+          </div>
+        </div>
+
+      </div>
+    `;
+  },
+
+  _repFormatDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'à l\'instant';
+    if (diff < 3600) return `il y a ${Math.floor(diff/60)} min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff/3600)} h`;
+    if (diff < 86400 * 7) return `il y a ${Math.floor(diff/86400)} j`;
+    return d.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+  },
+
+  _repToggleFolder(folderId) {
+    if (this._repOpenFolders.has(folderId)) {
+      this._repOpenFolders.delete(folderId);
+    } else {
+      this._repOpenFolders.add(folderId);
+    }
+    const body = document.querySelector(`#repFolder_${folderId} .rep-folder-body`);
+    const chev = document.querySelector(`#repFolder_${folderId} .rep-folder-chev`);
+    if (body) body.classList.toggle('open');
+    if (chev) chev.classList.toggle('open');
+  },
+
+  _repDeleteFolderConfirm(folderId) {
+    const folder = this._repertoire.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const count = this._repertoire.words.filter(w => w.folderId === folderId).length;
+    const msg = count > 0
+      ? `Supprimer le dossier "${folder.name}" ? Les ${count} mot(s) seront déplacés dans "Mes mots".`
+      : `Supprimer le dossier "${folder.name}" ?`;
+    if (confirm(msg)) this.repDeleteFolder(folderId);
+  },
+
+  _repShowNewFolderOverlay() {
+    const EMOJIS = ['📁','📂','🗂️','⭐','🔤','💬','🎯','🧠','💡','🎵','🏷️','📌'];
+    let selectedEmoji = '📁';
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Nouveau dossier</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+          ${EMOJIS.map(e => `<button onclick="App._repSelectEmoji(this,'${e}')" style="background:${e===selectedEmoji?'rgba(20,184,166,0.2)':'var(--surface)'};border:1px solid ${e===selectedEmoji?'#14B8A6':'var(--border)'};border-radius:8px;padding:6px 10px;cursor:pointer;font-size:18px;transition:all 0.15s">${e}</button>`).join('')}
+        </div>
+        <input class="rep-overlay-input" id="repFolderNameInput" type="text" placeholder="Nom du dossier…" maxlength="30" autocomplete="off">
+        <button class="rep-overlay-confirm" onclick="App._repConfirmNewFolder()">Créer le dossier</button>
+        <button class="rep-overlay-cancel" onclick="App._repCloseOverlay()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) App._repCloseOverlay(); });
+    setTimeout(() => document.getElementById('repFolderNameInput')?.focus(), 100);
+    this._repSelectedEmoji = selectedEmoji;
+  },
+
+  _repSelectEmoji(btn, emoji) {
+    this._repSelectedEmoji = emoji;
+    document.querySelectorAll('#repOverlay button[onclick*="_repSelectEmoji"]').forEach(b => {
+      b.style.background = 'var(--surface)';
+      b.style.borderColor = 'var(--border)';
+    });
+    btn.style.background = 'rgba(20,184,166,0.2)';
+    btn.style.borderColor = '#14B8A6';
+  },
+
+  _repConfirmNewFolder() {
+    const input = document.getElementById('repFolderNameInput');
+    const name = (input?.value || '').trim();
+    if (!name) { input?.focus(); return; }
+    this.repCreateFolder(name, this._repSelectedEmoji || '📁');
+    this._repCloseOverlay();
+    this.renderRepertoire();
+    this.showToast(`Dossier "${name}" créé ✓`);
+  },
+
+  _repShowSaveOverlay(word, ipa) {
+    const folders = this._repertoire.folders;
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Sauvegarder dans Le Répertoire</div>
+        <div class="rep-overlay-subtitle" style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
+        ${ipa ? `<div class="rep-overlay-subtitle" style="font-family:var(--font-display);font-size:12px;color:#14B8A6;margin-bottom:8px">${ipa}</div>` : ''}
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Choisir un dossier :</div>
+        ${folders.map(f => `
+          <button class="rep-overlay-folder-btn" onclick="App._repConfirmSave('${word.replace(/'/g,"\\'")}','${(ipa||'').replace(/'/g,"\\'")}','${f.id}')">
+            <span>${f.emoji}</span> ${f.name}
+            <span style="margin-left:auto;font-size:11px;color:var(--text3)">${this._repertoire.words.filter(w=>w.folderId===f.id).length} mot${this._repertoire.words.filter(w=>w.folderId===f.id).length!==1?'s':''}</span>
+          </button>`).join('')}
+        <button class="rep-overlay-folder-btn" onclick="App._repShowNewFolderFromSave('${word.replace(/'/g,"\\'")}','${(ipa||'').replace(/'/g,"\\'")}')" style="border-style:dashed;color:var(--text3)">
+          <span>📁</span> Nouveau dossier…
+        </button>
+        <button class="rep-overlay-cancel" onclick="App._repCloseOverlay()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) App._repCloseOverlay(); });
+  },
+
+  _repShowMoveOverlay(wordId) {
+    const wordEntry = this._repertoire.words.find(w => w.id === wordId);
+    if (!wordEntry) return;
+    const folders = this._repertoire.folders.filter(f => f.id !== wordEntry.folderId);
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Déplacer</div>
+        <div class="rep-overlay-subtitle">"${wordEntry.word}" → choisir un dossier :</div>
+        ${folders.map(f => `
+          <button class="rep-overlay-folder-btn" onclick="App.repMoveWord('${wordId}','${f.id}');App._repCloseOverlay()">
+            <span>${f.emoji}</span> ${f.name}
+          </button>`).join('')}
+        <button class="rep-overlay-cancel" onclick="App._repCloseOverlay()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) App._repCloseOverlay(); });
+  },
+
+  _repShowNewFolderFromSave(word, ipa) {
+    this._repCloseOverlay();
+    const EMOJIS = ['📁','📂','🗂️','⭐','🔤','💬','🎯','🧠','💡','🎵','🏷️','📌'];
+    let selectedEmoji = '📁';
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Nouveau dossier</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+          ${EMOJIS.map(e => `<button onclick="App._repSelectEmoji(this,'${e}')" style="background:${e===selectedEmoji?'rgba(20,184,166,0.2)':'var(--surface)'};border:1px solid ${e===selectedEmoji?'#14B8A6':'var(--border)'};border-radius:8px;padding:6px 10px;cursor:pointer;font-size:18px;transition:all 0.15s">${e}</button>`).join('')}
+        </div>
+        <input class="rep-overlay-input" id="repFolderNameInput" type="text" placeholder="Nom du dossier…" maxlength="30" autocomplete="off">
+        <button class="rep-overlay-confirm" onclick="App._repCreateAndSave('${word.replace(/'/g,"\\'")}','${ipa.replace(/'/g,"\\'")}')">Créer et sauvegarder</button>
+        <button class="rep-overlay-cancel" onclick="App._repCloseOverlay()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) App._repCloseOverlay(); });
+    setTimeout(() => document.getElementById('repFolderNameInput')?.focus(), 100);
+    this._repSelectedEmoji = selectedEmoji;
+  },
+
+  _repCreateAndSave(word, ipa) {
+    const input = document.getElementById('repFolderNameInput');
+    const name = (input?.value || '').trim();
+    if (!name) { input?.focus(); return; }
+    const folderId = this.repCreateFolder(name, this._repSelectedEmoji || '📁');
+    this._repCloseOverlay();
+    this._repConfirmSave(word, ipa, folderId);
+  },
+
+  _repConfirmSave(word, ipa, folderId) {
+    this.repAddWord(word, ipa, folderId);
+    this._repCloseOverlay();
+    this._wfUpdateSaveBtn();
+    const folderName = this._repertoire.folders.find(f => f.id === folderId)?.name || '';
+    this.showToast(`"${word}" ajouté${folderName ? ' dans ' + folderName : ''} ✓`);
+  },
+
+  _repCloseOverlay() {
+    const ol = document.getElementById('repOverlay');
+    if (ol) ol.remove();
+  },
+
+  // ── WF SAVE BUTTON ───────────────────────────────────────────
+  wfToggleSaveToRepertoire() {
+    const word = this._wfCurrentWord;
+    if (!word) return;
+    if (this.repIsWordSaved(word)) {
+      // Remove from repertoire
+      const entry = this._repertoire.words.find(w => w.word.toLowerCase() === word.toLowerCase());
+      if (entry) this.repRemoveWord(entry.id);
+      this._wfUpdateSaveBtn();
+      this.showToast(`"${word}" retiré du Répertoire`);
+    } else {
+      // Show folder picker
+      this._repShowSaveOverlay(word, this._wfCurrentIpa);
+    }
+  },
+
+  _wfUpdateSaveBtn() {
+    const btn = document.getElementById('wfSaveBtn');
+    if (!btn) return;
+    const saved = this.repIsWordSaved(this._wfCurrentWord);
+    if (saved) {
+      btn.classList.add('saved');
+      btn.title = 'Retiré du Répertoire';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="#14B8A6" stroke="#14B8A6" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20l-7-4-7 4V2z"/></svg>`;
+    } else {
+      btn.classList.remove('saved');
+      btn.title = 'Sauvegarder dans Le Répertoire';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20l-7-4-7 4V2z"/></svg>`;
+    }
   },
 
   showNoKeyMsg() {
@@ -3794,10 +4870,7 @@ const APP_DATA = {
         <button class="home-btn" onclick="App.navigate('home')">
           <span class="logo-ph">Ph</span><span class="logo-onetique">o</span>
         </button>
-        <button class="back-btn" onclick="App.navigate('category', {categoryId:'${p.category}'})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:${shade.accent}">${p.label}</div>
       </div>
@@ -3852,10 +4925,7 @@ const APP_DATA = {
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <button class="back-btn" onclick="App.navigate('phoneme', {phonemeId:'${phonemeId}'})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:${shade.accent}">Pratiquer</div>
       </div>
@@ -3916,6 +4986,34 @@ const APP_DATA = {
     `;
   },
 
+  _buildReadStrip(phonemeId, activeIdx, shade, showAiBtn) {
+    const BASE = 5;
+    const aiActive = activeIdx === 5;
+    const numBtns = [0,1,2,3,4].map(i => {
+      const isActive = i === activeIdx;
+      const size = isActive ? '32px' : '26px';
+      const fontSize = isActive ? '13px' : '11px';
+      const bg = isActive ? shade.accent : 'transparent';
+      const col = isActive ? '#000' : shade.accent;
+      return `<button class="pnum-btn${isActive ? ' pnum-active' : ''}"
+        style="width:${size};height:${size};font-size:${fontSize};background:${bg};border-color:${shade.accent};color:${col}"
+        onclick="App.swapPassageInPlace('${phonemeId}',${i})">${i + 1}</button>`;
+    }).join('');
+
+    const aiBtn = showAiBtn ? (() => {
+      const size = aiActive ? '32px' : '26px';
+      const fontSize = aiActive ? '11px' : '9px';
+      const bg = aiActive ? '#F59E0B' : 'transparent';
+      const col = aiActive ? '#000' : '#F59E0B';
+      const border = aiActive ? `2px solid #F59E0B` : `2px dashed #F59E0B`;
+      return `<button id="readAiBtn" class="pnum-btn${aiActive ? ' pnum-active' : ''}"
+        style="width:${size};height:${size};font-size:${fontSize};background:${bg};border:${border};color:${col}"
+        title="Passage IA" onclick="App.swapPassageInPlace('${phonemeId}',5)">IA</button>`;
+    })() : '';
+
+    return numBtns + aiBtn;
+  },
+
   // ── READ MODE ────────────────────────────────────────────────
   renderRead(phonemeId, passageIndex) {
     this.currentPhoneme = phonemeId;
@@ -3924,79 +5022,53 @@ const APP_DATA = {
     const shade = this.getPhonemeShade(phonemeId);
     const passages = this.getPassages(phonemeId);
     const passage = passages[passageIndex];
-    const total = passages.length;
-    const MAX_PASSAGES = 10;
-    const BASE_PASSAGES = 5;
-    const canAddMore = this.settings.openrouterKey && total < MAX_PASSAGES;
-    const isBonus = passageIndex >= BASE_PASSAGES;
+    const hasKey = !!this.settings.openrouterKey;
+    const hasAi = !!this.aiPassages[phonemeId];
+    const isAiSlot = passageIndex === 5;
+    const BASE = 5;
+    // total visible slots: always show AI button if key present or AI passage exists
+    const showAiBtn = hasKey || hasAi;
 
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <button class="back-btn" onclick="App.navigate('phoneme', {phonemeId:'${phonemeId}'})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:${shade.accent}">Lire & Écouter</div>
       </div>
       <div class="read-container">
 
-        <div class="read-num-strip">
-          ${(() => {
-            const showCount = 5;
-            const half = Math.floor(showCount / 2);
-            const allSlots = [...Array(total).keys()];
-            if (canAddMore) allSlots.push('add');
-            const totalSlots = allSlots.length;
-            let centre = Math.max(half, Math.min(passageIndex, totalSlots - 1 - half));
-            const visible = allSlots.slice(Math.max(0, centre - half), centre - half + showCount);
-            return visible.map(slot => {
-              if (slot === 'add') return `<button class="pnum-btn pnum-add" onclick="App.addBonusPassage('${phonemeId}')">+</button>`;
-              const isActive = slot === passageIndex;
-              const isBonus2 = slot >= BASE_PASSAGES;
-              const accent = isBonus2 ? '#F59E0B' : shade.accent;
-              const size = isActive ? '32px' : '26px';
-              const fontSize = isActive ? '13px' : '11px';
-              const bg = isActive ? accent : 'transparent';
-              const col = isActive ? (isBonus2 ? '#000' : '#000') : accent;
-              return `<button class="pnum-btn ${isActive ? 'pnum-active' : ''}"
-                style="width:${size};height:${size};font-size:${fontSize};background:${bg};border-color:${accent};color:${col}"
-                onclick="App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${slot}})">${slot + 1}</button>`;
-            }).join('');
-          })()}
+        <div class="read-num-strip" id="readNumStrip">
+          ${this._buildReadStrip(phonemeId, passageIndex, shade, showAiBtn)}
         </div>
 
         <div class="read-passage-wrap"
           id="readPassageWrap"
           data-phoneme="${phonemeId}"
           data-idx="${passageIndex}"
-          data-total="${total}"
-          data-canadd="${canAddMore}">
+          data-hasai="${showAiBtn}">
           <button class="read-chev read-chev-l ${passageIndex === 0 ? 'invisible' : ''}"
-            onclick="App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${passageIndex - 1}})"
+            onclick="App.swapPassageInPlace('${phonemeId}',${passageIndex - 1})"
             style="color:${shade.accent}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
 
-          <div class="passage-card ${isBonus ? 'bonus-passage' : ''}" style="--cat-color:${shade.color};--cat-accent:${shade.accent}">
-            ${isBonus ? `<div class="bonus-badge">✨ Bonus ${passageIndex - BASE_PASSAGES + 1}/5</div>` : ''}
-            <div class="passage-text" id="passageText">${this.highlightPassage(passage.text, phonemeId)}</div>
+          <div class="passage-card ${isAiSlot ? 'bonus-passage' : ''}" style="--cat-color:${shade.color};--cat-accent:${shade.accent}">
+            ${isAiSlot ? `<div class="bonus-badge" style="color:#F59E0B">✨ Passage IA</div>` : ''}
+            <div class="passage-text" id="passageText">${passage ? this.highlightPassage(passage.text, phonemeId) : ''}</div>
             <div class="passage-actions">
               <button class="passage-listen-btn" onclick="App.speakCurrentPassage()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
               </button>
-              ${(this.settings.openrouterKey && isBonus) ? `
-              <button class="generate-btn" onclick="App.generateNewPassage('${phonemeId}', ${passageIndex})" title="Régénérer">
+              ${isAiSlot && hasKey ? `
+              <button class="generate-btn" id="readAiRegen" onclick="App.generateAiPassage('${phonemeId}')" title="Régénérer (IA)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               </button>` : ''}
             </div>
           </div>
 
-          <button class="read-chev read-chev-r ${passageIndex >= total - 1 && !canAddMore ? 'invisible' : ''}"
-            onclick="${passageIndex < total - 1
-              ? `App.navigate('mode-read',{phonemeId:'${phonemeId}',passageIndex:${passageIndex + 1}})`
-              : `App.addBonusPassage('${phonemeId}')`}"
+          <button class="read-chev read-chev-r ${(!showAiBtn && passageIndex >= BASE - 1) || (showAiBtn && passageIndex >= 5) ? 'invisible' : ''}"
+            onclick="App.swapPassageInPlace('${phonemeId}',${passageIndex + 1})"
             style="color:${shade.accent}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -4038,39 +5110,173 @@ const APP_DATA = {
       if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
       const phonemeId = wrap.dataset.phoneme;
       const idx = parseInt(wrap.dataset.idx);
-      const total = parseInt(wrap.dataset.total);
-      const canAdd = wrap.dataset.canadd === 'true';
-      if (dx < 0) {
-        if (idx < total - 1) App.navigate('mode-read', { phonemeId, passageIndex: idx + 1 });
-        else if (canAdd) App.addBonusPassage(phonemeId);
-      } else {
-        if (idx > 0) App.navigate('mode-read', { phonemeId, passageIndex: idx - 1 });
-      }
+      const hasAi = wrap.dataset.hasai === 'true';
+      const maxIdx = hasAi ? 5 : 4;
+      if (dx < 0) { if (idx < maxIdx) App.swapPassageInPlace(phonemeId, idx + 1); }
+      else        { if (idx > 0)      App.swapPassageInPlace(phonemeId, idx - 1); }
     }, { passive: true });
   },
 
-  async addBonusPassage(phonemeId) {
-    if (!this.settings.openrouterKey) return;
+  // Swap passage card + number strip without redrawing the whole screen
+  swapPassageInPlace(phonemeId, newIdx) {
+    const shade = this.getPhonemeShade(phonemeId);
     const passages = this.getPassages(phonemeId);
-    if (passages.length >= 10) { this.showToast('Maximum 10 passages atteint.'); return; }
+    const hasKey = !!this.settings.openrouterKey;
+    const hasAi = !!this.aiPassages[phonemeId];
+    const showAiBtn = hasKey || hasAi;
+    const isAiSlot = newIdx === 5;
+    const maxIdx = showAiBtn ? 5 : 4;
+
+    // If navigating to AI slot but no passage yet, trigger generation instead
+    if (isAiSlot && !hasAi && hasKey) {
+      this.generateAiPassage(phonemeId);
+      return;
+    }
+
+    const passage = passages[newIdx];
+    if (!passage) return;
+
+    this.currentPassageIndex = newIdx;
+
+    // ── Bilan strip (if we're on the bilan screen — handled by selectBilanPassage) ──
+    const bilanStrip = document.getElementById('bilanNumStrip');
+    if (bilanStrip) return;
+
+    // ── Read strip ──
+    const strip = document.getElementById('readNumStrip');
+    if (strip) strip.innerHTML = this._buildReadStrip(phonemeId, newIdx, shade, showAiBtn);
+
+    // Update passage wrap
+    const wrap = document.getElementById('readPassageWrap');
+    if (wrap) {
+      wrap.dataset.idx = newIdx;
+      wrap.dataset.hasai = showAiBtn;
+
+      // Left chevron
+      const chevL = wrap.querySelector('.read-chev-l');
+      if (chevL) {
+        chevL.className = `read-chev read-chev-l${newIdx === 0 ? ' invisible' : ''}`;
+        chevL.onclick = () => App.swapPassageInPlace(phonemeId, newIdx - 1);
+      }
+
+      // Right chevron
+      const chevR = wrap.querySelector('.read-chev-r');
+      if (chevR) {
+        const atEnd = newIdx >= maxIdx;
+        chevR.className = `read-chev read-chev-r${atEnd ? ' invisible' : ''}`;
+        chevR.onclick = () => App.swapPassageInPlace(phonemeId, newIdx + 1);
+      }
+
+      // Swap card content
+      const card = wrap.querySelector('.passage-card');
+      if (card) {
+        card.className = `passage-card${isAiSlot ? ' bonus-passage' : ''}`;
+        const textEl = card.querySelector('#passageText');
+        if (textEl) textEl.innerHTML = this.highlightPassage(passage.text, phonemeId);
+
+        // Badge
+        const badge = card.querySelector('.bonus-badge');
+        if (isAiSlot && !badge) {
+          const b = document.createElement('div');
+          b.className = 'bonus-badge';
+          b.style.color = '#F59E0B';
+          b.textContent = '✨ Passage IA';
+          card.prepend(b);
+        } else if (!isAiSlot && badge) {
+          badge.remove();
+        }
+
+        // Regen button in actions
+        const actions = card.querySelector('.passage-actions');
+        if (actions) {
+          const existingRegen = actions.querySelector('#readAiRegen');
+          if (isAiSlot && hasKey && !existingRegen) {
+            const btn = document.createElement('button');
+            btn.className = 'generate-btn'; btn.id = 'readAiRegen'; btn.title = 'Régénérer (IA)';
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+            btn.onclick = () => App.generateAiPassage(phonemeId);
+            actions.appendChild(btn);
+          } else if (!isAiSlot && existingRegen) {
+            existingRegen.remove();
+          }
+        }
+      }
+    }
+
+    // Reset recording UI
+    const scoreArea = document.getElementById('scoreArea');
+    const playbackArea = document.getElementById('playbackArea');
+    const status = document.getElementById('recordingStatus');
+    if (scoreArea) { scoreArea.classList.add('hidden'); scoreArea.innerHTML = ''; }
+    if (playbackArea) playbackArea.classList.add('hidden');
+    if (status) { status.classList.add('hidden'); status.innerHTML = ''; }
+    const recordBtn = document.getElementById('recordBtn');
+    if (recordBtn) {
+      recordBtn.disabled = false;
+      const lbl = recordBtn.querySelector('.record-label');
+      if (lbl) lbl.textContent = 'Enregistrer ma lecture';
+      recordBtn.onclick = () => App.toggleRecording(phonemeId, 'read', newIdx);
+    }
+  },
+
+  async generateAiPassage(phonemeId) {
+    if (!this.settings.openrouterKey) return;
     const p = APP_DATA.phonemes[phonemeId];
-    const newIdx = passages.length;
-    this.navigate('mode-read', { phonemeId, passageIndex: newIdx - 1 });
-    const difficulty = Math.min(newIdx - 3, 5);
-    const prompt = "Écris un passage en français de 4 à 6 phrases contenant beaucoup d'exemples du son " + p.ipa + " (" + p.label + "). Les graphies courantes pour ce son incluent : " + p.graphies.join(', ') + ". Difficulté : niveau avancé (vocabulaire riche, phrases complexes). IMPORTANT: texte brut uniquement, sans astérisques ni formatage markdown.";
+
+    // Show loading state on the AI button
+    const aiBtn = document.getElementById('readAiBtn');
+    if (aiBtn) { aiBtn.disabled = true; aiBtn.style.opacity = '0.4'; aiBtn.textContent = '…'; }
+
+    // Build a phoneme-specific few-shot example from the phoneme's own passages
+    // Use passage[1] and passage[2] as concrete examples of correct length AND sound density
+    const passages = APP_DATA.phonemes[phonemeId]?.passages || [];
+    const ex1 = passages[1]?.text || '';
+    const ex2 = passages[2]?.text || '';
+    const exampleWords = (p.exemples || []).join(', ');
+
+    const systemPrompt = `Tu génères de courts passages de pratique de prononciation française (canadienne). Règles strictes :
+- 2 à 3 phrases courtes, 30 à 50 mots au total
+- Texte brut uniquement, pas de markdown
+- OBJECTIF PRINCIPAL : faire rimer ou résonner le son ${p.ipa} (${p.label}) — le passage doit en être SATURÉ. Vise au moins 6 à 8 mots contenant ce son.
+- Graphies cibles à utiliser : ${p.graphies.join(', ')}
+- Mots de référence pour ce son : ${exampleWords}
+- Tu peux utiliser quelques mots de liaison neutres pour que les phrases aient du sens, mais le son ${p.ipa} doit dominer
+- Varie les mots : ne répète pas les mots des exemples ci-dessous
+
+Exemples de passages bien construits pour ce son :
+
+Exemple A : ${ex1}
+
+Exemple B : ${ex2}
+
+Génère un NOUVEAU passage de même longueur, fortement concentré sur le son ${p.ipa}, avec des mots qui résonnent ensemble. Réponds avec UNIQUEMENT le texte du passage.`;
+
     try {
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + this.settings.openrouterKey, 'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
-        body: JSON.stringify({ model: this.settings.openrouterModel, messages: [{ role: 'user', content: prompt }], max_tokens: 300 }),
+        body: JSON.stringify({
+          model: this.settings.openrouterModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Génère un nouveau passage.' }
+          ],
+          max_tokens: 130,
+        }),
       });
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content?.trim().replace(/\*/g, '');
+      const text = data.choices?.[0]?.message?.content?.trim().replace(/\*/g, '').replace(/_{1,2}([^_]+)_{1,2}/g, '$1').trim();
       if (text) {
-        APP_DATA.phonemes[phonemeId].passages.push({ id: phonemeId + '_bonus_' + newIdx, text, generated: true });
-        this.navigate('mode-read', { phonemeId, passageIndex: newIdx });
+        this.aiPassages[phonemeId] = text;
+        this.saveAiPassages();
+        // Swap to slot 5 in-place
+        this.swapPassageInPlace(phonemeId, 5);
       }
-    } catch(e) { console.error('Bonus passage error:', e); }
+    } catch(e) {
+      console.error('AI passage error:', e);
+    }
+    const aiBtn2 = document.getElementById('readAiBtn');
+    if (aiBtn2) { aiBtn2.disabled = false; aiBtn2.style.opacity = ''; aiBtn2.textContent = 'IA'; }
   },
 
   // ── COMPARE MODE ─────────────────────────────────────────────
@@ -4088,9 +5294,9 @@ const APP_DATA = {
           <div class="compare-card active-card" style="--cat-color:${shade.color};--cat-accent:${shade.accent}">
             <div class="compare-ipa">${p.ipa}</div>
             <div class="compare-label">${p.label}</div>
-            <button class="compare-listen" onclick="App.speakText('${p.targetWord}', true)">
+            <button class="compare-listen" onclick="App.speakText('${p.practiceWords[0][0]}', true)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-              ${p.targetWord}
+              ${p.practiceWords[0][0]}
             </button>
           </div>
           <div class="compare-vs">VS</div>
@@ -4101,9 +5307,9 @@ const APP_DATA = {
               <div class="compare-card" style="--cat-color:${ccat.color};--cat-accent:${ccat.accent}">
                 <div class="compare-ipa">${cp.ipa}</div>
                 <div class="compare-label">${cp.label}</div>
-                <button class="compare-listen" onclick="App.speakText('${cp.targetWord}', true)">
+                <button class="compare-listen" onclick="App.speakText('${cp.practiceWords[0][0]}', true)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                  ${cp.targetWord}
+                  ${cp.practiceWords[0][0]}
                 </button>
                 <button class="compare-goto" onclick="App.navigate('phoneme',{phonemeId:'${confId}'})">
                   Aller à ce son →
@@ -4118,10 +5324,7 @@ const APP_DATA = {
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <button class="back-btn" onclick="App.navigate('phoneme', {phonemeId:'${phonemeId}'})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:${shade.accent}">Comparer</div>
       </div>
@@ -4141,10 +5344,7 @@ const APP_DATA = {
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
-        <button class="back-btn" onclick="App.navigate('phoneme', {phonemeId:'${phonemeId}'})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:${shade.accent}">Test</div>
       </div>
@@ -4292,7 +5492,7 @@ const APP_DATA = {
       if (!data) return `<span class="ann-word ann-neutral ann-tappable" ${lpAttr} onclick="App.speakText('${stripped.replace(/'/g,"\\'")}')"> ${token}</span>`;
       const s = data.score;
       const cls = data.error==="Omission"?"ann-omission":s>=85?"ann-good":s>=65?"ann-ok":"ann-bad";
-      const tip = data.error==="Omission"?"Non détecté":`${Math.round(this.remapScore(s))}%`;
+      const tip = data.error==="Omission"?"Non détecté":`${Math.round(s)}%`;
       return `<span class="ann-word ${cls} ann-tappable" ${lpAttr} onclick="App.speakText('${stripped.replace(/'/g,"\\'")}')"> ${token}<span class="ann-score">${tip}</span></span>`;
     }).join("");
     const overlay = document.createElement("div");
@@ -4304,9 +5504,105 @@ const APP_DATA = {
   },
 
   // ── BILAN ─────────────────────────────────────────────────────
+  _buildBilanStrip(idx, hasKey, aiReady) {
+    const accent = '#C084FC';
+    const btns = BILAN_PASSAGES.map((p, i) => {
+      const isActive = idx === i;
+      const size = isActive ? '32px' : '26px';
+      const fontSize = isActive ? '13px' : '11px';
+      const bg = isActive ? accent : 'transparent';
+      const col = isActive ? '#000' : accent;
+      return `<button class="pnum-btn${isActive ? ' pnum-active' : ''}"
+        style="width:${size};height:${size};font-size:${fontSize};background:${bg};border-color:${accent};color:${col}"
+        onclick="App.selectBilanPassage(${i})">${i + 1}</button>`;
+    }).join('');
+
+    const aiBtn = (hasKey || aiReady) ? (() => {
+      const isActive = idx === 5;
+      const size = isActive ? '32px' : '26px';
+      const fontSize = isActive ? '11px' : '9px';
+      const bg = isActive ? '#F59E0B' : 'transparent';
+      const col = isActive ? '#000' : '#F59E0B';
+      const border = isActive ? `2px solid #F59E0B` : `2px dashed #F59E0B`;
+      return `<button class="pnum-btn${isActive ? ' pnum-active' : ''}"
+        style="width:${size};height:${size};font-size:${fontSize};background:${bg};border:${border};color:${col}"
+        title="Passage IA" onclick="App.selectBilanPassage(5)">IA</button>`;
+    })() : '';
+
+    return `<div class="bilan-num-strip" id="bilanNumStrip">${btns}${aiBtn}</div>`;
+  },
+
   renderBilan() {
-    const hasPassage = !!this.bilanPassage;
     const hasKey = !!this.settings.openrouterKey;
+    const idx = this.bilanPassageIndex;
+    const activeText = this.getActiveBilanPassage();
+    const isAiSlot = idx === 5;
+    const aiReady = isAiSlot && !!activeText;
+
+    const stripHTML = this._buildBilanStrip(idx, hasKey, aiReady);
+
+    const maxBilanIdx = (hasKey || aiReady) ? 5 : 4;
+    const passageCardHTML = (isAiSlot && !activeText) ? `
+      <div class="read-passage-wrap" style="align-items:flex-start">
+        <button class="read-chev read-chev-l" onclick="App.selectBilanPassage(${idx - 1})" style="color:#C084FC;margin-top:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div style="flex:1">
+          <div class="bilan-empty" style="padding:20px 0 8px">
+            <p style="color:var(--text2);margin-bottom:16px;font-size:13px">Aucun passage IA — cliquez sur Générer.</p>
+            <button class="generate-passage-btn" id="genBtn" onclick="App.generateBilanPassage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 0-2.12-9.36L23 10"/></svg>
+              Générer un passage (IA)
+            </button>
+          </div>
+        </div>
+        <button class="read-chev read-chev-r invisible" style="color:#C084FC;margin-top:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>` : `
+      <div class="read-passage-wrap" style="align-items:flex-start">
+        <button class="read-chev read-chev-l${idx === 0 ? ' invisible' : ''}" onclick="App.selectBilanPassage(${idx - 1})" style="color:#C084FC;margin-top:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="bilan-passage-card" id="bilanPassageCard" style="flex:1;min-width:0">
+          ${isAiSlot ? `<div class="bonus-badge" style="color:#F59E0B">✨ Passage IA</div>` : ''}
+          <div class="passage-text">${activeText}</div>
+          <div class="passage-actions">
+            <button class="bilan-action-btn" id="speakerBtn" onclick="App.playRecording()" title="Réécouter" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+            <button class="bilan-action-btn" id="eyeBtn" onclick="App.toggleBilanAnnotation()" title="Voir les détails par mot" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="bilan-action-btn" id="trashBtn" onclick="App.clearBilanResults()" title="Effacer les résultats" style="display:none;color:#F87171;border-color:rgba(248,113,113,0.3)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+            ${isAiSlot && hasKey ? `
+            <button class="bilan-action-btn" id="genBtn" onclick="App.generateBilanPassage()" title="Regénérer (IA)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 12a9 9 0 1 1-9-9c2.39 0 4.68.94 6.36 2.64L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+            </button>` : ''}
+          </div>
+        </div>
+        <button class="read-chev read-chev-r${idx >= maxBilanIdx ? ' invisible' : ''}" onclick="App.selectBilanPassage(${idx + 1})" style="color:#C084FC;margin-top:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="bilan-tip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Lisez tout le passage d'une traite !
+      </div>
+      <div class="record-section">
+        <button class="record-btn" id="recordBtn" onclick="App.toggleRecording('__bilan__', 'bilan')">
+          <div class="record-btn-inner" style="background:linear-gradient(135deg,#0F4C75,#48CAE4)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          </div>
+          <div class="record-label">Commencer le diagnostic</div>
+        </button>
+        <div id="recordingStatus" class="recording-status hidden"></div>
+        <div id="playbackArea" class="playback-area hidden"></div>
+        <div id="scoreArea" class="score-area hidden"></div>
+      </div>`;
+
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
@@ -4315,50 +5611,25 @@ const APP_DATA = {
         <div class="screen-title" style="color:#C084FC">Bilan</div>
       </div>
       <div class="bilan-container">
-        ${hasPassage ? `
-        <div class="bilan-passage-card" id="bilanPassageCard">
-          <div class="passage-text">${this.bilanPassage}</div>
-          <div class="passage-actions">
-            <button class="bilan-action-btn" id="speakerBtn" onclick="App.playRecording()" title="Réécouter" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            </button>
-            <button class="bilan-action-btn" id="eyeBtn" onclick="App.toggleBilanAnnotation()" title="Voir les détails par mot" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-            ${hasKey ? `
-            <button class="bilan-action-btn" id="genBtn" onclick="App.generateBilanPassage()" title="Nouveau passage (IA)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 12a9 9 0 1 1-9-9c2.39 0 4.68.94 6.36 2.64L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
-            </button>` : ''}
-          </div>
-        </div>
-        <div class="bilan-tip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Lisez tout le passage d'une traite !
-        </div>
-        <div class="record-section">
-          <button class="record-btn" id="recordBtn" onclick="App.toggleRecording('__bilan__', 'bilan')">
-            <div class="record-btn-inner" style="background:linear-gradient(135deg,#0F4C75,#48CAE4)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
-            </div>
-            <div class="record-label">Commencer le diagnostic</div>
-          </button>
-          <div id="recordingStatus" class="recording-status hidden"></div>
-          <div id="playbackArea" class="playback-area hidden"></div>
-          <div id="scoreArea" class="score-area hidden"></div>
-        </div>` : `
-        <div class="bilan-empty">
-          <div style="font-size:48px;margin-bottom:12px">🔬</div>
-          <p style="color:var(--text2);margin-bottom:16px">Générez un passage pour commencer votre diagnostic.</p>
-          ${hasKey ? `<button class="generate-passage-btn" id="genBtn" onclick="App.generateBilanPassage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 0-2.12-9.36L23 10"/></svg> Générer un passage (IA)</button>` : `<p style="font-size:12px;color:var(--text2)">Ajoutez une clé OpenRouter dans les paramètres pour générer un passage.</p>`}
-        </div>`}
+        ${stripHTML}
+        ${passageCardHTML}
       </div>
     `;
   },
 
   async generateBilanPassage() {
     const btn = document.getElementById('genBtn');
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
-    const prompt = `Écris un passage en français de 3 à 4 phrases courtes (maximum 50 mots au total) conçu pour tester les sons difficiles du français. Inclus naturellement: des voyelles nasales (en/an, in, on), le son U et EU, le R français, et au moins une liaison obligatoire. Le texte doit être simple, cohérent, et facile à lire à voix haute. IMPORTANT: Maximum 50 mots. Réponds avec UNIQUEMENT du texte brut, sans aucun formatage markdown, sans astérisques. Texte simple uniquement.`;
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; btn.textContent = '...'; }
+
+    // Few-shot examples anchor the model to the right length (~35–50 words)
+    const systemPrompt = `Tu génères de courts passages de pratique de prononciation française (canadienne). Chaque passage : 1 à 3 phrases, 30 à 50 mots au total. Pas de formatage markdown. Texte brut uniquement. Inclus naturellement des voyelles nasales, le son U/EU, le R français et une liaison. Exemples de longueur cible :
+
+Exemple A : « Jean prend un bon repas en plein air : du poulet rôti, des légumes frais et un verre de lait froid. Il mange lentement, puis il dit merci en souriant à son vieux voisin. »
+
+Exemple B : « Tu dis à Didier que tu étudies du thé et du sucre, que tu dînes tôt dans une petite rue du Vieux-Québec, près du fleuve. »
+
+Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le texte du passage.`;
+
     try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -4369,20 +5640,36 @@ const APP_DATA = {
         },
         body: JSON.stringify({
           model: this.settings.openrouterModel,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 300,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Génère un nouveau passage.' }
+          ],
+          max_tokens: 120,
         }),
       });
       const data = await response.json();
-      const text = data.choices?.[0]?.message?.content?.trim().replace(/\*/g, '').replace(/_{1,2}([^_]+)_{1,2}/g, '$1').trim();
+      const text = data.choices?.[0]?.message?.content
+        ?.trim()
+        .replace(/\*/g, '')
+        .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
+        .trim();
       if (text) {
-        this.bilanPassage = text;
+        this.bilanAiPassage = text;
+        this.bilanPassageIndex = 5;
         this.saveDiagScores();
+        // Clear old results so the new passage starts fresh
+        this._lastBilanScore = null;
+        this._lastBilanPa = null;
+        this._lastBilanWords = null;
+        this._lastBilanAnnotationOpen = false;
+        this._bilanWords = null;
         this.renderBilan();
+      } else {
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Réessayer'; }
       }
     } catch(e) {
       console.error('Bilan generation error:', e);
-      if (btn) { btn.disabled = false; btn.textContent = 'Réessayer'; }
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Réessayer'; }
     }
   },
 
@@ -4397,7 +5684,17 @@ const APP_DATA = {
 
     words.forEach(w => {
       const wText = (w.Word || '').toLowerCase();
-      const score = w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      const wpa = w.PronunciationAssessment;
+      const error = wpa?.ErrorType ?? w.ErrorType ?? 'None';
+      // Skip pure insertions (Azure hallucinated a word not in the reference)
+      if (error === 'Insertion') return;
+      // Omissions score 0; all others use raw AccuracyScore
+      let score;
+      if (error === 'Omission') {
+        score = 0;
+      } else {
+        score = wpa?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      }
       
       let cat = 'moyennes'; 
       for (const [graphie, category] of Object.entries(graphieToCat)) {
@@ -4414,7 +5711,7 @@ const APP_DATA = {
 
     APP_DATA.categories.forEach(c => {
       if (catCounts[c.id] > 0) {
-        const final = Math.round(this.remapScore(catScores[c.id] / catCounts[c.id]));
+        const final = Math.round(catScores[c.id] / catCounts[c.id]);
         this.bilanScores[c.id] = final;
         this.bilanBestScores[c.id] = Math.max(final, this.bilanBestScores[c.id] || 0);
       }
@@ -4471,6 +5768,8 @@ const APP_DATA = {
       const b = document.getElementById(id);
       if (b) b.disabled = false;
     });
+    const trashBtn = document.getElementById('trashBtn');
+    if (trashBtn) trashBtn.style.display = '';
   },
       
   toggleBilanAnnotation() {
@@ -4484,7 +5783,7 @@ const APP_DATA = {
       if (!card.querySelector('.passage-text')) {
         const pt = document.createElement('div');
         pt.className = 'passage-text';
-        pt.innerHTML = this.bilanPassage || '';
+        pt.innerHTML = this.getActiveBilanPassage() || '';
         const actions = card.querySelector('.passage-actions');
         if (actions) card.insertBefore(pt, actions);
         else card.prepend(pt);
@@ -4495,16 +5794,21 @@ const APP_DATA = {
 
     const words = this._bilanWords || [];
     const wordScores = {};
+    const isFrCAann = App.settings?.frVariant === 'fr-CA';
     words.forEach(w => {
       const key = (w.Word || '').toLowerCase();
-      // SDK nests scores under w.PronunciationAssessment; REST API puts them directly on w
-      const pa = w.PronunciationAssessment;
-      const score = pa?.AccuracyScore ?? w.AccuracyScore ?? 0;
-      const error = pa?.ErrorType ?? w.ErrorType ?? 'None';
-      wordScores[key] = { score, error };
+      const wpa = w.PronunciationAssessment;
+      const error = wpa?.ErrorType ?? w.ErrorType ?? 'None';
+      if (error === 'Insertion') {
+        console.log(`📝 Annotation word: "${w.Word}" SKIPPED (Insertion)`);
+        return;
+      }
+      const rawScore = wpa?.AccuracyScore ?? w.AccuracyScore ?? 0;
+      wordScores[key] = { score: rawScore, rawScore, error, frCACalibrated: false };
+      console.log(`📝 Annotation word: "${w.Word}" score=${rawScore} error=${error}`);
     });
 
-    const passage = this.bilanPassage || '';
+    const passage = this.getActiveBilanPassage() || '';
     const annotated = passage.split(/(\s+)/).map(token => {
       if (/^\s+$/.test(token)) return token;
       // Strip ALL leading/trailing punctuation (quotes, dashes, «», ?, !, . etc)
@@ -4523,12 +5827,13 @@ const APP_DATA = {
       const longPressAttr = stripped ? `data-wf="${stripped.replace(/"/g,'&quot;')}"` : '';
       if (!data) return `<span class="ann-word ann-neutral ann-tappable" ${longPressAttr} onclick="App.speakText('${speakWord}')" title="🔊 Écouter — maintenir pour focus">${token}</span>`;
       const s = data.score;
-      const cls = data.error === 'Omission' ? 'ann-omission'
-                : s >= 85 ? 'ann-good'
-                : s >= 65 ? 'ann-ok'
-                : 'ann-bad';
-      const tooltip = data.error === 'Omission' ? 'Non détecté'
-                    : `${Math.round(this.remapScore(s))}%`;
+      let cls;
+      if (data.error === 'Omission' || data.error === 'Insertion') {
+        cls = 'ann-omission';
+      } else {
+        cls = s >= 85 ? 'ann-good' : s >= 55 ? 'ann-ok' : 'ann-bad';
+      }
+      const tooltip = data.error === 'Omission' ? 'Non détecté' : `${Math.round(s)}%`;
       return `<span class="ann-word ${cls} ann-tappable" ${longPressAttr} onclick="App.speakText('${speakWord}')" title="🔊 ${tooltip} — maintenir pour focus">${token}<span class="ann-score">${tooltip}</span></span>`;
     }).join('');
 
@@ -4828,15 +6133,27 @@ const APP_DATA = {
   speakText(text, slow = false) {
     const SpeechSDK = window.SpeechSDK;
     console.log(`[TTS] speakText called. text="${text}", slow=${slow}, SDK=${!!SpeechSDK}, key=${!!this.settings.azureKey}, region=${this.settings.azureRegion}`);
+    // Always cancel browser TTS
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    // Stop any active playRecording audio too
+    if (this._playbackAudio) {
+      this._playbackAudio.pause();
+      this._playbackAudio.currentTime = 0;
+      this._playbackAudio = null;
+    }
+    // Cancel any in-flight Azure TTS — stop audio first, then close
+    if (this._ttssynth) {
+      const old = this._ttssynth;
+      this._ttssynth = null;
+      try {
+        old.stopSpeakingAsync(
+          () => { try { old.close(); } catch(e) {} },
+          ()  => { try { old.close(); } catch(e) {} }
+        );
+      } catch(e) { try { old.close(); } catch(e2) {} }
+    }
     if (SpeechSDK && this.settings.azureKey && this.settings.azureRegion) {
       // ── Azure Neural TTS ──────────────────────────────────────
-      // Cancel any ongoing browser TTS just in case
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      // Stop any previous Azure synth
-      if (this._ttssynth) {
-        try { this._ttssynth.close(); } catch(e) {}
-        this._ttssynth = null;
-      }
       const isCA = this.settings.frVariant === 'fr-CA';
       const voiceName = isCA ? 'fr-CA-SylvieNeural' : 'fr-FR-DeniseNeural';
       const rate = slow ? '0.8' : '1.0';
@@ -4897,7 +6214,46 @@ const APP_DATA = {
     }
   },
 
+  clearBilanResults() {
+    // Wipe previous bilan attempt so we start fresh
+    this._lastBilanScore = null;
+    this._lastBilanPa = null;
+    this._lastBilanWords = null;
+    this._lastBilanAnnotationOpen = false;
+    this._bilanWords = null;
+    // Close annotation overlay if open
+    const card = document.getElementById('bilanPassageCard');
+    if (card) {
+      const overlay = card.querySelector('.annotation-overlay');
+      if (overlay) overlay.remove();
+      if (!card.querySelector('.passage-text')) {
+        const pt = document.createElement('div');
+        pt.className = 'passage-text';
+        pt.innerHTML = this.getActiveBilanPassage() || '';
+        const actions = card.querySelector('.passage-actions');
+        if (actions) card.insertBefore(pt, actions);
+        else card.prepend(pt);
+      }
+    }
+    // Reset UI
+    const scoreArea = document.getElementById('scoreArea');
+    const playbackArea = document.getElementById('playbackArea');
+    const status = document.getElementById('recordingStatus');
+    if (scoreArea) { scoreArea.classList.add('hidden'); scoreArea.innerHTML = ''; }
+    if (playbackArea) playbackArea.classList.add('hidden');
+    if (status) { status.classList.add('hidden'); status.innerHTML = ''; }
+    // Disable action buttons until new attempt completes
+    ['eyeBtn', 'speakerBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = true;
+    });
+    const trashBtn = document.getElementById('trashBtn');
+    if (trashBtn) trashBtn.style.display = 'none';
+    console.log('🗑️ Bilan results cleared for fresh attempt');
+  },
+
   async startRecording(phonemeId, mode, passageIndex) {
+    if (mode === 'bilan') this.clearBilanResults();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
       this.audioChunks = [];
@@ -4973,8 +6329,8 @@ const APP_DATA = {
       this.showSimpleScore(phonemeId, mode, "Veuillez écrire une phrase avant d'enregistrer.");
       return;
     }
-    if (mode === 'bilan' && !this.bilanPassage?.trim()) {
-      this.showSimpleScore(phonemeId, mode, "Veuillez d'abord générer un passage.");
+    if (mode === 'bilan' && !this.getActiveBilanPassage()?.trim()) {
+      this.showSimpleScore(phonemeId, mode, "Veuillez d'abord sélectionner un passage.");
       return;
     }
     if (!window.SpeechSDK) {
@@ -4989,7 +6345,10 @@ const APP_DATA = {
     }
     try {
       const { blob: wavBlob, sampleRate } = await this.toWav(this.recordingAudioBlob);
-      this.wavAudioBlob = wavBlob; 
+      this.wavAudioBlob = wavBlob;
+      // Keep bilan recording separate so réécouter always plays the bilan attempt,
+      // even after going into word-focus and back
+      if (mode === 'bilan') this._bilanWavBlob = wavBlob;
       console.log(`WAV blob ready: ${wavBlob.size} bytes at ${sampleRate}Hz`);
 
       return await this._sendToAzure(phonemeId, mode, passageIndex, wavBlob, false, sampleRate);
@@ -5000,16 +6359,30 @@ const APP_DATA = {
   },
 
   playRecording() {
-    // FIX: Play the exact WAV file generated for Azure, so you hear what Azure hears!
-    if (this.wavAudioBlob) {
-      const url = URL.createObjectURL(this.wavAudioBlob);
-      const audio = new Audio(url);
-      audio.play();
-    } else if (this.recordingAudioBlob) {
-      const url = URL.createObjectURL(this.recordingAudioBlob);
-      const audio = new Audio(url);
-      audio.play();
+    // Stop any currently playing playback audio first
+    if (this._playbackAudio) {
+      this._playbackAudio.pause();
+      this._playbackAudio.currentTime = 0;
+      this._playbackAudio = null;
     }
+    // Also stop any Azure TTS and browser TTS
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (this._ttssynth) {
+      const old = this._ttssynth;
+      this._ttssynth = null;
+      try { old.stopSpeakingAsync(() => { try { old.close(); } catch(e) {} }, () => { try { old.close(); } catch(e) {} }); } catch(e) {}
+    }
+    // On bilan screen, always use the bilan-specific recording, not any word-focus attempt
+    const onBilan = this.currentScreen === 'bilan';
+    const blob = (onBilan && this._bilanWavBlob) ? this._bilanWavBlob
+               : this.wavAudioBlob || this.recordingAudioBlob;
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    this._playbackAudio = audio;
+    audio.onended = () => { this._playbackAudio = null; URL.revokeObjectURL(url); };
+    audio.onerror = () => { this._playbackAudio = null; URL.revokeObjectURL(url); };
+    audio.play().catch(e => { console.warn('[Playback] play() failed:', e); this._playbackAudio = null; });
   },
 
   // ── AZURE PRONUNCIATION ASSESSMENT ───────────────────────────
@@ -5020,7 +6393,7 @@ const APP_DATA = {
     let rawText;
     if (mode === 'practice') rawText = p?.practiceWords?.[App.currentPracticeWordIndex || 0]?.[0] || '';
     else if (mode === 'libre') rawText = App.phraseLibreText || '';
-    else if (mode === 'bilan') rawText = App.bilanPassage || '';
+    else if (mode === 'bilan') rawText = App.getActiveBilanPassage() || '';
     else if (mode === 'word-focus') rawText = App._wfCurrentWord || '';
     else rawText = passages[passageIndex]?.text || '';
 
@@ -5035,7 +6408,7 @@ const APP_DATA = {
 
     const recognitionMode = (mode === 'practice' || mode === 'word-focus') ? 'conversation' : 'dictation';
     const timeoutMs = (mode === 'bilan' || mode === 'read') ? 90000 : 30000;
-    const enableMiscue = (mode === 'bilan') ? false : !simpleFallback;
+    const enableMiscue = !simpleFallback; // enable for all modes incl. bilan
 
     const data = await this._azureRequest(wavBlob, referenceText, enableMiscue, recognitionMode, timeoutMs, sampleRate);
 
@@ -5062,23 +6435,36 @@ const APP_DATA = {
       pa = nbest.PronunciationAssessment;
     }
     console.log('🔍 directPA:', directPA, '| nestedPA:', nestedPA, '| pa:', JSON.stringify(pa));
-    console.log('🔍 words[0]:', JSON.stringify(words[0]));
+    console.log('🔍 Total words from Azure:', words.length);
+    words.forEach((w, i) => {
+      const wpa = w.PronunciationAssessment || {};
+      console.log(`🔍 Word[${i}] "${w.Word}" | AccuracyScore:${wpa.AccuracyScore ?? w.AccuracyScore ?? '?'} | ErrorType:${wpa.ErrorType ?? w.ErrorType ?? '?'} | Offset:${w.Offset} | Duration:${w.Duration}`);
+    });
+
+    // Raw word score — no calibration, no remapping
+    const getWordScore = (w) => {
+      const wpa = w.PronunciationAssessment;
+      const err = wpa?.ErrorType ?? w.ErrorType ?? 'None';
+      if (err === 'Omission' || err === 'Insertion') return 0;
+      return wpa?.AccuracyScore ?? w.AccuracyScore ?? 0;
+    };
 
     if (!pa && words.length > 0) {
       console.warn('⚠️ No PA scores found. Calculating from word-level AccuracyScore.');
-      const getScore = w => w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0;
-      const validWords = words.filter(w => getScore(w) > 0);
+      const validWords = words.filter(w => getWordScore(w) > 0);
       const avg = validWords.length > 0
-        ? validWords.reduce((s, w) => s + getScore(w), 0) / validWords.length : 0;
+        ? validWords.reduce((s, w) => s + getWordScore(w), 0) / validWords.length : 0;
       pa = { AccuracyScore: avg, PronScore: avg, CompletenessScore: (validWords.length / words.length) * 100 };
     }
 
     if (mode === 'bilan') {
-      const finalScore = Math.round(this.remapScore(pa?.PronScore || pa?.AccuracyScore || 0));
+      // Use PronScore directly from Azure (includes fluency, completeness, accuracy)
+      const finalScore = Math.round(pa?.PronScore || pa?.AccuracyScore || 0);
+      console.log(`📊 Bilan overall: PronScore=${finalScore}%`);
       this.showBilanResults(finalScore, pa, words);
     } else {
       const rawScore = pa?.PronScore || pa?.AccuracyScore || 0;
-      const finalScore = Math.round(this.remapScore(rawScore));
+      const finalScore = Math.round(rawScore);
       if (mode === 'test') this.recordScore(phonemeId, finalScore);
       if (mode === 'word-focus') this.wfRecordComplete(finalScore, this.scoreColor(finalScore));
       this.showAzureScore(finalScore, pa, mode, rawScore, pa?.FluencyScore || rawScore);
@@ -5223,7 +6609,17 @@ const APP_DATA = {
               try {
                 const detailed = JSON.parse(result.json);
                 console.log('🔍 SDK NBest[0] keys:', Object.keys(detailed?.NBest?.[0] || {}));
-                console.log('🔍 SDK response:', JSON.stringify(detailed).slice(0, 600));
+                console.log('🔍 SDK response:', JSON.stringify(detailed).slice(0, 800));
+                // Log full word-level details for debugging (trouvé-type accent issues etc.)
+                const dbgWords = detailed?.NBest?.[0]?.Words || [];
+                if (dbgWords.length > 0) {
+                  console.log('🔍 Full word-level PA:');
+                  dbgWords.forEach((w, i) => {
+                    const wpa = w.PronunciationAssessment || {};
+                    const phonemes = wpa.Phonemes ? wpa.Phonemes.map(p => `${p.Phoneme}:${p.PronunciationAssessment?.AccuracyScore??'?'}`).join(' ') : 'n/a';
+                    console.log(`  [${i}] "${w.Word}" | acc=${wpa.AccuracyScore??'?'} err=${wpa.ErrorType??'?'} | phonemes: ${phonemes}`);
+                  });
+                }
                 resolve(detailed);
               } catch(e) {
                 console.error('❌ SDK JSON parse:', e, result.json);
@@ -5257,8 +6653,8 @@ const APP_DATA = {
     const color = this.scoreColor(score);
     const feedback = this.scoreFeedback(score);
 
-    const accRemapped = rawAzure !== undefined ? Math.round(this.remapScore(rawAzure)) : null;
-    const fluRemapped = fluency !== undefined ? Math.round(this.remapScore(fluency)) : null;
+    const accRemapped = rawAzure !== undefined ? Math.round(rawAzure) : null;
+    const fluRemapped = fluency !== undefined ? Math.round(fluency) : null;
     const subScores = (accRemapped !== null && fluRemapped !== null && accRemapped !== score)
       ? `<div class="score-sub-row">
            <div class="score-sub"><span class="score-sub-label">Précision</span><span class="score-sub-val" style="color:${this.scoreColor(accRemapped)}">${accRemapped}%</span></div>
@@ -5362,7 +6758,7 @@ const APP_DATA = {
     const nextIdx = this.currentPassageIndex + 1;
     const passages = this.getPassages(this.currentPhoneme);
     if (nextIdx < passages.length) {
-      this.navigate('mode-read', { phonemeId: this.currentPhoneme, passageIndex: nextIdx });
+      this.swapPassageInPlace(this.currentPhoneme, nextIdx);
     } else {
       this.navigate('phoneme', { phonemeId: this.currentPhoneme });
     }
@@ -5422,7 +6818,14 @@ const APP_DATA = {
   },
 
   getPassages(phonemeId) {
-    return APP_DATA.phonemes[phonemeId]?.passages || [];
+    const base = APP_DATA.phonemes[phonemeId]?.passages || [];
+    const ai = this.aiPassages[phonemeId];
+    if (ai) {
+      // Return base (5 passages) + ai slot at index 5
+      const aiSlot = { id: phonemeId + '_ai', text: ai, generated: true, isAi: true };
+      return [...base.slice(0, 5), aiSlot];
+    }
+    return base.slice(0, 5);
   },
 
   highlightPassage(text, phonemeId) {
@@ -5474,7 +6877,18 @@ const APP_DATA = {
       'il ': /il /gi,
       'ille': /ille/gi,
       'ail': /ail/gi,
+      'aille': /aille/gi,
+      'aill': /aill/gi,
       'eil': /eil/gi,
+      'eille': /eille/gi,
+      'eill': /eill/gi,
+      'uil': /uil/gi,
+      'uille': /uille/gi,
+      'ui': /ui/gi,
+      'uy': /uy/gi,
+      'ien': /ien/gi,
+      'ienne': /ienne/gi,
+      'yen': /yen/gi,
       'euil': /euil/gi,
       'r': null,
       'ent': /ent /gi,
@@ -5584,18 +6998,8 @@ const APP_DATA = {
   },
 
   remapScore(azureScore) {
-    const s = Math.max(0, Math.min(100, azureScore));
-    const pts = [[0,0],[50,12],[60,25],[70,42],[78,57],[85,72],[90,85],[95,94],[100,100]];
-    for (let i = 1; i < pts.length; i++) {
-      const [ax, ay] = pts[i-1];
-      const [bx, by] = pts[i];
-      if (s <= bx) {
-        const t = (s - ax) / (bx - ax);
-        const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-        return ay + e * (by - ay);
-      }
-    }
-    return 100;
+    // Pass-through: report raw Azure score as-is
+    return Math.max(0, Math.min(100, azureScore));
   },
 
   calcLiaisonPenalty(words) {
