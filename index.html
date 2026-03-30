@@ -1593,7 +1593,6 @@ body::before {
   background: rgba(20,184,166,0.08);
 }
 .rep-word-text {
-  flex: 1;
   font-weight: 600;
   font-size: 14px;
   color: var(--text);
@@ -1710,6 +1709,25 @@ body::before {
 }
 .rep-compare-cancel:hover { color: var(--text); }
 
+/* Pick-mode: one word selected, waiting for 2nd tap */
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected) {
+  cursor: pointer;
+  border-color: rgba(20,184,166,0.15);
+}
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected):hover {
+  border-color: rgba(20,184,166,0.45);
+  background: rgba(20,184,166,0.04);
+}
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected) .rep-play-btn,
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected) .rep-word-quick-btns,
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected) .rep-word-ctx {
+  opacity: 0.25;
+  pointer-events: none;
+}
+.rep-word-list.rep-pick-mode .rep-word-row:not(.rep-selected) .rep-word-text {
+  pointer-events: none;
+}
+
 .rep-folder-empty {
   padding: 14px 16px;
   color: var(--text3);
@@ -1781,6 +1799,27 @@ body::before {
 .wf-save-btn.saved { background: #14B8A6; border-color: #14B8A6; color: #05060F; }
 .wf-save-btn svg { width: 17px; height: 17px; }
 
+/* ── Compare pill button — bottom-right of word card ── */
+.wf-compare-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(20,184,166,0.08);
+  border: 1.5px solid rgba(20,184,166,0.25);
+  border-radius: 20px;
+  padding: 5px 10px 5px 7px;
+  display: flex; align-items: center; gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(20,184,166,0.7);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+}
+.wf-compare-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; color: #14B8A6; }
+.wf-compare-btn svg { width: 13px; height: 13px; }
+.wf-compare-btn.active { background: rgba(20,184,166,0.15); border-color: #14B8A6; color: #14B8A6; }
+
 /* ── WF Compare second word ── */
 .wf-compare-add-btn {
   display: flex;
@@ -1804,20 +1843,25 @@ body::before {
 .wf-compare-add-btn svg { width: 15px; height: 15px; }
 
 .wf-compare-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(20,184,166,0.06) 0%, var(--surface) 100%);
+  border: 1px solid rgba(20,184,166,0.3);
   border-radius: var(--radius);
-  padding: 16px;
-  margin-top: 2px;
+  padding: 16px 18px 18px;
+  margin-top: 8px;
   position: relative;
+  animation: slideInCompare 0.25s cubic-bezier(0.25,0.46,0.45,0.94) both;
+}
+@keyframes slideInCompare {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .wf-compare-label {
-  font-size: 10px;
+  font-size: 9px;
   font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: #14B8A6;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .wf-compare-dismiss {
   position: absolute;
@@ -1828,7 +1872,7 @@ body::before {
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   transition: color 0.15s;
 }
@@ -2271,7 +2315,7 @@ body::before {
   background: var(--surface);
   border: 1px solid rgba(20, 184, 166, 0.25);
   border-radius: var(--radius);
-  padding: 24px 20px 20px;
+  padding: 24px 20px 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3987,27 +4031,58 @@ const BILAN_PASSAGES = [
     const cancel = () => {
       clearTimeout(lpTimer);
       lpTimer = null;
-      if (lpTarget) { lpTarget.classList.remove('lp-active'); lpTarget = null; }
+      if (lpTarget) {
+        lpTarget.classList.remove('lp-active');
+        lpTarget.classList.remove('lp-active-row');
+        lpTarget = null;
+      }
     };
 
     document.getElementById('main').addEventListener('pointerdown', e => {
-      const el = e.target.closest('[data-wf]');
-      if (!el) return;
-      lpTarget = el;
-      el.classList.add('lp-active');
-      lpTimer = setTimeout(() => {
-        el.classList.remove('lp-active');
-        const word = el.dataset.wf;
-        if (word) {
-          e.preventDefault();
-          // Prevent the click (TTS) from firing after long-press
-          el.addEventListener('click', ev => ev.stopImmediatePropagation(), { once: true, capture: true });
-          App._wfFromBilan = App.currentScreen === 'bilan';
-          App.navigate('word-focus', { word });
+      // ── Bilan annotation word (data-wf) ──────────────────────
+      const wfEl = e.target.closest('[data-wf]');
+      if (wfEl) {
+        lpTarget = wfEl;
+        wfEl.classList.add('lp-active');
+        lpTimer = setTimeout(() => {
+          wfEl.classList.remove('lp-active');
+          const word = wfEl.dataset.wf;
+          if (word) {
+            e.preventDefault();
+            wfEl.addEventListener('click', ev => ev.stopImmediatePropagation(), { once: true, capture: true });
+            App._wfFromBilan = App.currentScreen === 'bilan';
+            App.navigate('word-focus', { word });
+          }
+          lpTimer = null; lpTarget = null;
+        }, DURATION);
+        return;
+      }
+
+      // ── Répertoire word row ──────────────────────────────────
+      const row = e.target.closest('.rep-word-row');
+      if (row) {
+        // If already in "pick mode" (1 word selected), any tap on an unselected row selects it
+        if (App._repSelectedIds.length === 1 && !row.classList.contains('rep-selected')) {
+          App._repToggleSelect(row);
+          return;
         }
-        lpTimer = null; lpTarget = null;
-      }, DURATION);
-    }, { passive: false });
+        // If tapping an already-selected row, deselect on pointer-up (handled via click), skip here
+        if (row.classList.contains('rep-selected')) {
+          // Let it fall through to the click handler on _repToggleSelect below
+          return;
+        }
+        // Normal mode: ignore taps on play button or word text (those are single-tap actions)
+        if (e.target.closest('.rep-play-btn') || e.target.closest('.rep-word-text')) return;
+        lpTarget = row;
+        row.classList.add('lp-active-row');
+        lpTimer = setTimeout(() => {
+          row.classList.remove('lp-active-row');
+          lpTimer = null; lpTarget = null;
+          App._repToggleSelect(row);
+        }, DURATION);
+        return;
+      }
+    }, { passive: true });
 
     document.getElementById('main').addEventListener('pointerup', cancel);
     document.getElementById('main').addEventListener('pointermove', cancel);
@@ -4352,6 +4427,10 @@ const BILAN_PASSAGES = [
             <div id="playbackArea" class="playback-area hidden"></div>
             <div id="scoreArea" class="score-area hidden"></div>
           </div>
+          <button class="wf-compare-btn" id="wfCompareBtn" onclick="App._wfToggleCompare()" style="${preloadWord ? '' : 'display:none'}" title="Comparer avec un autre mot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Comparer
+          </button>
         </div>
 
         <div id="wfCompareSlot"></div>
@@ -4403,6 +4482,9 @@ const BILAN_PASSAGES = [
     // Show save button and update its state
     const saveBtn = document.getElementById('wfSaveBtn');
     if (saveBtn) { saveBtn.style.display = ''; App._wfUpdateSaveBtn(); }
+    // Show compare button
+    const cmpBtn = document.getElementById('wfCompareBtn');
+    if (cmpBtn) cmpBtn.style.display = '';
     // Reset score/playback
     this.retryRecording();
     const relistenBtn = document.getElementById('wfRelistenBtn');
@@ -4540,16 +4622,23 @@ const BILAN_PASSAGES = [
     this._wfMaybeShowCompareBtn();
   },
 
-  _wfMaybeShowCompareBtn() {
-    // Show the compare add-button only if no compare slot is open yet
+  _wfToggleCompare() {
     const slot = document.getElementById('wfCompareSlot');
-    if (!slot || slot.children.length > 0) return;
-    if (!this._wfCurrentWord) return;
-    slot.innerHTML = `
-      <button class="wf-compare-add-btn" onclick="App._wfOpenCompareInput()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Ajouter un mot pour comparer
-      </button>`;
+    const btn = document.getElementById('wfCompareBtn');
+    if (!slot) return;
+    if (slot.children.length > 0) {
+      // Close it
+      slot.innerHTML = '';
+      if (btn) { btn.classList.remove('active'); btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Comparer`; }
+    } else {
+      // Open input
+      if (btn) btn.classList.add('active');
+      this._wfOpenCompareInput();
+    }
+  },
+
+  _wfMaybeShowCompareBtn() {
+    // No-op — button is always in the card, just shown/hidden via display
   },
 
   _wfOpenCompareInput() {
@@ -4559,10 +4648,10 @@ const BILAN_PASSAGES = [
       <div class="wf-compare-card">
         <button class="wf-compare-dismiss" onclick="App._wfDismissCompare()" title="Fermer">✕</button>
         <div class="wf-compare-label">Comparer avec…</div>
-        <div class="wf-input-row" style="gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
           <input class="wf-input" id="wfCompareInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
-            onkeydown="if(event.key==='Enter')App._wfLoadCompareWord()" style="flex:1">
-          <button class="wf-go-btn" onclick="App._wfLoadCompareWord()">OK</button>
+            onkeydown="if(event.key==='Enter')App._wfLoadCompareWord()" style="flex:1;padding:10px 14px;font-size:15px">
+          <button class="wf-go-btn" onclick="App._wfLoadCompareWord()" style="padding:10px 16px">OK</button>
         </div>
         <div id="wfCompareResult"></div>
       </div>`;
@@ -4639,7 +4728,8 @@ const BILAN_PASSAGES = [
   _wfDismissCompare() {
     const slot = document.getElementById('wfCompareSlot');
     if (slot) slot.innerHTML = '';
-    this._wfMaybeShowCompareBtn();
+    const btn = document.getElementById('wfCompareBtn');
+    if (btn) { btn.classList.remove('active'); btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Comparer`; }
   },
 
   _wfGoBackToBilan() {
@@ -4802,6 +4892,7 @@ const BILAN_PASSAGES = [
               ${folderWords.length ? folderWords.map(w => `
                 <div class="rep-word-row" data-word-id="${w.id}" data-word="${w.word.replace(/"/g,'&quot;')}" data-ipa="${(w.ipa||'').replace(/"/g,'&quot;')}">
                   <span class="rep-word-text" onclick="App._wfFromBilan=false;App.navigate('word-focus',{word:'${w.word.replace(/'/g,"\\'")}'})">${w.word}</span>
+                  <span style="flex:1"></span>
                   <span class="rep-word-ipa">${w.ipa || ''}</span>
                   <div class="rep-word-quick-btns">
                     <button class="rep-play-btn" onclick="event.stopPropagation();App.speakText('${w.word.replace(/'/g,"\\'")}',false)" title="Écouter">
@@ -4879,7 +4970,10 @@ const BILAN_PASSAGES = [
 
       </div>
     `;
-    this._repSetupLongPress();
+    // Keep selection state valid after re-render (remove ids no longer in DOM)
+    this._repSelectedIds = this._repSelectedIds.filter(id =>
+      !!document.querySelector(`.rep-word-row[data-word-id="${id}"]`)
+    );
   },
 
   _repFormatDate(ts) {
@@ -5052,39 +5146,6 @@ const BILAN_PASSAGES = [
   // ── RÉPERTOIRE LONG-PRESS + SELECTION ───────────────────────
   _repSelectedIds: [],
 
-  _repSetupLongPress() {
-    const DURATION = 480;
-    let timer = null;
-    let target = null;
-
-    const cancel = () => {
-      clearTimeout(timer);
-      timer = null;
-      if (target) { target.classList.remove('lp-active-row'); target = null; }
-    };
-
-    const main = document.getElementById('main');
-    if (!main) return;
-
-    main.addEventListener('pointerdown', e => {
-      const row = e.target.closest('.rep-word-row');
-      if (!row) return;
-      // Don't intercept play btn, quick nav clicks
-      if (e.target.closest('.rep-play-btn') || e.target.closest('.rep-word-text')) return;
-      target = row;
-      row.classList.add('lp-active-row');
-      timer = setTimeout(() => {
-        row.classList.remove('lp-active-row');
-        timer = null; target = null;
-        App._repToggleSelect(row);
-      }, DURATION);
-    }, { passive: true });
-
-    main.addEventListener('pointerup', cancel);
-    main.addEventListener('pointermove', cancel);
-    main.addEventListener('pointercancel', cancel);
-  },
-
   _repToggleSelect(row) {
     const id = row.dataset.wordId;
     if (!id) return;
@@ -5112,6 +5173,12 @@ const BILAN_PASSAGES = [
     const label = document.getElementById('repCompareLabel');
     if (!bar) return;
     const n = this._repSelectedIds.length;
+
+    // Toggle pick-mode class on all word rows so CSS can dim non-interactive elements
+    document.querySelectorAll('.rep-word-list').forEach(list => {
+      list.classList.toggle('rep-pick-mode', n === 1);
+    });
+
     if (n === 0) {
       bar.classList.remove('visible');
     } else {
@@ -5121,7 +5188,7 @@ const BILAN_PASSAGES = [
         return w ? `"${w.word}"` : '';
       }).filter(Boolean).join(' + ');
       label.textContent = n === 1
-        ? `${words} — sélectionnez un 2ᵉ mot`
+        ? `${words} — tapez un 2ᵉ mot`
         : `${words}`;
     }
   },
