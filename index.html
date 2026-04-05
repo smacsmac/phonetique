@@ -1512,6 +1512,27 @@ body::before {
   font-style: italic;
 }
 
+.rep-recent-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20,184,166,0.1);
+  border: 1px solid rgba(20,184,166,0.35);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.rep-recent-card.rep-recent-selected {
+  border-color: #14B8A6;
+  box-shadow: 0 0 0 2px rgba(20,184,166,0.25);
+  background: rgba(20,184,166,0.1);
+}
+.rep-recent-card.lp-active-recent {
+  transform: scale(0.96);
+  border-color: rgba(20,184,166,0.5);
+}
+
 /* ── Folder system ── */
 .rep-folders-area {
   display: flex;
@@ -1688,15 +1709,30 @@ body::before {
   background: #14B8A6;
   border: none;
   border-radius: 8px;
-  padding: 7px 14px;
+  padding: 7px 12px;
   color: #05060F;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   font-family: var(--font-body);
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
-.rep-compare-go:hover { opacity: 0.85; }
+.rep-compare-go:hover:not(:disabled) { opacity: 0.85; }
+.rep-delete-sel {
+  background: rgba(248,113,113,0.15);
+  border: 1px solid rgba(248,113,113,0.35);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #F87171;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.rep-delete-sel:hover { background: rgba(248,113,113,0.25); }
 .rep-compare-cancel {
   background: none;
   border: none;
@@ -1780,6 +1816,26 @@ body::before {
 .rep-data-btn:hover { border-color: #14B8A6; color: #14B8A6; }
 .rep-data-btn svg { width: 14px; height: 14px; }
 
+/* ── Rep-nav button — jumps to Répertoire folder for current word ── */
+.wf-rep-nav-btn {
+  position: absolute;
+  top: 12px;
+  right: 58px; /* sits left of the 38px save btn + 8px gap */
+  background: rgba(20,184,166,0.08);
+  border: 1.5px solid rgba(20,184,166,0.2);
+  border-radius: 10px;
+  width: 34px; height: 34px;
+  display: flex; /* always visible when word is loaded */
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(20,184,166,0.45);
+  opacity: 0.6;
+}
+.wf-rep-nav-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; color: #14B8A6; opacity: 1; }
+.wf-rep-nav-btn.visible { color: #14B8A6; border-color: rgba(20,184,166,0.5); opacity: 1; }
+.wf-rep-nav-btn svg { width: 15px; height: 15px; }
+
 /* ── Save-to-workbook button on Mot en Focus ── */
 .wf-save-btn {
   position: absolute;
@@ -1819,6 +1875,90 @@ body::before {
 .wf-compare-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; color: #14B8A6; }
 .wf-compare-btn svg { width: 13px; height: 13px; }
 .wf-compare-btn.active { background: rgba(20,184,166,0.15); border-color: #14B8A6; color: #14B8A6; }
+
+/* ── Rhymes pill button — bottom-left of word card ── */
+.wf-rhymes-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(251,191,36,0.08);
+  border: 1.5px solid rgba(251,191,36,0.3);
+  border-radius: 20px;
+  padding: 5px 10px 5px 7px;
+  display: flex; align-items: center; gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(251,191,36,0.8);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+}
+.wf-rhymes-btn:hover { background: rgba(251,191,36,0.15); border-color: #FBBF24; color: #FBBF24; }
+.wf-rhymes-btn svg { width: 13px; height: 13px; }
+.wf-rhymes-btn.loading { opacity: 0.6; cursor: wait; }
+
+/* ── Rhymes result strip ── */
+.wf-rhymes-strip {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 4px;
+  animation: fadeInRhymes 0.3s ease both;
+}
+@keyframes fadeInRhymes {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wf-rhymes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wf-rhymes-title {
+  font-size: 9px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #FBBF24;
+}
+.wf-rhymes-dismiss {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.wf-rhymes-dismiss:hover { color: var(--text); }
+.wf-rhymes-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.wf-rhyme-chip {
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wf-rhyme-chip:hover { background: rgba(251,191,36,0.15); border-color: #FBBF24; color: #FBBF24; transform: translateY(-1px); }
+.wf-rhyme-chip-ipa {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: rgba(251,191,36,0.6);
+}
 
 /* ── WF Compare second word ── */
 .wf-compare-add-btn {
@@ -3988,9 +4128,11 @@ const BILAN_PASSAGES = [
     frVariant: 'fr-CA',
     openrouterKey: '',
     openrouterModel: 'openai/gpt-4o-mini',
+    rhymesModel: 'google/gemini-2.5-flash-preview-05-20',
     azureKey: '',
     azureRegion: 'eastus',
     speechSynthVoice: null,
+    launchScreen: 'home',
   },
   scores: {},
   recording: false,
@@ -4017,8 +4159,10 @@ const BILAN_PASSAGES = [
     this.loadDiagScores();
     this.loadPassageScores();
     this.loadRepertoire();
+    this.loadLookupHistory();
     this.applyTheme();
-    this.renderHome();
+    if (this.settings.launchScreen === 'labo') this.renderLabo();
+    else this.renderHome();
     this.setupSpeechSynthVoices();
     this._setupLongPress();
   },
@@ -4026,7 +4170,7 @@ const BILAN_PASSAGES = [
   _setupLongPress() {
     let lpTimer = null;
     let lpTarget = null;
-    const DURATION = 500; // ms
+    const DURATION = 500;
 
     const cancel = () => {
       clearTimeout(lpTimer);
@@ -4034,12 +4178,40 @@ const BILAN_PASSAGES = [
       if (lpTarget) {
         lpTarget.classList.remove('lp-active');
         lpTarget.classList.remove('lp-active-row');
+        lpTarget.classList.remove('lp-active-recent');
         lpTarget = null;
       }
     };
 
-    document.getElementById('main').addEventListener('pointerdown', e => {
-      // ── Bilan annotation word (data-wf) ──────────────────────
+    const main = document.getElementById('main');
+
+    // ── contextmenu fires on Android long-press (and desktop right-click) ──
+    // Use it as the primary long-press trigger for word rows
+    main.addEventListener('contextmenu', e => {
+      const row = e.target.closest('.rep-word-row');
+      if (row) {
+        e.preventDefault();
+        cancel();
+        if (App._repSelectedIds.length >= 1 && !row.classList.contains('rep-selected')) {
+          App._repToggleSelect(row);
+          return;
+        }
+        App._repToggleSelect(row);
+        return;
+      }
+      const rcard = e.target.closest('.rep-recent-card');
+      if (rcard) {
+        e.preventDefault();
+        cancel();
+        const word = rcard.dataset.recentWord;
+        App._recentToggleSelect(rcard, word);
+        return;
+      }
+    });
+
+    // ── pointerdown: handles bilan word-focus long-press + desktop/Chromebook rep rows ──
+    main.addEventListener('pointerdown', e => {
+      // Bilan annotation word (data-wf)
       const wfEl = e.target.closest('[data-wf]');
       if (wfEl) {
         lpTarget = wfEl;
@@ -4048,7 +4220,6 @@ const BILAN_PASSAGES = [
           wfEl.classList.remove('lp-active');
           const word = wfEl.dataset.wf;
           if (word) {
-            e.preventDefault();
             wfEl.addEventListener('click', ev => ev.stopImmediatePropagation(), { once: true, capture: true });
             App._wfFromBilan = App.currentScreen === 'bilan';
             App.navigate('word-focus', { word });
@@ -4058,20 +4229,19 @@ const BILAN_PASSAGES = [
         return;
       }
 
-      // ── Répertoire word row ──────────────────────────────────
+      // Répertoire word row — pointer timer (Chromebook / desktop)
       const row = e.target.closest('.rep-word-row');
       if (row) {
-        // If already in "pick mode" (1 word selected), any tap on an unselected row selects it
-        if (App._repSelectedIds.length === 1 && !row.classList.contains('rep-selected')) {
-          App._repToggleSelect(row);
+        // In pick mode (≥1 selected): single tap selects immediately, no timer needed
+        if (App._repSelectedIds.length >= 1) {
+          if (!row.classList.contains('rep-selected')) {
+            App._repToggleSelect(row);
+          } else {
+            App._repToggleSelect(row); // deselect
+          }
           return;
         }
-        // If tapping an already-selected row, deselect on pointer-up (handled via click), skip here
-        if (row.classList.contains('rep-selected')) {
-          // Let it fall through to the click handler on _repToggleSelect below
-          return;
-        }
-        // Normal mode: ignore taps on play button or word text (those are single-tap actions)
+        // Normal mode: ignore play btn and word text (those are single-tap)
         if (e.target.closest('.rep-play-btn') || e.target.closest('.rep-word-text')) return;
         lpTarget = row;
         row.classList.add('lp-active-row');
@@ -4082,11 +4252,35 @@ const BILAN_PASSAGES = [
         }, DURATION);
         return;
       }
+
+      // Recent card — pointer timer for long-press select (Chromebook / desktop)
+      const rcard = e.target.closest('.rep-recent-card');
+      if (rcard) {
+        // If already in recent-select mode, single tap selects
+        if (App._recentSelectedWords && App._recentSelectedWords.length > 0) {
+          const word = rcard.dataset.recentWord;
+          App._recentToggleSelect(rcard, word);
+          return;
+        }
+        lpTarget = rcard;
+        rcard.classList.add('lp-active-recent');
+        lpTimer = setTimeout(() => {
+          rcard.classList.remove('lp-active-recent');
+          lpTimer = null; lpTarget = null;
+          const word = rcard.dataset.recentWord;
+          App._recentToggleSelect(rcard, word);
+        }, DURATION);
+        return;
+      }
     }, { passive: true });
 
-    document.getElementById('main').addEventListener('pointerup', cancel);
-    document.getElementById('main').addEventListener('pointermove', cancel);
-    document.getElementById('main').addEventListener('pointercancel', cancel);
+    main.addEventListener('pointerup', cancel);
+    main.addEventListener('pointermove', e => {
+      // Only cancel if moved more than a few px (avoids cancelling on tiny finger wobble)
+      if (lpTarget && e.movementX !== undefined && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) cancel();
+      else if (lpTarget && e.movementX === undefined) cancel();
+    });
+    main.addEventListener('pointercancel', cancel);
   },
 
   showToast(msgText) {
@@ -4380,7 +4574,12 @@ const BILAN_PASSAGES = [
     this._wfCompareWord = compareWord || '';
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
-        <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#14B8A6">
+            <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+            <line x1="9" y1="3" x2="15" y2="3"/>
+          </svg>
+        </button>
         <button class="back-btn" onclick="${this._wfFromBilan ? 'App._wfGoBackToBilan()' : 'App.goBack()'}" title="Retour">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
@@ -4402,6 +4601,11 @@ const BILAN_PASSAGES = [
           <button class="wf-save-btn" id="wfSaveBtn" onclick="App.wfToggleSaveToRepertoire()" title="Sauvegarder dans Le Répertoire" ${preloadWord ? '' : 'style="display:none"'}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+          <button class="wf-rep-nav-btn" id="wfRepNavBtn" onclick="App._wfGoToRepertoire()" title="Le Répertoire" style="${preloadWord ? '' : 'display:none'}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           </button>
           <div class="wf-word-display" id="wfWordDisplay">${preloadWord}</div>
@@ -4431,8 +4635,13 @@ const BILAN_PASSAGES = [
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Comparer
           </button>
+          <button class="wf-rhymes-btn" id="wfRhymesBtn" onclick="App._wfFetchRhymes()" style="${preloadWord ? '' : 'display:none'}" title="Trouver des rimes (IA)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            Rimes ✦
+          </button>
         </div>
 
+        <div id="wfRhymesSlot"></div>
         <div id="wfCompareSlot"></div>
 
         <div id="wfHistory" class="wf-history" style="${this._wfHistory.length ? '' : 'display:none'}">
@@ -4485,6 +4694,17 @@ const BILAN_PASSAGES = [
     // Show compare button
     const cmpBtn = document.getElementById('wfCompareBtn');
     if (cmpBtn) cmpBtn.style.display = '';
+    // Show rhymes button and clear previous rhymes
+    const rhymesBtn = document.getElementById('wfRhymesBtn');
+    if (rhymesBtn) { rhymesBtn.style.display = ''; rhymesBtn.classList.remove('loading'); }
+    const rhymesSlot = document.getElementById('wfRhymesSlot');
+    if (rhymesSlot) rhymesSlot.innerHTML = '';
+    // Show/update rep nav button — always visible when a word is loaded
+    const repNavBtn = document.getElementById('wfRepNavBtn');
+    if (repNavBtn) repNavBtn.style.display = '';
+    App._wfUpdateRepBtn();
+    // Record this word in lookup history (IPA added after fetch)
+    this._wfRecordLookup(word, '');
     // Reset score/playback
     this.retryRecording();
     const relistenBtn = document.getElementById('wfRelistenBtn');
@@ -4512,6 +4732,9 @@ const BILAN_PASSAGES = [
                 if (match) {
                   this._wfCurrentIpa = `/${match[1]}/`;
                   if (ipaEl) { ipaEl.textContent = this._wfCurrentIpa; ipaEl.className = 'wf-ipa'; }
+                  // Backfill IPA into lookup history
+                  const lh = this._lookupHistory.find(h => h.word === word);
+                  if (lh) { lh.ipa = this._wfCurrentIpa; this.saveLookupHistory(); }
                   return;
                 }
               }
@@ -4531,6 +4754,9 @@ const BILAN_PASSAGES = [
           if (ipaMatch) {
             this._wfCurrentIpa = `/${ipaMatch[1]}/`;
             if (ipaEl) { ipaEl.textContent = this._wfCurrentIpa; ipaEl.className = 'wf-ipa'; }
+            // Backfill IPA into lookup history
+            const lh2 = this._lookupHistory.find(h => h.word === word);
+            if (lh2) { lh2.ipa = this._wfCurrentIpa; this.saveLookupHistory(); }
             return;
           }
         }
@@ -4759,6 +4985,138 @@ const BILAN_PASSAGES = [
     localStorage.setItem('phonetique_repertoire', JSON.stringify(this._repertoire));
   },
 
+  // ── LOOKUP HISTORY (persisted "Récents") ─────────────────────
+  // Each entry: { word, ipa, lookedUpAt }  — capped at 30
+  _lookupHistory: [],
+
+  loadLookupHistory() {
+    try {
+      const s = localStorage.getItem('phonetique_lookup_history');
+      if (s) this._lookupHistory = JSON.parse(s);
+    } catch(e) { this._lookupHistory = []; }
+  },
+
+  saveLookupHistory() {
+    localStorage.setItem('phonetique_lookup_history', JSON.stringify(this._lookupHistory));
+  },
+
+  _wfRecordLookup(word, ipa) {
+    // Remove existing entry for this word then prepend fresh
+    this._lookupHistory = this._lookupHistory.filter(h => h.word.toLowerCase() !== word.toLowerCase());
+    this._lookupHistory.unshift({ word, ipa: ipa || '', lookedUpAt: Date.now() });
+    if (this._lookupHistory.length > 30) this._lookupHistory = this._lookupHistory.slice(0, 30);
+    this.saveLookupHistory();
+  },
+
+  _lookupRemove(word) {
+    this._lookupHistory = this._lookupHistory.filter(h => h.word.toLowerCase() !== word.toLowerCase());
+    this.saveLookupHistory();
+    this.renderRepertoire();
+  },
+
+  // ── RECENT CARD INTERACTIONS ─────────────────────────────────
+  _recentSelectedWords: [],
+
+  _recentTap(card) {
+    const word = card.dataset.recentWord;
+    if (!word) return;
+    // If in selection mode, toggle selection
+    if (this._recentSelectedWords.length > 0) {
+      this._recentToggleSelect(card, word);
+      return;
+    }
+    // Otherwise navigate to Mot en Focus
+    this._wfFromBilan = false;
+    this.navigate('word-focus', { word });
+  },
+
+  _recentToggleSelect(card, word) {
+    const idx = this._recentSelectedWords.indexOf(word);
+    if (idx >= 0) {
+      this._recentSelectedWords.splice(idx, 1);
+      card.classList.remove('rep-recent-selected');
+    } else {
+      this._recentSelectedWords.push(word);
+      card.classList.add('rep-recent-selected');
+    }
+    this._recentUpdateBar();
+  },
+
+  _recentUpdateBar() {
+    const bar = document.getElementById('recentActionBar');
+    const label = document.getElementById('recentActionLabel');
+    const saveBtn = document.getElementById('recentSaveBtn');
+    const n = this._recentSelectedWords.length;
+    if (!bar) return;
+    if (n === 0) {
+      bar.style.display = 'none';
+    } else {
+      bar.style.display = 'flex';
+      if (label) label.textContent = n === 1 ? `"${this._recentSelectedWords[0]}"` : `${n} mots sélectionnés`;
+      // Grey out save btn if all already in repertoire
+      if (saveBtn) {
+        const allSaved = this._recentSelectedWords.every(w => this.repIsWordSaved(w));
+        saveBtn.style.opacity = allSaved ? '0.4' : '';
+        saveBtn.disabled = allSaved;
+      }
+    }
+  },
+
+  _recentClearSelection() {
+    this._recentSelectedWords = [];
+    document.querySelectorAll('.rep-recent-card.rep-recent-selected').forEach(c => c.classList.remove('rep-recent-selected'));
+    this._recentUpdateBar();
+  },
+
+  _recentSaveSelected() {
+    const toSave = this._recentSelectedWords.filter(w => !this.repIsWordSaved(w));
+    if (!toSave.length) return;
+    // If multiple words, show folder picker for batch-add
+    const entries = toSave.map(w => {
+      const h = this._lookupHistory.find(h => h.word === w);
+      return { word: w, ipa: h?.ipa || '' };
+    });
+    this._recentShowBatchSaveOverlay(entries);
+  },
+
+  _recentShowBatchSaveOverlay(entries) {
+    const folders = this._repertoire.folders;
+    const label = entries.length === 1 ? `"${entries[0].word}"` : `${entries.length} mots`;
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Ajouter au Répertoire</div>
+        <div class="rep-overlay-subtitle" style="margin-bottom:8px">Ajouter ${label} dans :</div>
+        ${folders.map(f => `
+          <button class="rep-overlay-folder-btn" onclick="App._recentBatchSave(${JSON.stringify(entries).replace(/"/g,'&quot;')},'${f.id}')">
+            <span>${f.emoji}</span> ${f.name}
+          </button>`).join('')}
+        <button class="rep-overlay-cancel" onclick="App._repCloseOverlay()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) App._repCloseOverlay(); });
+  },
+
+  _recentBatchSave(entries, folderId) {
+    entries.forEach(e => { if (!this.repIsWordSaved(e.word)) this.repAddWord(e.word, e.ipa, folderId); });
+    this._repCloseOverlay();
+    this._recentClearSelection();
+    const folderName = this._repertoire.folders.find(f => f.id === folderId)?.name || '';
+    this.showToast(`${entries.length} mot(s) ajouté(s)${folderName ? ' dans ' + folderName : ''} ✓`);
+    this.renderRepertoire();
+  },
+
+  _recentRemoveSelected() {
+    this._recentSelectedWords.forEach(w => {
+      this._lookupHistory = this._lookupHistory.filter(h => h.word.toLowerCase() !== w.toLowerCase());
+    });
+    this.saveLookupHistory();
+    this._recentSelectedWords = [];
+    this.renderRepertoire();
+  },
+
   repIsWordSaved(word) {
     return this._repertoire.words.some(w => w.word.toLowerCase() === word.toLowerCase());
   },
@@ -4776,8 +5134,23 @@ const BILAN_PASSAGES = [
     this.saveRepertoire();
   },
 
-  repRemoveWord(wordId) {
+  repRemoveWord(wordId, skipNavigate = false) {
     this._repertoire.words = this._repertoire.words.filter(w => w.id !== wordId);
+    this.saveRepertoire();
+    if (!skipNavigate) this.renderRepertoire();
+  },
+
+  _repDeleteSelected() {
+    const n = this._repSelectedIds.length;
+    if (!n) return;
+    const msg = n === 1
+      ? `Supprimer ce mot du Répertoire ?`
+      : `Supprimer ces ${n} mots du Répertoire ?`;
+    if (!confirm(msg)) return;
+    this._repSelectedIds.forEach(id => {
+      this._repertoire.words = this._repertoire.words.filter(w => w.id !== id);
+    });
+    this._repSelectedIds = [];
     this.saveRepertoire();
     this.renderRepertoire();
   },
@@ -4856,20 +5229,33 @@ const BILAN_PASSAGES = [
     if (this.navHistory.length === 0 || this.navHistory[this.navHistory.length - 1].screen !== 'repertoire') {
       this.navHistory.push({ screen: 'repertoire', params: {} });
     }
+    // Always reset selection when arriving at this screen
+    this._repSelectedIds = [];
+    this._recentSelectedWords = [];
     const words = this._repertoire.words;
     const folders = this._repertoire.folders;
     const totalWords = words.length;
 
-    // Recent words (last 5 added across all folders)
-    const recent = [...words].slice(0, 5);
-    const recentHtml = recent.length
-      ? recent.map(w => `
-          <div class="rep-recent-card" onclick="App._wfFromBilan=false;App.navigate('word-focus',{word:'${w.word.replace(/'/g,"\\'")}'})" title="Ouvrir dans Mot en Focus">
-            <div class="rep-recent-word">${w.word}</div>
-            ${w.ipa ? `<div class="rep-recent-ipa">${w.ipa}</div>` : ''}
-            <div class="rep-recent-date">${this._repFormatDate(w.addedAt)}</div>
-          </div>`).join('')
-      : `<div class="rep-empty-recent">Aucun mot encore sauvegardé.<br>Utilisez Mot en Focus pour commencer.</div>`;
+    // ── Récents: from lookup history (words visited in Mot en Focus) ──
+    const recents = this._lookupHistory.slice(0, 12);
+    const recentHtml = recents.length
+      ? recents.map(h => {
+          const inRep = this.repIsWordSaved(h.word);
+          return `
+          <div class="rep-recent-card" data-recent-word="${h.word.replace(/"/g,'&quot;')}" data-recent-ipa="${(h.ipa||'').replace(/"/g,'&quot;')}"
+               onclick="App._recentTap(this)">
+            <div class="rep-recent-word">${h.word}</div>
+            ${h.ipa ? `<div class="rep-recent-ipa">${h.ipa}</div>` : ''}
+            <div class="rep-recent-date" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px">
+              ${inRep ? `<svg viewBox="0 0 24 24" fill="#14B8A6" stroke="#14B8A6" stroke-width="2" style="width:10px;height:10px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : ''}
+              <span style="font-size:10px;color:var(--text3)">${this._repFormatDate(h.lookedUpAt)}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<div class="rep-empty-recent">Les mots consultés dans Mot en Focus apparaîtront ici.</div>`;
+
+    // Recent selection state
+    this._recentSelectedWords = this._recentSelectedWords || [];
 
     // Folder sections
     const foldersHtml = folders.map(folder => {
@@ -4934,15 +5320,22 @@ const BILAN_PASSAGES = [
       <div class="repertoire-container">
 
         <div>
-          <div class="rep-section-title">Ajouts récents</div>
-          <div class="rep-recent-strip">${recentHtml}</div>
+          <div class="rep-section-title">Récents — Mot en Focus</div>
+          <div id="recentActionBar" class="rep-recent-action-bar" style="display:none">
+            <span id="recentActionLabel" style="flex:1;font-size:12px;color:#14B8A6;font-weight:600"></span>
+            <button class="rep-compare-go" id="recentSaveBtn" onclick="App._recentSaveSelected()" style="font-size:11px;padding:5px 10px">+ Répertoire</button>
+            <button class="rep-delete-sel" id="recentRemoveBtn" onclick="App._recentRemoveSelected()" style="font-size:11px;padding:5px 10px">Retirer</button>
+            <button class="rep-compare-cancel" onclick="App._recentClearSelection()">✕</button>
+          </div>
+          <div class="rep-recent-strip" id="recentStrip">${recentHtml}</div>
         </div>
 
         <div>
           <div class="rep-section-title">Dossiers</div>
           <div id="repCompareBar" class="rep-compare-bar">
-            <span class="rep-compare-bar-label" id="repCompareLabel">2 mots sélectionnés</span>
-            <button class="rep-compare-go" onclick="App._repLaunchCompare()">Comparer →</button>
+            <span class="rep-compare-bar-label" id="repCompareLabel"></span>
+            <button class="rep-compare-go" id="repCompareBtn" onclick="App._repLaunchCompare()" style="opacity:0.35;cursor:default" disabled>Comparer →</button>
+            <button class="rep-delete-sel" id="repDeleteBtn" onclick="App._repDeleteSelected()">Supprimer</button>
             <button class="rep-compare-cancel" onclick="App._repClearSelection()" title="Annuler">✕</button>
           </div>
           <div class="rep-folders-area">
@@ -5134,6 +5527,7 @@ const BILAN_PASSAGES = [
     this.repAddWord(word, ipa, folderId);
     this._repCloseOverlay();
     this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
     const folderName = this._repertoire.folders.find(f => f.id === folderId)?.name || '';
     this.showToast(`"${word}" ajouté${folderName ? ' dans ' + folderName : ''} ✓`);
   },
@@ -5155,12 +5549,6 @@ const BILAN_PASSAGES = [
       row.classList.remove('rep-selected');
       this._repSelectedIds = this._repSelectedIds.filter(x => x !== id);
     } else {
-      if (this._repSelectedIds.length >= 2) {
-        // Deselect the older one first
-        const oldId = this._repSelectedIds.shift();
-        const oldRow = document.querySelector(`.rep-word-row[data-word-id="${oldId}"]`);
-        if (oldRow) oldRow.classList.remove('rep-selected');
-      }
       row.classList.add('rep-selected');
       this._repSelectedIds.push(id);
     }
@@ -5171,25 +5559,53 @@ const BILAN_PASSAGES = [
   _repUpdateCompareBar() {
     const bar = document.getElementById('repCompareBar');
     const label = document.getElementById('repCompareLabel');
+    const cmpBtn = document.getElementById('repCompareBtn');
+    const delBtn = document.getElementById('repDeleteBtn');
     if (!bar) return;
     const n = this._repSelectedIds.length;
 
-    // Toggle pick-mode class on all word rows so CSS can dim non-interactive elements
+    // Pick mode: any row can be single-tapped when n >= 1
     document.querySelectorAll('.rep-word-list').forEach(list => {
-      list.classList.toggle('rep-pick-mode', n === 1);
+      list.classList.toggle('rep-pick-mode', n >= 1);
     });
 
     if (n === 0) {
       bar.classList.remove('visible');
-    } else {
-      bar.classList.add('visible');
-      const words = this._repSelectedIds.map(id => {
-        const w = this._repertoire.words.find(x => x.id === id);
-        return w ? `"${w.word}"` : '';
-      }).filter(Boolean).join(' + ');
-      label.textContent = n === 1
-        ? `${words} — tapez un 2ᵉ mot`
-        : `${words}`;
+      return;
+    }
+
+    bar.classList.add('visible');
+
+    // Label
+    if (label) {
+      if (n === 1) {
+        const w = this._repertoire.words.find(x => x.id === this._repSelectedIds[0]);
+        label.textContent = w ? `"${w.word}"` : '1 sélectionné';
+      } else {
+        label.textContent = `${n} mots sélectionnés`;
+      }
+    }
+
+    // Compare button: visible only at exactly 2, greyed at 1
+    if (cmpBtn) {
+      if (n === 1) {
+        cmpBtn.style.display = '';
+        cmpBtn.disabled = true;
+        cmpBtn.style.opacity = '0.35';
+        cmpBtn.style.cursor = 'default';
+      } else if (n === 2) {
+        cmpBtn.style.display = '';
+        cmpBtn.disabled = false;
+        cmpBtn.style.opacity = '';
+        cmpBtn.style.cursor = '';
+      } else {
+        cmpBtn.style.display = 'none';
+      }
+    }
+
+    // Delete button: always shown when n >= 1
+    if (delBtn) {
+      delBtn.textContent = n === 1 ? 'Supprimer' : `Supprimer (${n})`;
     }
   },
 
@@ -5216,15 +5632,34 @@ const BILAN_PASSAGES = [
     const word = this._wfCurrentWord;
     if (!word) return;
     if (this.repIsWordSaved(word)) {
-      // Remove from repertoire
+      // Remove but stay on Mot en Focus — don't navigate away
       const entry = this._repertoire.words.find(w => w.word.toLowerCase() === word.toLowerCase());
-      if (entry) this.repRemoveWord(entry.id);
+      if (entry) this.repRemoveWord(entry.id, true); // skipNavigate = true
       this._wfUpdateSaveBtn();
+      this._wfUpdateRepBtn();
       this.showToast(`"${word}" retiré du Répertoire`);
     } else {
       // Show folder picker
       this._repShowSaveOverlay(word, this._wfCurrentIpa);
     }
+  },
+
+  _wfUpdateRepBtn() {
+    const btn = document.getElementById('wfRepNavBtn');
+    if (!btn) return;
+    const saved = this.repIsWordSaved(this._wfCurrentWord);
+    if (saved) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+  },
+
+  _wfGoToRepertoire() {
+    // Find which folder this word is in and open it
+    const word = this._wfCurrentWord;
+    const entry = this._repertoire.words.find(w => w.word.toLowerCase() === word.toLowerCase());
+    if (entry) {
+      this._repOpenFolders.add(entry.folderId);
+    }
+    this.navigate('repertoire');
   },
 
   _wfUpdateSaveBtn() {
@@ -5241,6 +5676,123 @@ const BILAN_PASSAGES = [
       btn.title = 'Sauvegarder dans Le Répertoire';
       btn.innerHTML = icon + `<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor"/></svg>`;
     }
+  },
+
+  // ── WF RHYMES ────────────────────────────────────────────────
+  _wfRhymesCache: {}, // word → [{word, ipa}]
+
+  async _wfFetchRhymes() {
+    const word = this._wfCurrentWord;
+    const ipa  = this._wfCurrentIpa;
+    if (!word) return;
+
+    const slot = document.getElementById('wfRhymesSlot');
+    const btn  = document.getElementById('wfRhymesBtn');
+
+    // If already cached, just toggle display
+    if (this._wfRhymesCache[word]) {
+      if (slot && slot.children.length > 0) {
+        slot.innerHTML = '';
+        if (btn) btn.classList.remove('loading');
+      } else {
+        this._wfRenderRhymes(word, this._wfRhymesCache[word]);
+      }
+      return;
+    }
+
+    if (!this.settings.openrouterKey) {
+      this.showToast('Ajoutez une clé OpenRouter dans les Paramètres pour les rimes IA.');
+      return;
+    }
+
+    // Show loading state
+    if (btn) btn.classList.add('loading');
+    if (slot) slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.6);font-size:12px;padding:4px 0">Recherche de rimes…</div></div>`;
+
+    // Build IPA rhyme tail: last vowel cluster + everything after
+    const ipaCore = ipa ? ipa.replace(/^\/|\/$/g, '') : '';
+    const vowels = 'aàâæeéèêëiîïoôœøuùûüyɑɛɔœəɐɪʊɥɛ̃ɔ̃ɑ̃œ̃';
+    const vowelRe = new RegExp(`[${vowels}][^]*$`);
+    const rhymeTail = ipaCore ? (ipaCore.match(vowelRe)?.[0] || ipaCore) : '';
+    const rhymeHint = ipaCore
+      ? `"${word}" se prononce /${ipaCore}/ en IPA. La terminaison sonore à faire rimer est : /${rhymeTail}/.`
+      : `Le mot cible est "${word}".`;
+
+    const prompt = `Tu es un expert en versification et phonétique françaises. ${rhymeHint}
+
+ÉTAPE 1 — ANALYSE (raisonne à voix haute en 2-3 lignes) :
+Quelle est la terminaison sonore exacte de "${word}" ? (voyelle + coda)
+Quels mots français partagent cette même terminaison sonore ?
+Élimine tout candidat dont la coda finale diffère (ex: /ɛj/ ≠ /ɛl/).
+
+ÉTAPE 2 — SÉLECTION FINALE :
+Retiens exactement 6 mots. Priorité : même coda exacte. Si moins de 6, complète avec coda très proche.
+Ne laisse jamais la liste vide.
+
+EXEMPLES CORRECTS :
+- sel /sɛl/ → belle /bɛl/ ✓, celle /sɛl/ ✓, nouvelle /nuvɛl/ ✓ — tous finissent en /ɛl/
+- sel /sɛl/ → pareil /paʁɛj/ ✗ — coda /j/ ≠ /l/, EXCLURE
+- chien /ʃjɛ̃/ → bien /bjɛ̃/ ✓, ancien /ɑ̃sjɛ̃/ ✓ — tous finissent en /jɛ̃/
+
+RÉPONSE FORMAT : D'abord ton analyse (texte libre), puis le JSON sur une nouvelle ligne :
+{"rhymes":[{"word":"...","ipa":"/.../","match":"terminaison /xx/ commune"},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."}]}`;
+
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + this.settings.openrouterKey,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.href,
+        },
+        body: JSON.stringify({
+          model: this.settings.rhymesModel || this.settings.openrouterModel,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 600,
+        }),
+      });
+      const data = await resp.json();
+      let text = data.choices?.[0]?.message?.content?.trim() || '';
+      // Robustly extract the JSON object — find the first { ... } block
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response');
+      const parsed = JSON.parse(jsonMatch[0]);
+      const rhymes = (parsed.rhymes || []).slice(0, 6).filter(r => r.word);
+      this._wfRhymesCache[word] = rhymes;
+      this._wfRenderRhymes(word, rhymes);
+    } catch(e) {
+      if (slot) slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.5);font-size:12px">Impossible de trouver des rimes.</div></div>`;
+    }
+    if (btn) btn.classList.remove('loading');
+  },
+
+  _wfRenderRhymes(word, rhymes) {
+    const slot = document.getElementById('wfRhymesSlot');
+    if (!slot) return;
+    if (!rhymes || rhymes.length === 0) {
+      slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.5);font-size:12px">Aucune rime trouvée.</div></div>`;
+      return;
+    }
+    const chips = rhymes.map(r => `
+      <div class="wf-rhyme-chip" onclick="App._wfFromBilan=false;App.wfLoadRhymeWord('${r.word.replace(/'/g,"\\'")}')" title="${r.match ? r.match.replace(/"/g,'&quot;') : ''}">
+        ${r.word}
+        ${r.ipa ? `<span class="wf-rhyme-chip-ipa">${r.ipa}</span>` : ''}
+      </div>`).join('');
+    slot.innerHTML = `
+      <div class="wf-rhymes-strip">
+        <div class="wf-rhymes-header">
+          <span class="wf-rhymes-title">✦ Rimes pour « ${word} »</span>
+          <button class="wf-rhymes-dismiss" onclick="document.getElementById('wfRhymesSlot').innerHTML=''" title="Fermer">✕</button>
+        </div>
+        <div class="wf-rhymes-chips">${chips}</div>
+      </div>`;
+  },
+
+  wfLoadRhymeWord(word) {
+    // Load a rhyme word into the main input — same as typing it
+    const input = document.getElementById('wfInput');
+    if (input) input.value = word;
+    this.wfLoadWord();
   },
 
   showNoKeyMsg() {
@@ -5802,7 +6354,12 @@ Génère un NOUVEAU passage de même longueur, fortement concentré sur le son $
     const saved = this.phraseLibreText || '';
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
-        <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#48CAE4">
+            <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+            <line x1="9" y1="3" x2="15" y2="3"/>
+          </svg>
+        </button>
         <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:#48CAE4">Phrase libre</div>
@@ -6026,7 +6583,12 @@ Génère un NOUVEAU passage de même longueur, fortement concentré sur le son $
 
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
-        <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#C084FC">
+            <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+            <line x1="9" y1="3" x2="15" y2="3"/>
+          </svg>
+        </button>
         <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:#C084FC">Bilan</div>
@@ -6402,6 +6964,16 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               <option value="fr-FR" ${this.settings.frVariant === 'fr-FR' ? 'selected' : ''}>Français standard</option>
             </select>
           </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
+              Démarrer sur Le Labo
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="launchLaboToggle" ${this.settings.launchScreen === 'labo' ? 'checked' : ''} onchange="App.setLaunchScreen(this.checked ? 'labo' : 'home')">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
 
         <div class="settings-group">
@@ -6419,6 +6991,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               Modèle OpenRouter
             </label>
             <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="orModel" value="${this.settings.openrouterModel}" oninput="App.settings.openrouterModel=this.value;App.saveSettings()">
+          </div>
+          <div class="settings-field">
+            <label class="field-label" style="color:#FBBF24">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Modèle Rimes ✦
+            </label>
+            <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}" oninput="App.settings.rhymesModel=this.value;App.saveSettings()">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Recommandé : gemini-2.5-flash ou claude-sonnet-4-5 (meilleure phonétique)</div>
           </div>
         </div>
 
@@ -6457,6 +7037,10 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.settings.darkMode = val;
     this.saveSettings();
     this.applyTheme();
+  },
+  setLaunchScreen(val) {
+    this.settings.launchScreen = val;
+    this.saveSettings();
   },
   setFrVariant(val) {
     this.settings.frVariant = val;
