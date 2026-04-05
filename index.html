@@ -2754,6 +2754,757 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LE GRENIER — Spaced Repetition Feature (Neon Orange Palette)
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --gr-orange: #FF6B1A;
+  --gr-orange2: #FF8C42;
+  --gr-orange-dim: rgba(255,107,26,0.18);
+  --gr-orange-glow: rgba(255,107,26,0.35);
+  --gr-amber: #FFB347;
+  --gr-bg: #100800;
+  --gr-bg2: #1A0E00;
+  --gr-bg3: #221500;
+  --gr-surface: #2A1A00;
+  --gr-surface2: #331F00;
+  --gr-border: rgba(255,107,26,0.20);
+  --gr-border-bright: rgba(255,107,26,0.45);
+}
+
+/* ── Grenier Home ────────────────────────────────────────────── */
+.grenier-screen {
+  background: var(--gr-bg);
+  min-height: 100%;
+  position: relative;
+}
+.grenier-screen::before {
+  content: '';
+  position: fixed;
+  top: -40%;
+  left: -40%;
+  width: 180%;
+  height: 180%;
+  background:
+    radial-gradient(ellipse 500px 300px at 70% 10%, rgba(255,107,26,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 400px 300px at 20% 80%, rgba(255,140,66,0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.grenier-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  background: linear-gradient(180deg, rgba(255,107,26,0.06) 0%, transparent 100%);
+  border-bottom: 1px solid var(--gr-border);
+}
+.grenier-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.grenier-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gr-orange);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 20px var(--gr-orange-glow);
+}
+.grenier-tagline {
+  font-size: 11px;
+  color: rgba(255,107,26,0.6);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.grenier-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.grenier-icon-btn {
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-border);
+  border-radius: var(--radius-sm);
+  color: var(--gr-orange2);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.grenier-icon-btn:hover { background: var(--gr-surface2); border-color: var(--gr-border-bright); }
+.grenier-icon-btn svg { width: 18px; height: 18px; }
+
+/* Toolbar: view toggle + add button */
+.grenier-toolbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+}
+.grenier-view-toggle {
+  display: flex;
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.grenier-view-btn {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  color: var(--gr-orange2);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+.grenier-view-btn.active {
+  background: var(--gr-orange-dim);
+  opacity: 1;
+  color: var(--gr-orange);
+}
+.grenier-view-btn svg { width: 15px; height: 15px; }
+
+/* Deck Grid / List */
+.grenier-decks-area {
+  position: relative;
+  z-index: 1;
+  padding: 8px 16px 100px;
+}
+.grenier-decks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.grenier-decks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.grenier-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255,107,26,0.4);
+}
+.grenier-empty-icon { font-size: 48px; margin-bottom: 12px; }
+.grenier-empty-text { font-size: 14px; line-height: 1.5; }
+
+/* Deck Card */
+.grenier-deck-card {
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+}
+.grenier-deck-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--deck-accent, var(--gr-orange));
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.grenier-deck-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gr-border-bright);
+  box-shadow: 0 8px 24px rgba(255,107,26,0.12);
+}
+.grenier-deck-card.deck-selected {
+  border-color: var(--deck-accent, var(--gr-orange));
+  box-shadow: 0 0 0 2px var(--deck-accent, var(--gr-orange));
+}
+.grenier-deck-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.grenier-deck-meta {
+  font-size: 11px;
+  color: rgba(255,107,26,0.6);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.grenier-deck-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,107,26,0.15);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gr-orange);
+}
+.grenier-deck-due.zero { background: rgba(255,255,255,0.05); color: var(--text3); }
+
+/* List view deck row */
+.grenier-decks-list .grenier-deck-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.grenier-decks-list .grenier-deck-card::before { display: none; }
+.grenier-deck-accent-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--deck-accent, var(--gr-orange));
+  flex-shrink: 0;
+}
+.grenier-decks-list .grenier-deck-name { margin-bottom: 0; flex: 1; }
+
+/* FAB button */
+.grenier-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 20px;
+  z-index: 100;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gr-orange);
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 40px rgba(255,107,26,0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.grenier-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px var(--gr-orange-glow); }
+.grenier-fab.open { transform: rotate(45deg); }
+
+/* FAB menu */
+.grenier-fab-menu {
+  position: fixed;
+  bottom: 96px;
+  right: 20px;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.grenier-fab-menu.open { opacity: 1; transform: translateY(0); pointer-events: all; }
+.grenier-fab-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.grenier-fab-label {
+  background: var(--gr-surface2);
+  border: 1px solid var(--gr-border-bright);
+  border-radius: 100px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gr-orange2);
+}
+.grenier-fab-icon {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--gr-surface2);
+  border: 1.5px solid var(--gr-border-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+/* ── Deck Context Menu (long press) ─────────────────────────── */
+.grenier-ctx-menu {
+  position: fixed;
+  z-index: 200;
+  background: var(--gr-surface2);
+  border: 1px solid var(--gr-border-bright);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: ctxIn 0.15s ease;
+}
+@keyframes ctxIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+.grenier-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+}
+.grenier-ctx-item:hover { background: var(--gr-orange-dim); }
+.grenier-ctx-item.danger { color: #F87171; }
+.grenier-ctx-sep { height: 1px; background: var(--gr-border); margin: 4px 0; }
+
+/* ── New Deck Modal ──────────────────────────────────────────── */
+.grenier-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.grenier-modal {
+  background: var(--gr-bg2);
+  border: 1px solid var(--gr-border-bright);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 24px 20px 40px;
+  width: 100%;
+  max-width: 480px;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.grenier-modal-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gr-orange);
+  margin-bottom: 20px;
+  text-align: center;
+}
+.grenier-modal-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gr-orange2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.grenier-modal-input {
+  width: 100%;
+  background: var(--gr-surface);
+  border: 1.5px solid var(--gr-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--text);
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+}
+.grenier-modal-input:focus { border-color: var(--gr-orange); }
+.grenier-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.grenier-btn-primary {
+  flex: 1;
+  background: var(--gr-orange);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  font-family: var(--font-body);
+}
+.grenier-btn-primary:hover { background: var(--gr-orange2); }
+.grenier-btn-secondary {
+  flex: 1;
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-border-bright);
+  border-radius: var(--radius-sm);
+  padding: 13px;
+  color: var(--gr-orange2);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+/* colour picker row */
+.grenier-color-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.grenier-color-swatch {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.grenier-color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+
+/* folder select chips */
+.grenier-folder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.grenier-folder-chip {
+  background: var(--gr-surface);
+  border: 1.5px solid var(--gr-border);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.grenier-folder-chip.selected {
+  background: var(--gr-orange-dim);
+  border-color: var(--gr-orange);
+  color: var(--gr-orange);
+}
+
+/* ── Card Creation Screen ────────────────────────────────────── */
+.grenier-card-create-screen {
+  background: var(--gr-bg);
+  min-height: 100%;
+  position: relative;
+}
+.grenier-form-section {
+  padding: 0 16px 16px;
+  position: relative;
+  z-index: 1;
+}
+.grenier-form-section + .grenier-form-section {
+  padding-top: 0;
+}
+
+/* ── Study Session ───────────────────────────────────────────── */
+.grenier-study-screen {
+  background: var(--gr-bg);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.grenier-study-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gr-border);
+  position: relative;
+  z-index: 1;
+}
+.grenier-study-progress {
+  flex: 1;
+  height: 4px;
+  background: var(--gr-surface);
+  border-radius: 2px;
+  margin: 0 12px;
+  overflow: hidden;
+}
+.grenier-study-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gr-orange), var(--gr-amber));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.grenier-study-count {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--gr-orange);
+  white-space: nowrap;
+}
+.grenier-card-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+/* The main card — mimics Mot en Focus but orange */
+.grenier-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card-bg, var(--gr-surface));
+  border: 1.5px solid var(--card-border, var(--gr-border-bright));
+  border-radius: var(--radius-lg);
+  padding: 24px 20px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(255,107,26,0.1);
+}
+.grenier-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--card-accent, var(--gr-orange)), var(--gr-amber));
+}
+.grenier-card-word {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--card-accent, var(--gr-orange));
+  text-shadow: 0 0 30px var(--gr-orange-glow);
+  margin-bottom: 4px;
+}
+.grenier-card-ipa {
+  text-align: center;
+  font-size: 18px;
+  color: var(--gr-amber);
+  opacity: 0.85;
+  margin-bottom: 16px;
+  letter-spacing: 0.03em;
+}
+.grenier-card-listen-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.grenier-card-btn {
+  flex: 1;
+  background: var(--gr-surface2);
+  border: 1px solid var(--gr-border-bright);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  color: var(--gr-orange2);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s;
+}
+.grenier-card-btn:hover { background: var(--gr-orange-dim); }
+.grenier-card-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.grenier-record-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px 0;
+}
+.grenier-record-btn {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gr-orange), var(--gr-amber));
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px var(--gr-orange-glow);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.grenier-record-btn:hover { transform: scale(1.05); }
+.grenier-record-btn.recording {
+  animation: grPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 var(--gr-orange-glow);
+}
+@keyframes grPulse {
+  0%,100% { box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 0 0 rgba(255,107,26,0.4); }
+  50% { box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 0 14px rgba(255,107,26,0); }
+}
+.grenier-record-btn svg { width: 28px; height: 28px; }
+.grenier-record-label { font-size: 12px; color: var(--gr-orange2); margin-top: 6px; opacity: 0.8; }
+
+/* Rating buttons */
+.grenier-rating-area {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 14px;
+}
+.grenier-rating-label {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,107,26,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.grenier-rating-btns {
+  display: flex;
+  gap: 8px;
+}
+.grenier-rate-btn {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: transform 0.1s, opacity 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.grenier-rate-btn:hover { transform: translateY(-2px); }
+.grenier-rate-btn span { font-size: 10px; font-weight: 400; opacity: 0.8; }
+.gr-rate-again { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.4); color: #F87171; }
+.gr-rate-hard  { background: rgba(251,191,36,0.15);  border: 1px solid rgba(251,191,36,0.4);  color: #FBBF24; }
+.gr-rate-good  { background: rgba(52,211,153,0.15);  border: 1px solid rgba(52,211,153,0.4);  color: #34D399; }
+.gr-rate-easy  { background: rgba(99,102,241,0.15);  border: 1px solid rgba(99,102,241,0.4);  color: #818CF8; }
+
+/* rhymes slot in card */
+.grenier-rhymes-btn {
+  background: none;
+  border: 1.5px solid var(--gr-border-bright);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gr-amber);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px auto 0;
+  font-family: var(--font-body);
+  transition: background 0.15s;
+}
+.grenier-rhymes-btn:hover { background: var(--gr-orange-dim); }
+
+/* Card settings panel */
+.grenier-card-settings-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--gr-bg2);
+  border: 1px solid var(--gr-border-bright);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 20px 20px 40px;
+  z-index: 200;
+  animation: slideUp 0.25s ease;
+}
+.grenier-card-settings-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gr-orange);
+  margin-bottom: 16px;
+  text-align: center;
+}
+.grenier-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gr-border);
+  font-size: 14px;
+  color: var(--text);
+}
+.grenier-settings-row:last-child { border-bottom: none; }
+.grenier-toggle {
+  width: 40px; height: 22px;
+  background: var(--gr-surface2);
+  border-radius: 100px;
+  position: relative;
+  cursor: pointer;
+  border: 1px solid var(--gr-border);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.grenier-toggle.on { background: var(--gr-orange); border-color: var(--gr-orange); }
+.grenier-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+.grenier-toggle.on::after { left: 20px; }
+
+/* Session done screen */
+.grenier-done-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  flex: 1;
+}
+.grenier-done-icon { font-size: 64px; margin-bottom: 16px; }
+.grenier-done-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--gr-orange);
+  text-shadow: 0 0 30px var(--gr-orange-glow);
+  margin-bottom: 8px;
+}
+.grenier-done-sub { font-size: 14px; color: var(--text2); margin-bottom: 28px; line-height: 1.5; }
+.grenier-done-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 28px;
+}
+.grenier-done-stat {
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.grenier-done-stat-val { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.grenier-done-stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; }
+
+/* ── Labo tile orange override ──────────────────────────────── */
+.labo-tile-grenier {
+  --cat-color: #2A0E00;
+  --cat-accent: #FF6B1A;
+}
+
   </style>
 </head>
 <body>
@@ -4128,7 +4879,7 @@ const BILAN_PASSAGES = [
     frVariant: 'fr-CA',
     openrouterKey: '',
     openrouterModel: 'openai/gpt-4o-mini',
-    rhymesModel: 'google/gemini-2.5-flash-preview-05-20',
+    rhymesModel: 'google/gemini-2.5-flash-lite-preview-09-2025',
     azureKey: '',
     azureRegion: 'eastus',
     speechSynthVoice: null,
@@ -4160,6 +4911,7 @@ const BILAN_PASSAGES = [
     this.loadPassageScores();
     this.loadRepertoire();
     this.loadLookupHistory();
+    this.loadGrenier();
     this.applyTheme();
     if (this.settings.launchScreen === 'labo') this.renderLabo();
     else this.renderHome();
@@ -4439,6 +5191,9 @@ const BILAN_PASSAGES = [
         case 'settings': this.renderSettings(); break;
         case 'word-focus': this.renderWordFocus(params?.word || '', params?.compareWord || ''); break;
         case 'repertoire': this.renderRepertoire(); break;
+        case 'grenier': this.renderGrenier(); break;
+        case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
+        case 'grenier-study': this.renderGrenierStudy(params?.deckId || null); break;
       }
       setTimeout(() => main.classList.remove('screen-enter'), 400);
     }, 150);
@@ -4537,6 +5292,12 @@ const BILAN_PASSAGES = [
           <div class="cat-icon">📖</div>
           <div class="cat-label">Le Répertoire</div>
           <div class="cat-desc">Vos mots &amp; expressions sauvegardés</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile labo-tile-grenier" style="--cat-color:#2A0E00;--cat-accent:#FF6B1A" onclick="App.navigate('grenier')">
+          <div class="cat-icon">🗃️</div>
+          <div class="cat-label">Le Grenier</div>
+          <div class="cat-desc">Révisez vos mots par répétition</div>
           <div class="cat-glow"></div>
         </button>
         <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#002220;--cat-accent:#0D9488" disabled>
@@ -8175,6 +8936,1009 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (score >= 28) return 'Accent fort — ce son a besoin de travail.';
     return 'Recommencez — rapprochez-vous du son cible!';
   },
+
+  // ══════════════════════════════════════════════════════════════
+  //  LE GRENIER — Spaced Repetition System
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Data ──────────────────────────────────────────────────────
+  _grenier: null,   // { decks: [...], cards: [...] }
+  _grenierFabOpen: false,
+  _grenierView: 'grid',   // 'grid' | 'list'
+  _grenierStudySession: null, // { deckId, queue:[], idx, stats }
+  _grenierCardRecording: false,
+  _grenierCardAudioBlob: null,
+  _grenierCardSettingsOpen: false,
+  _grenierRhymesCache: {},  // cardId -> rhymes html
+
+  // deck accent colour palette
+  GRENIER_COLORS: [
+    '#FF6B1A','#FF8C42','#FFB347',
+    '#34D399','#60A5FA','#818CF8',
+    '#F472B6','#F87171','#A3E635',
+  ],
+
+  loadGrenier() {
+    try {
+      const raw = localStorage.getItem('phonetique_grenier');
+      if (raw) this._grenier = JSON.parse(raw);
+    } catch(e) {}
+    if (!this._grenier) this._grenier = { decks: [], cards: [] };
+    if (!this._grenier.decks) this._grenier.decks = [];
+    if (!this._grenier.cards) this._grenier.cards = [];
+  },
+
+  saveGrenier() {
+    localStorage.setItem('phonetique_grenier', JSON.stringify(this._grenier));
+  },
+
+  _gid() {
+    return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  },
+
+  // ── SM-2-inspired scheduler ───────────────────────────────────
+  // ratings: 0=Again 1=Hard 2=Good 3=Easy
+  _grSchedule(card, rating) {
+    const now = Date.now();
+    let { interval = 1, ease = 2.5, reps = 0 } = card;
+    if (rating === 0) {
+      // Again — reset
+      interval = 1;
+      reps = 0;
+      ease = Math.max(1.3, ease - 0.2);
+    } else {
+      reps += 1;
+      if (reps === 1)      interval = (rating === 3) ? 4 : 1;
+      else if (reps === 2) interval = (rating === 3) ? 6 : 3;
+      else {
+        const mult = rating === 3 ? ease + 0.15 : rating === 2 ? ease : Math.max(1.3, ease - 0.15);
+        interval = Math.round(interval * mult);
+      }
+      if (rating === 1) ease = Math.max(1.3, ease - 0.15);
+      if (rating === 3) ease = Math.min(3.0, ease + 0.1);
+    }
+    card.interval = interval;
+    card.ease = ease;
+    card.reps = reps;
+    card.lastReviewed = now;
+    card.nextDue = now + interval * 86400000;
+    return card;
+  },
+
+  _grDueCards(deckId) {
+    const now = Date.now();
+    return (this._grenier.cards || []).filter(c =>
+      c.deckId === deckId && !c.deleted && (!c.nextDue || c.nextDue <= now)
+    );
+  },
+
+  _grDeckDueCount(deckId) {
+    return this._grDueCards(deckId).length;
+  },
+
+  // ── renderGrenier (Home) ──────────────────────────────────────
+  renderGrenier() {
+    if (!this._grenier) this.loadGrenier();
+    this.currentScreen = 'grenier';
+    const decks = this._grenier.decks;
+    const view = this._grenierView;
+    this._grenierFabOpen = false;
+
+    const deckCards = decks.map(deck => {
+      const due = this._grDeckDueCount(deck.id);
+      const total = (this._grenier.cards || []).filter(c => c.deckId === deck.id && !c.deleted).length;
+      const accent = deck.color || '#FF6B1A';
+      if (view === 'grid') {
+        return `<button class="grenier-deck-card" style="--deck-accent:${accent}"
+          onclick="App._grOpenDeck('${deck.id}')"
+          oncontextmenu="event.preventDefault();App._grDeckCtxMenu('${deck.id}',event)"
+          data-deck-id="${deck.id}">
+          <div class="grenier-deck-name">${deck.name}</div>
+          <div class="grenier-deck-meta">
+            <span>${total} carte${total!==1?'s':''}</span>
+            <span class="grenier-deck-due ${due===0?'zero':''}">${due===0?'✓ À jour':`${due} à réviser`}</span>
+          </div>
+        </button>`;
+      } else {
+        return `<button class="grenier-deck-card" style="--deck-accent:${accent}"
+          onclick="App._grOpenDeck('${deck.id}')"
+          oncontextmenu="event.preventDefault();App._grDeckCtxMenu('${deck.id}',event)"
+          data-deck-id="${deck.id}">
+          <div class="grenier-deck-accent-dot"></div>
+          <div class="grenier-deck-name">${deck.name}</div>
+          <div class="grenier-deck-meta">
+            <span>${total}</span>
+          </div>
+          <span class="grenier-deck-due ${due===0?'zero':''}">${due===0?'✓':due}</span>
+        </button>`;
+      }
+    }).join('');
+
+    const emptyHtml = decks.length === 0 ? `
+      <div class="grenier-empty">
+        <div class="grenier-empty-icon">🗃️</div>
+        <div class="grenier-empty-text">Aucun paquet pour l'instant.<br>Appuyez sur <b>+</b> pour commencer!</div>
+      </div>` : '';
+
+    document.getElementById('main').innerHTML = `
+      <div class="grenier-screen">
+        <div class="grenier-header">
+          <div>
+            <div class="grenier-title">Le Grenier</div>
+            <div class="grenier-tagline">Répétition espacée</div>
+          </div>
+          <div class="grenier-header-actions">
+            <button class="grenier-icon-btn" onclick="App.navigate('labo')" title="Le Labo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/>
+                <line x1="9" y1="3" x2="15" y2="3"/>
+              </svg>
+            </button>
+            <button class="grenier-icon-btn" onclick="App.navigate('settings')" title="Paramètres">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="grenier-toolbar">
+          <div class="grenier-view-toggle">
+            <button class="grenier-view-btn ${view==='grid'?'active':''}" onclick="App._grSetView('grid')" title="Grille">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+            <button class="grenier-view-btn ${view==='list'?'active':''}" onclick="App._grSetView('list')" title="Liste">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="grenier-decks-area">
+          ${emptyHtml}
+          <div class="grenier-decks-${view}">${deckCards}</div>
+        </div>
+      </div>
+      <div class="grenier-fab-menu" id="grFabMenu">
+        <button class="grenier-fab-item" onclick="App._grShowNewCard()">
+          <span class="grenier-fab-label">Nouvelle carte</span>
+          <span class="grenier-fab-icon">🃏</span>
+        </button>
+        <button class="grenier-fab-item" onclick="App._grShowNewDeck()">
+          <span class="grenier-fab-label">Nouveau paquet</span>
+          <span class="grenier-fab-icon">📦</span>
+        </button>
+      </div>
+      <button class="grenier-fab" id="grFab" onclick="App._grToggleFab()">+</button>
+    `;
+    this._grSetupLongPress();
+  },
+
+  _grSetView(v) {
+    this._grenierView = v;
+    this.renderGrenier();
+  },
+
+  _grToggleFab() {
+    this._grenierFabOpen = !this._grenierFabOpen;
+    document.getElementById('grFab')?.classList.toggle('open', this._grenierFabOpen);
+    document.getElementById('grFabMenu')?.classList.toggle('open', this._grenierFabOpen);
+  },
+
+  _grOpenDeck(deckId) {
+    const due = this._grDueCards(deckId).length;
+    const total = (this._grenier.cards||[]).filter(c=>c.deckId===deckId&&!c.deleted).length;
+    if (total === 0) { this.showToast('Ce paquet est vide. Ajoutez des cartes d\'abord!'); return; }
+    if (due === 0) { this.showToast('Tout à jour! Revenez plus tard 🎉'); return; }
+    this.navigate('grenier-study', { deckId });
+  },
+
+  _grSetupLongPress() {
+    const area = document.querySelector('.grenier-decks-area');
+    if (!area) return;
+    let timer = null;
+    area.addEventListener('pointerdown', e => {
+      const card = e.target.closest('[data-deck-id]');
+      if (!card) return;
+      timer = setTimeout(() => {
+        timer = null;
+        this._grDeckCtxMenu(card.dataset.deckId, e);
+      }, 550);
+    }, { passive: true });
+    area.addEventListener('pointerup', () => { if (timer) { clearTimeout(timer); timer = null; } });
+    area.addEventListener('pointermove', () => { if (timer) { clearTimeout(timer); timer = null; } });
+  },
+
+  _grDeckCtxMenu(deckId, e) {
+    document.querySelector('.grenier-ctx-menu')?.remove();
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    if (!deck) return;
+    const menu = document.createElement('div');
+    menu.className = 'grenier-ctx-menu';
+    const x = Math.min(e.clientX, window.innerWidth - 200);
+    const y = Math.min(e.clientY, window.innerHeight - 180);
+    menu.style.cssText = `left:${x}px;top:${y}px`;
+    menu.innerHTML = `
+      <button class="grenier-ctx-item" onclick="App._grImportFolder('${deckId}');App._grCloseCtx()">
+        📂 Importer dossier Répertoire
+      </button>
+      <button class="grenier-ctx-item" onclick="App._grShowRenameDeck('${deckId}');App._grCloseCtx()">
+        ✏️ Renommer
+      </button>
+      <div class="grenier-ctx-sep"></div>
+      <button class="grenier-ctx-item danger" onclick="App._grDeleteDeck('${deckId}');App._grCloseCtx()">
+        🗑️ Supprimer le paquet
+      </button>
+    `;
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener('pointerdown', this._grCloseCtxBound = () => this._grCloseCtx(), { once: true }), 50);
+  },
+
+  _grCloseCtx() {
+    document.querySelector('.grenier-ctx-menu')?.remove();
+  },
+
+  _grDeleteDeck(deckId) {
+    this._grenier.decks = this._grenier.decks.filter(d => d.id !== deckId);
+    this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deckId);
+    this.saveGrenier();
+    this.renderGrenier();
+    this.showToast('Paquet supprimé');
+  },
+
+  _grShowRenameDeck(deckId) {
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    if (!deck) return;
+    this._grShowDeckModal(deck);
+  },
+
+  // ── New Deck Modal ────────────────────────────────────────────
+  _grShowNewDeck() {
+    this._grenierFabOpen = false;
+    document.getElementById('grFab')?.classList.remove('open');
+    document.getElementById('grFabMenu')?.classList.remove('open');
+    this._grShowDeckModal(null);
+  },
+
+  _grShowDeckModal(existingDeck) {
+    document.querySelector('.grenier-modal-bg')?.remove();
+    const folders = (this._repertoire?.folders || []).filter(f => f.id !== 'default');
+    const allFolders = (this._repertoire?.folders || []);
+    const colorSwatches = this.GRENIER_COLORS.map((c, i) =>
+      `<span class="grenier-color-swatch ${(!existingDeck && i===0)||existingDeck?.color===c?'selected':''}"
+        style="background:${c}" data-color="${c}" onclick="App._grSelectColor(this,'${c}')"></span>`
+    ).join('');
+    const folderChips = allFolders.map(f =>
+      `<span class="grenier-folder-chip" data-folder-id="${f.id}" onclick="App._grToggleFolderChip(this)">${f.emoji||'📁'} ${f.name}</span>`
+    ).join('');
+
+    const bg = document.createElement('div');
+    bg.className = 'grenier-modal-bg';
+    bg.innerHTML = `
+      <div class="grenier-modal" onclick="event.stopPropagation()">
+        <div class="grenier-modal-title">${existingDeck ? 'Modifier le paquet' : 'Nouveau paquet'}</div>
+        <div class="grenier-modal-label">Nom du paquet</div>
+        <input class="grenier-modal-input" id="grDeckNameInput" placeholder="Ex: Vocabulaire quotidien" value="${existingDeck?.name||''}">
+        <div class="grenier-modal-label">Couleur du paquet</div>
+        <div class="grenier-color-row" id="grColorRow">${colorSwatches}</div>
+        ${!existingDeck ? `
+        <div class="grenier-modal-label">Importer depuis Répertoire (optionnel)</div>
+        <div class="grenier-folder-chips" id="grFolderChips">${folderChips||'<span style="color:var(--text3);font-size:13px">Aucun dossier disponible</span>'}</div>
+        ` : ''}
+        <div class="grenier-modal-actions">
+          <button class="grenier-btn-secondary" onclick="App._grCloseDeckModal()">Annuler</button>
+          <button class="grenier-btn-primary" onclick="App._grSaveDeck('${existingDeck?.id||''}')">
+            ${existingDeck ? 'Enregistrer' : 'Créer'}
+          </button>
+        </div>
+      </div>
+    `;
+    bg.addEventListener('pointerdown', e => { if (e.target === bg) this._grCloseDeckModal(); });
+    document.body.appendChild(bg);
+    setTimeout(() => document.getElementById('grDeckNameInput')?.focus(), 100);
+    this._grSelectedColor = existingDeck?.color || this.GRENIER_COLORS[0];
+  },
+
+  _grSelectColor(el, color) {
+    document.querySelectorAll('#grColorRow .grenier-color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    this._grSelectedColor = color;
+  },
+
+  _grToggleFolderChip(el) {
+    el.classList.toggle('selected');
+  },
+
+  _grCloseDeckModal() {
+    document.querySelector('.grenier-modal-bg')?.remove();
+  },
+
+  _grSaveDeck(existingId) {
+    const name = document.getElementById('grDeckNameInput')?.value.trim();
+    if (!name) { document.getElementById('grDeckNameInput')?.focus(); return; }
+    const color = this._grSelectedColor || this.GRENIER_COLORS[0];
+
+    if (existingId) {
+      const deck = this._grenier.decks.find(d => d.id === existingId);
+      if (deck) { deck.name = name; deck.color = color; }
+      this.saveGrenier();
+      this._grCloseDeckModal();
+      this.renderGrenier();
+      return;
+    }
+
+    // New deck
+    const deckId = this._gid();
+    this._grenier.decks.push({ id: deckId, name, color, createdAt: Date.now() });
+
+    // Import selected repertoire folders
+    const selectedFolderIds = [...document.querySelectorAll('#grFolderChips .grenier-folder-chip.selected')]
+      .map(el => el.dataset.folderId);
+    let importCount = 0;
+    if (selectedFolderIds.length > 0) {
+      const existingWords = new Set(this._grenier.cards.filter(c=>c.deckId===deckId).map(c=>c.word?.toLowerCase()));
+      selectedFolderIds.forEach(fid => {
+        const words = (this._repertoire?.words || []).filter(w => w.folderId === fid || (fid==='default'&&!w.folderId));
+        words.forEach(w => {
+          if (!existingWords.has(w.word?.toLowerCase())) {
+            this._grenier.cards.push({
+              id: this._gid(), deckId, word: w.word, ipa: w.ipa||'',
+              interval:1, ease:2.5, reps:0, nextDue: Date.now(),
+              showListen:true, showRecord:true, showRhymes:true,
+              color: null, createdAt: Date.now()
+            });
+            existingWords.add(w.word?.toLowerCase());
+            importCount++;
+          }
+        });
+      });
+    }
+
+    this.saveGrenier();
+    this._grCloseDeckModal();
+    this.renderGrenier();
+    this.showToast(`Paquet "${name}" créé${importCount>0?' ('+importCount+' mots importés)':''}! 🎉`);
+  },
+
+  _grImportFolder(deckId) {
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    if (!deck) return;
+    const allFolders = (this._repertoire?.folders || []);
+    if (allFolders.length === 0) { this.showToast('Aucun dossier dans le Répertoire'); return; }
+    const colorSwatches = '';
+    const bg = document.createElement('div');
+    bg.className = 'grenier-modal-bg';
+    const chips = allFolders.map(f =>
+      `<span class="grenier-folder-chip" data-folder-id="${f.id}" onclick="App._grToggleFolderChip(this)">${f.emoji||'📁'} ${f.name}</span>`
+    ).join('');
+    bg.innerHTML = `
+      <div class="grenier-modal" onclick="event.stopPropagation()">
+        <div class="grenier-modal-title">Importer dans "${deck.name}"</div>
+        <div class="grenier-modal-label">Choisir des dossiers</div>
+        <div class="grenier-folder-chips" id="grFolderChips">${chips}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Les mots déjà présents dans le paquet seront ignorés.</div>
+        <div class="grenier-modal-actions">
+          <button class="grenier-btn-secondary" onclick="App._grCloseDeckModal()">Annuler</button>
+          <button class="grenier-btn-primary" onclick="App._grDoImportFolder('${deckId}')">Importer</button>
+        </div>
+      </div>`;
+    bg.addEventListener('pointerdown', e => { if (e.target === bg) this._grCloseDeckModal(); });
+    document.body.appendChild(bg);
+  },
+
+  _grDoImportFolder(deckId) {
+    const selectedFolderIds = [...document.querySelectorAll('#grFolderChips .grenier-folder-chip.selected')]
+      .map(el => el.dataset.folderId);
+    if (selectedFolderIds.length === 0) { this.showToast('Sélectionnez au moins un dossier'); return; }
+    const existingWords = new Set(this._grenier.cards.filter(c=>c.deckId===deckId&&!c.deleted).map(c=>c.word?.toLowerCase()));
+    let count = 0;
+    selectedFolderIds.forEach(fid => {
+      (this._repertoire?.words||[]).filter(w=>w.folderId===fid||(fid==='default'&&!w.folderId)).forEach(w => {
+        if (!existingWords.has(w.word?.toLowerCase())) {
+          this._grenier.cards.push({
+            id:this._gid(), deckId, word:w.word, ipa:w.ipa||'',
+            interval:1, ease:2.5, reps:0, nextDue:Date.now(),
+            showListen:true, showRecord:true, showRhymes:true, color:null, createdAt:Date.now()
+          });
+          existingWords.add(w.word?.toLowerCase());
+          count++;
+        }
+      });
+    });
+    this.saveGrenier();
+    this._grCloseDeckModal();
+    this.showToast(`${count} mot${count!==1?'s':''} importé${count!==1?'s':''} ✓`);
+  },
+
+  // ── Card Creation Screen ──────────────────────────────────────
+  _grShowNewCard() {
+    this._grenierFabOpen = false;
+    document.getElementById('grFab')?.classList.remove('open');
+    document.getElementById('grFabMenu')?.classList.remove('open');
+    this.navigate('grenier-card-create', {});
+  },
+
+  renderGrenierCardCreate(params) {
+    const editCard = params.editCardId ? this._grenier.cards.find(c=>c.id===params.editCardId) : null;
+    const decks = this._grenier.decks;
+    const deckOptions = decks.map(d =>
+      `<option value="${d.id}" ${(editCard?.deckId||params.deckId)===d.id?'selected':''}>${d.name}</option>`
+    ).join('') + `<option value="__new__">+ Nouveau paquet…</option>`;
+
+    const colorSwatches = this.GRENIER_COLORS.map((c,i) =>
+      `<span class="grenier-color-swatch ${(!editCard&&i===0)||(editCard?.color===c)?'selected':''}"
+        style="background:${c}" data-color="${c}" onclick="App._grSelectCardColor(this,'${c}')"></span>`
+    ).join('');
+    const noColorSwatch = `<span class="grenier-color-swatch ${!editCard?.color?'selected':''}"
+      style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright)" data-color=""
+      onclick="App._grSelectCardColor(this,'')" title="Par défaut">✕</span>`;
+
+    this._grSelectedCardColor = editCard?.color || '';
+    document.getElementById('main').innerHTML = `
+      <div class="grenier-card-create-screen">
+        <div class="screen-header">
+          <button class="back-btn" onclick="App.goBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="screen-title" style="color:var(--gr-orange)">${editCard?'Modifier la carte':'Nouvelle carte'}</div>
+        </div>
+        <div style="padding:0 0 100px;overflow-y:auto;max-height:calc(100vh - 60px)">
+          <div class="grenier-form-section" style="padding:16px 16px 0">
+            <div class="grenier-modal-label">Paquet</div>
+            <select class="grenier-modal-input" id="grCardDeckSelect" onchange="App._grCardDeckChange(this)">
+              ${deckOptions}
+            </select>
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">Mot ou expression</div>
+            <input class="grenier-modal-input" id="grCardWordInput" placeholder="Ex: bonjour, un chat…"
+              value="${editCard?.word||''}" oninput="App._grCardAutoIpa(this.value)">
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">IPA (optionnel)</div>
+            <input class="grenier-modal-input" id="grCardIpaInput" placeholder="Se remplit automatiquement…"
+              value="${editCard?.ipa||''}">
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">Couleur de la carte (optionnel)</div>
+            <div class="grenier-color-row">${noColorSwatch}${colorSwatches}</div>
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">Options</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              ${['showListen','showRecord','showRhymes'].map(k => {
+                const labels = {showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦'};
+                const on = editCard ? editCard[k]!==false : true;
+                return `<div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
+                  <span>${labels[k]}</span>
+                  <div class="grenier-toggle ${on?'on':''}" id="grOpt_${k}" onclick="this.classList.toggle('on')"></div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+          <div style="padding:16px">
+            <button class="grenier-btn-primary" onclick="App._grSaveCard('${editCard?.id||''}')">
+              ${editCard?'Enregistrer':'Ajouter la carte'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    if (!editCard) setTimeout(() => document.getElementById('grCardWordInput')?.focus(), 200);
+  },
+
+  _grSelectCardColor(el, color) {
+    document.querySelectorAll('.grenier-color-row .grenier-color-swatch').forEach(s=>s.classList.remove('selected'));
+    el.classList.add('selected');
+    this._grSelectedCardColor = color;
+  },
+
+  _grCardDeckChange(sel) {
+    if (sel.value === '__new__') {
+      this._grShowNewDeck();
+      sel.value = this._grenier.decks[0]?.id || '';
+    }
+  },
+
+  async _grCardAutoIpa(word) {
+    if (!word || word.length < 2) return;
+    const ipaEl = document.getElementById('grCardIpaInput');
+    if (!ipaEl || ipaEl.value) return;
+    try {
+      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.trim())}`);
+      const data = await resp.json();
+      const entries = data.fr || [];
+      for (const e of entries) {
+        const ipa = e.pronunciations?.find(p => p.ipa)?.ipa;
+        if (ipa && !ipaEl.value) { ipaEl.value = ipa; break; }
+      }
+    } catch(e) {}
+  },
+
+  _grSaveCard(editId) {
+    const word = document.getElementById('grCardWordInput')?.value.trim();
+    if (!word) { document.getElementById('grCardWordInput')?.focus(); return; }
+    const ipa = document.getElementById('grCardIpaInput')?.value.trim() || '';
+    let deckId = document.getElementById('grCardDeckSelect')?.value;
+    if (!deckId || deckId === '__new__') {
+      if (this._grenier.decks.length === 0) { this.showToast('Créez d\'abord un paquet'); return; }
+      deckId = this._grenier.decks[0].id;
+    }
+    const color = this._grSelectedCardColor || null;
+    const showListen = document.getElementById('grOpt_showListen')?.classList.contains('on');
+    const showRecord = document.getElementById('grOpt_showRecord')?.classList.contains('on');
+    const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on');
+
+    if (editId) {
+      const card = this._grenier.cards.find(c=>c.id===editId);
+      if (card) Object.assign(card, { word, ipa, color, showListen, showRecord, showRhymes });
+    } else {
+      this._grenier.cards.push({
+        id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
+        nextDue:Date.now(), showListen, showRecord, showRhymes,
+        color, createdAt:Date.now()
+      });
+    }
+    this.saveGrenier();
+    this.showToast(editId ? 'Carte modifiée ✓' : `"${word}" ajouté au paquet ✓`);
+    this.goBack();
+  },
+
+  // ── Study Session ─────────────────────────────────────────────
+  renderGrenierStudy(deckId) {
+    if (!deckId) { this.navigate('grenier'); return; }
+    const deck = this._grenier.decks.find(d=>d.id===deckId);
+    if (!deck) { this.navigate('grenier'); return; }
+
+    const due = this._grDueCards(deckId);
+    // Shuffle queue
+    const queue = [...due].sort(() => Math.random() - 0.5);
+    this._grenierStudySession = {
+      deckId, queue, idx: 0,
+      stats: { again:0, hard:0, good:0, easy:0 }
+    };
+    this._grenierCardRecording = false;
+    this._grenierCardAudioBlob = null;
+    this._grenierCardSettingsOpen = false;
+    this._grRenderStudyCard();
+  },
+
+  _grRenderStudyCard() {
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const { queue, idx, deckId } = sess;
+    const deck = this._grenier.decks.find(d=>d.id===deckId);
+    const accent = deck?.color || '#FF6B1A';
+
+    if (idx >= queue.length) {
+      this._grRenderDone();
+      return;
+    }
+
+    const card = queue[idx];
+    const prog = idx / queue.length;
+    const ipa = card.ipa || '';
+    const cardAccent = card.color || accent;
+    const cardBg = cardAccent + '18';
+    const cardBorder = cardAccent + '55';
+
+    document.getElementById('main').innerHTML = `
+      <div class="grenier-study-screen">
+        <div class="grenier-study-header">
+          <button class="grenier-icon-btn" onclick="App.navigate('grenier')" title="Quitter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="grenier-study-progress">
+            <div class="grenier-study-progress-fill" style="width:${Math.round(prog*100)}%"></div>
+          </div>
+          <div class="grenier-study-count">${idx+1} / ${queue.length}</div>
+          <button class="grenier-icon-btn" onclick="App._grOpenCardSettings('${card.id}')" title="Options">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+        </div>
+        <div class="grenier-card-area" id="grCardArea">
+          <div class="grenier-card" style="--card-accent:${cardAccent};--card-bg:${cardBg};--card-border:${cardBorder}">
+            <div class="grenier-card-word" style="color:${cardAccent}">${card.word}</div>
+            ${ipa ? `<div class="grenier-card-ipa">${ipa}</div>` : '<div class="grenier-card-ipa" id="grIpaLoading" style="opacity:0.4">Chargement IPA…</div>'}
+            <div class="grenier-card-listen-row">
+              ${card.showListen!==false ? `
+              <button class="grenier-card-btn" id="grListenBtn" onclick="App._grSpeak('${card.word.replace(/'/g,"\\'")}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                Écouter
+              </button>` : ''}
+              <button class="grenier-card-btn" id="grRelistenBtn" onclick="App._grPlayRecording()" disabled style="opacity:0.4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Réécouter
+              </button>
+            </div>
+            ${card.showRecord!==false ? `
+            <div class="grenier-record-btn-wrap">
+              <button class="grenier-record-btn" id="grRecordBtn" onclick="App._grToggleRecording()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+              </button>
+              <div class="grenier-record-label" id="grRecordLabel">Appuyer pour enregistrer</div>
+            </div>
+            <div id="grScoreArea" style="margin:4px 0"></div>
+            ` : ''}
+            ${card.showRhymes!==false ? `
+            <button class="grenier-rhymes-btn" id="grRhymesBtn" onclick="App._grFetchRhymes('${card.id}','${card.word.replace(/'/g,"\\'")}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Rimes ✦
+            </button>
+            <div id="grRhymesSlot"></div>
+            ` : ''}
+          </div>
+          <div class="grenier-rating-area">
+            <div class="grenier-rating-label">Comment était-ce ?</div>
+            <div class="grenier-rating-btns">
+              <button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>maintenant</span></button>
+              <button class="grenier-rate-btn gr-rate-hard"  onclick="App._grRate(1)">Difficile<span>+1j</span></button>
+              <button class="grenier-rate-btn gr-rate-good"  onclick="App._grRate(2)">Bien<span>+${Math.max(1,Math.round((card.interval||1)*2.5))}j</span></button>
+              <button class="grenier-rate-btn gr-rate-easy"  onclick="App._grRate(3)">Facile<span>+${Math.max(4,Math.round((card.interval||1)*3.5))}j</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // If no IPA stored, try to fetch it
+    if (!ipa) this._grFetchCardIpa(card);
+
+    // Pre-load cached rhymes
+    if (card.showRhymes!==false && this._grenierRhymesCache[card.id]) {
+      const slot = document.getElementById('grRhymesSlot');
+      if (slot) slot.innerHTML = this._grenierRhymesCache[card.id];
+    }
+    if (card.showRhymes!==false && card._rhymes) {
+      this._grenierRhymesCache[card.id] = card._rhymes;
+      const slot = document.getElementById('grRhymesSlot');
+      if (slot) slot.innerHTML = card._rhymes;
+      const btn = document.getElementById('grRhymesBtn');
+      if (btn) btn.style.display = 'none';
+    }
+  },
+
+  async _grFetchCardIpa(card) {
+    try {
+      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(card.word)}`);
+      const data = await resp.json();
+      const entries = data.fr || [];
+      for (const e of entries) {
+        const ipa = e.pronunciations?.find(p=>p.ipa)?.ipa;
+        if (ipa) {
+          card.ipa = ipa;
+          this.saveGrenier();
+          const el = document.getElementById('grIpaLoading');
+          if (el) { el.textContent = ipa; el.style.opacity='0.85'; el.removeAttribute('id'); }
+          break;
+        }
+      }
+    } catch(e) {}
+  },
+
+  _grSpeak(word) {
+    const key = this.settings?.azureKey;
+    const region = this.settings?.azureRegion || 'eastus';
+    if (!key) { this.showToast('Clé Azure requise pour la synthèse vocale'); return; }
+    try {
+      const sc = SpeechSDK.SpeechConfig.fromSubscription(key, region);
+      sc.speechSynthesisLanguage = 'fr-FR';
+      sc.speechSynthesisVoiceName = 'fr-FR-DeniseNeural';
+      const synth = new SpeechSDK.SpeechSynthesizer(sc, null);
+      const btn = document.getElementById('grListenBtn');
+      if (btn) btn.style.opacity = '0.5';
+      synth.speakTextAsync(word, result => {
+        synth.close();
+        if (btn) btn.style.opacity = '';
+      }, err => { synth.close(); if (btn) btn.style.opacity=''; });
+    } catch(e) { this.showToast('Erreur synthèse vocale'); }
+  },
+
+  _grMediaRecorder: null,
+  _grRecordChunks: [],
+
+  async _grToggleRecording() {
+    if (this._grenierCardRecording) {
+      this._grStopRecording();
+    } else {
+      await this._grStartRecording();
+    }
+  },
+
+  async _grStartRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this._grRecordChunks = [];
+      this._grMediaRecorder = new MediaRecorder(stream);
+      this._grMediaRecorder.ondataavailable = e => { if (e.data.size>0) this._grRecordChunks.push(e.data); };
+      this._grMediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t=>t.stop());
+        const blob = new Blob(this._grRecordChunks, { type:'audio/webm' });
+        this._grenierCardAudioBlob = blob;
+        const relisten = document.getElementById('grRelistenBtn');
+        if (relisten) { relisten.disabled = false; relisten.style.opacity=''; }
+        this._grScoreRecording(blob);
+      };
+      this._grMediaRecorder.start();
+      this._grenierCardRecording = true;
+      const btn = document.getElementById('grRecordBtn');
+      const lbl = document.getElementById('grRecordLabel');
+      if (btn) btn.classList.add('recording');
+      if (lbl) lbl.textContent = 'Enregistrement… (appuyer pour arrêter)';
+    } catch(e) { this.showToast('Microphone non disponible'); }
+  },
+
+  _grStopRecording() {
+    if (this._grMediaRecorder && this._grMediaRecorder.state !== 'inactive') {
+      this._grMediaRecorder.stop();
+    }
+    this._grenierCardRecording = false;
+    const btn = document.getElementById('grRecordBtn');
+    const lbl = document.getElementById('grRecordLabel');
+    if (btn) btn.classList.remove('recording');
+    if (lbl) lbl.textContent = 'Appuyer pour enregistrer';
+  },
+
+  _grPlayRecording() {
+    if (!this._grenierCardAudioBlob) return;
+    const url = URL.createObjectURL(this._grenierCardAudioBlob);
+    const audio = new Audio(url);
+    audio.play();
+  },
+
+  async _grScoreRecording(blob) {
+    const key = this.settings?.azureKey;
+    const region = this.settings?.azureRegion || 'eastus';
+    if (!key) return;
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+    const scoreEl = document.getElementById('grScoreArea');
+    if (scoreEl) scoreEl.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--gr-orange2);opacity:0.7">Analyse en cours…</div>`;
+    try {
+      const arrayBuf = await blob.arrayBuffer();
+      const wavBlob = await this._convertToWav(arrayBuf);
+      const sc = SpeechSDK.SpeechConfig.fromSubscription(key, region);
+      sc.speechRecognitionLanguage = 'fr-FR';
+      const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
+        card.word,
+        SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SpeechSDK.PronunciationAssessmentGranularity.Word, true
+      );
+      const pushStream = SpeechSDK.AudioInputStream.createPushStream();
+      const wavBytes = new Uint8Array(await wavBlob.arrayBuffer());
+      pushStream.write(wavBytes.buffer);
+      pushStream.close();
+      const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+      const recognizer = new SpeechSDK.SpeechRecognizer(sc, audioConfig);
+      paConfig.applyTo(recognizer);
+      recognizer.recognizeOnceAsync(result => {
+        recognizer.close();
+        try {
+          const d = JSON.parse(result.json);
+          const nbest = d?.NBest?.[0];
+          const score = Math.round(nbest?.PronScore || nbest?.PronunciationAssessment?.PronScore || 0);
+          const color = this.scoreColor(score);
+          if (scoreEl) scoreEl.innerHTML = `
+            <div style="text-align:center;padding:8px;background:${color}22;border-radius:10px;border:1px solid ${color}44">
+              <span style="font-family:var(--font-display);font-size:22px;font-weight:700;color:${color}">${score}</span>
+              <span style="font-size:11px;color:var(--text3)">/100</span>
+              <div style="font-size:11px;color:${color};margin-top:2px">${this.scoreFeedback(score)}</div>
+            </div>`;
+        } catch(e) {
+          if (scoreEl) scoreEl.innerHTML = '';
+        }
+      }, err => { recognizer.close(); if (scoreEl) scoreEl.innerHTML=''; });
+    } catch(e) { if (scoreEl) scoreEl.innerHTML=''; }
+  },
+
+  async _convertToWav(arrayBuf) {
+    try {
+      const ctx = new (window.AudioContext||window.webkitAudioContext)({ sampleRate:16000 });
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      const ch = decoded.getChannelData(0);
+      const buf = new ArrayBuffer(44+ch.length*2);
+      const v = new DataView(buf);
+      const w = (off,s)=>{for(let i=0;i<s.length;i++)v.setUint8(off+i,s.charCodeAt(i));};
+      const sr=16000,nc=1;
+      w(0,'RIFF');v.setUint32(4,36+ch.length*2,true);w(8,'WAVE');w(12,'fmt ');
+      v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+      v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);
+      v.setUint16(34,16,true);w(36,'data');v.setUint32(40,ch.length*2,true);
+      for(let i=0;i<ch.length;i++){const s=Math.max(-1,Math.min(1,ch[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
+      ctx.close();
+      return new Blob([buf],{type:'audio/wav'});
+    } catch(e) { return new Blob([arrayBuf],{type:'audio/webm'}); }
+  },
+
+  async _grFetchRhymes(cardId, word) {
+    const key = this.settings?.openrouterKey;
+    if (!key) { this.showToast('Clé OpenRouter requise pour les rimes'); return; }
+    const btn = document.getElementById('grRhymesBtn');
+    const slot = document.getElementById('grRhymesSlot');
+    if (!btn || !slot) return;
+    if (this._grenierRhymesCache[cardId]) {
+      slot.innerHTML = this._grenierRhymesCache[cardId]; btn.style.display='none'; return;
+    }
+    btn.style.opacity='0.5'; btn.textContent='Chargement…';
+    try {
+      const model = this.settings?.rhymesModel || 'google/gemini-2.5-flash-lite-preview-09-2025';
+      const prompt = `For the French word "${word}", provide 8 French words that rhyme with it.
+For each rhyming word, give its IPA pronunciation.
+Think through the IPA carefully step by step first, then output ONLY a JSON array like:
+[{"word":"chat","ipa":"/ʃa/"},...]
+No preamble, no markdown fences, just the JSON array.`;
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions',{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+        body:JSON.stringify({model,messages:[{role:'user',content:prompt}],max_tokens:600})
+      });
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content || '';
+      const match = text.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('No JSON');
+      const rhymes = JSON.parse(match[0]);
+      const html = `<div style="margin-top:10px">
+        <div style="font-size:11px;color:var(--gr-amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Rimes pour « ${word} »</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${rhymes.map(r=>`<div style="background:var(--gr-surface2);border:1px solid var(--gr-border-bright);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--gr-orange2)">
+            ${r.word}<span style="font-size:11px;color:var(--text3);margin-left:5px;font-weight:400">${r.ipa||''}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+      this._grenierRhymesCache[cardId] = html;
+      // Persist on card
+      const card = this._grenier.cards.find(c=>c.id===cardId);
+      if (card) { card._rhymes = html; this.saveGrenier(); }
+      slot.innerHTML = html;
+      btn.style.display = 'none';
+    } catch(e) {
+      btn.style.opacity=''; btn.textContent='Rimes ✦';
+      this.showToast('Erreur chargement des rimes');
+    }
+  },
+
+  _grRate(rating) {
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+
+    // Update stats
+    const rNames = ['again','hard','good','easy'];
+    sess.stats[rNames[rating]]++;
+
+    // Schedule card (rating 0 = re-queue at end)
+    this._grSchedule(card, rating);
+    if (rating === 0) {
+      // Push to end of queue for re-practice
+      sess.queue.push(card);
+    }
+    const updCard = this._grenier.cards.find(c=>c.id===card.id);
+    if (updCard) Object.assign(updCard, { interval:card.interval, ease:card.ease, reps:card.reps, nextDue:card.nextDue, lastReviewed:card.lastReviewed });
+    this.saveGrenier();
+
+    // Next card
+    sess.idx++;
+    this._grenierCardRecording = false;
+    this._grenierCardAudioBlob = null;
+    this._grRenderStudyCard();
+  },
+
+  _grRenderDone() {
+    const sess = this._grenierStudySession;
+    const { stats } = sess || { stats:{again:0,hard:0,good:0,easy:0} };
+    const total = stats.again+stats.hard+stats.good+stats.easy;
+    document.getElementById('main').innerHTML = `
+      <div class="grenier-study-screen">
+        <div class="grenier-study-header">
+          <button class="grenier-icon-btn" onclick="App.navigate('grenier')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div style="flex:1"></div>
+        </div>
+        <div class="grenier-done-screen">
+          <div class="grenier-done-icon">🔥</div>
+          <div class="grenier-done-title">Session terminée!</div>
+          <div class="grenier-done-sub">Excellent travail. Continuez comme ça!</div>
+          <div class="grenier-done-stats">
+            <div class="grenier-done-stat">
+              <span class="grenier-done-stat-val" style="color:#F87171">${stats.again}</span>
+              <span class="grenier-done-stat-lbl">À revoir</span>
+            </div>
+            <div class="grenier-done-stat">
+              <span class="grenier-done-stat-val" style="color:#FBBF24">${stats.hard}</span>
+              <span class="grenier-done-stat-lbl">Difficile</span>
+            </div>
+            <div class="grenier-done-stat">
+              <span class="grenier-done-stat-val" style="color:#34D399">${stats.good}</span>
+              <span class="grenier-done-stat-lbl">Bien</span>
+            </div>
+            <div class="grenier-done-stat">
+              <span class="grenier-done-stat-val" style="color:#818CF8">${stats.easy}</span>
+              <span class="grenier-done-stat-lbl">Facile</span>
+            </div>
+          </div>
+          <button class="grenier-btn-primary" style="max-width:240px" onclick="App.navigate('grenier')">
+            Retour aux paquets
+          </button>
+        </div>
+      </div>
+    `;
+    this._grenierStudySession = null;
+  },
+
+  // ── Card Settings Panel ───────────────────────────────────────
+  _grOpenCardSettings(cardId) {
+    document.querySelector('.grenier-card-settings-panel')?.remove();
+    const card = this._grenier.cards.find(c=>c.id===cardId);
+    if (!card) return;
+    const deckName = this._grenier.decks.find(d=>d.id===card.deckId)?.name || '';
+    const colorSwatches = this.GRENIER_COLORS.map((c,i)=>
+      `<span class="grenier-color-swatch ${card.color===c?'selected':''}" style="background:${c}" data-color="${c}"
+        onclick="App._grCardSettingColorChange('${cardId}',this,'${c}')"></span>`
+    ).join('');
+    const noColor=`<span class="grenier-color-swatch ${!card.color?'selected':''}"
+      style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright)" data-color=""
+      onclick="App._grCardSettingColorChange('${cardId}',this,'')">✕</span>`;
+
+    const panel = document.createElement('div');
+    panel.className = 'grenier-card-settings-panel';
+    panel.innerHTML = `
+      <div class="grenier-card-settings-title">⚙️ Options de la carte</div>
+      <div class="grenier-settings-row">
+        <span style="font-size:12px;color:var(--text3)">Paquet</span>
+        <span style="font-size:13px;color:var(--gr-orange2)">${deckName}</span>
+      </div>
+      <div class="grenier-settings-row">
+        <span>Couleur de la carte</span>
+        <div class="grenier-color-row" style="margin:0">${noColor}${colorSwatches}</div>
+      </div>
+      ${['showListen','showRecord','showRhymes'].map(k=>{
+        const labels={showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦'};
+        const on = card[k]!==false;
+        return `<div class="grenier-settings-row">
+          <span>${labels[k]}</span>
+          <div class="grenier-toggle ${on?'on':''}" onclick="App._grToggleCardOpt('${cardId}','${k}',this)"></div>
+        </div>`;
+      }).join('')}
+      <div class="grenier-settings-row">
+        <span style="color:#F87171">Supprimer la carte</span>
+        <button style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#F87171;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13px;font-family:var(--font-body)"
+          onclick="App._grDeleteCardFromSession('${cardId}')">Supprimer</button>
+      </div>
+      <button class="grenier-btn-secondary" style="margin-top:14px" onclick="App._grCloseCardSettings()">Fermer</button>
+    `;
+    document.body.appendChild(panel);
+    this._grenierCardSettingsOpen = true;
+    setTimeout(()=>document.addEventListener('pointerdown', this._grSettingsBg = e=>{
+      if (!panel.contains(e.target)) this._grCloseCardSettings();
+    },{once:true}),100);
+  },
+
+  _grCloseCardSettings() {
+    document.querySelector('.grenier-card-settings-panel')?.remove();
+    this._grenierCardSettingsOpen = false;
+  },
+
+  _grCardSettingColorChange(cardId, el, color) {
+    el.closest('.grenier-color-row')?.querySelectorAll('.grenier-color-swatch').forEach(s=>s.classList.remove('selected'));
+    el.classList.add('selected');
+    const card = this._grenier.cards.find(c=>c.id===cardId);
+    if (card) { card.color = color || null; this.saveGrenier(); }
+  },
+
+  _grToggleCardOpt(cardId, key, toggleEl) {
+    toggleEl.classList.toggle('on');
+    const card = this._grenier.cards.find(c=>c.id===cardId);
+    if (card) { card[key] = toggleEl.classList.contains('on'); this.saveGrenier(); }
+  },
+
+  _grDeleteCardFromSession(cardId) {
+    const card = this._grenier.cards.find(c=>c.id===cardId);
+    if (card) { card.deleted = true; this.saveGrenier(); }
+    this._grCloseCardSettings();
+    const sess = this._grenierStudySession;
+    if (sess) { sess.idx++; this._grRenderStudyCard(); }
+    this.showToast('Carte supprimée');
+  },
+
 };
 
 // Démarrer l'application
