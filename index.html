@@ -3244,6 +3244,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-size: 12px;
   color: var(--gr-orange);
   white-space: nowrap;
+  margin-right: 6px;
 }
 .grenier-card-area {
   flex: 1;
@@ -3286,7 +3287,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-card-ipa {
   text-align: center;
   font-size: 18px;
-  color: var(--gr-amber);
+  color: color-mix(in srgb, var(--card-accent, var(--gr-amber)) 70%, var(--gr-amber));
   opacity: 0.85;
   margin-bottom: 16px;
   letter-spacing: 0.03em;
@@ -3299,10 +3300,10 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-card-btn {
   flex: 1;
   background: var(--gr-surface2);
-  border: 1px solid var(--gr-border-bright);
+  border: 1px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 40%, transparent);
   border-radius: var(--radius-sm);
   padding: 10px;
-  color: var(--gr-orange2);
+  color: var(--card-accent, var(--gr-orange2));
   font-size: 13px;
   font-weight: 600;
   display: flex;
@@ -3313,7 +3314,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-family: var(--font-body);
   transition: background 0.15s;
 }
-.grenier-card-btn:hover { background: var(--gr-orange-dim); }
+.grenier-card-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 15%, transparent); }
 .grenier-card-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .grenier-record-btn-wrap {
   display: flex;
@@ -3324,28 +3325,27 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-record-btn {
   width: 68px; height: 68px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gr-orange), var(--gr-amber));
+  background: linear-gradient(135deg, var(--card-accent, var(--gr-orange)), color-mix(in srgb, var(--card-accent, var(--gr-orange)) 60%, #fff));
   border: none;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px var(--gr-orange-glow);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent);
   transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
 }
 .grenier-record-btn:hover { transform: scale(1.05); }
 .grenier-record-btn.recording {
   animation: grPulse 1.2s ease-in-out infinite;
-  box-shadow: 0 0 0 0 var(--gr-orange-glow);
 }
 @keyframes grPulse {
-  0%,100% { box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 0 0 rgba(255,107,26,0.4); }
-  50% { box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 0 14px rgba(255,107,26,0); }
+  0%,100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent), 0 0 0 0 color-mix(in srgb, var(--card-accent, var(--gr-orange)) 40%, transparent); }
+  50% { box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent), 0 0 0 14px rgba(255,107,26,0); }
 }
 .grenier-record-btn svg { width: 28px; height: 28px; }
-.grenier-record-label { font-size: 12px; color: var(--gr-orange2); margin-top: 6px; opacity: 0.8; }
+.grenier-record-label { font-size: 12px; color: var(--card-accent, var(--gr-orange2)); margin-top: 6px; opacity: 0.8; }
 
 /* Rating buttons */
 .grenier-rating-area {
@@ -3390,21 +3390,25 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 /* rhymes slot in card */
 .grenier-rhymes-btn {
   background: none;
-  border: 1.5px solid var(--gr-border-bright);
-  border-radius: 100px;
-  padding: 6px 16px;
-  font-size: 12px;
+  border: 1.5px solid rgba(255,179,71,0.5);
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--gr-amber);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin: 8px auto 0;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  width: 100%;
+  white-space: nowrap;
   font-family: var(--font-body);
   transition: background 0.15s;
 }
-.grenier-rhymes-btn:hover { background: var(--gr-orange-dim); }
+.grenier-rhymes-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.grenier-rhymes-btn:hover { background: rgba(255,179,71,0.1); }
 
 /* Card settings panel */
 .grenier-card-settings-panel {
@@ -9126,8 +9130,65 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const due = this._grDueCards(deckId).length;
     const total = (this._grenier.cards||[]).filter(c=>c.deckId===deckId&&!c.deleted).length;
     if (total === 0) { this.showToast('Ce paquet est vide. Ajoutez des cartes d\'abord!'); return; }
-    if (due === 0) { this.showToast('Tout à jour! Revenez plus tard 🎉'); return; }
+    if (due === 0) {
+      this._grShowPracticeAnywayModal(deckId, total);
+      return;
+    }
     this.navigate('grenier-study', { deckId });
+  },
+
+  _grShowPracticeAnywayModal(deckId, total) {
+    document.querySelector('.grenier-modal-bg')?.remove();
+    const deck = this._grenier.decks.find(d=>d.id===deckId);
+    const bg = document.createElement('div');
+    bg.className = 'grenier-modal-bg';
+    bg.innerHTML = `
+      <div class="grenier-modal" onclick="event.stopPropagation()" style="text-align:center">
+        <div style="font-size:40px;margin-bottom:10px">🎉</div>
+        <div class="grenier-modal-title">Tout à jour !</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6">
+          Toutes les cartes de <b style="color:var(--gr-orange)">${deck?.name||'ce paquet'}</b> ont été révisées.<br>
+          Voulez-vous quand même pratiquer ?
+        </div>
+        <div style="background:var(--gr-surface);border:1px solid var(--gr-border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="text-align:left">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Réinitialiser les intervalles</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">Vos choix écraseront la progression précédente</div>
+            </div>
+            <div class="grenier-toggle on" id="grOverrideToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="grenier-modal-actions">
+          <button class="grenier-btn-secondary" onclick="App._grCloseDeckModal()">Annuler</button>
+          <button class="grenier-btn-primary" onclick="App._grStartPracticeAnyway('${deckId}')">
+            Pratiquer (${total} cartes)
+          </button>
+        </div>
+      </div>
+    `;
+    bg.addEventListener('pointerdown', e => { if (e.target === bg) this._grCloseDeckModal(); });
+    document.body.appendChild(bg);
+  },
+
+  _grStartPracticeAnyway(deckId) {
+    const override = document.getElementById('grOverrideToggle')?.classList.contains('on');
+    this._grCloseDeckModal();
+    // Build queue from all non-deleted cards in deck
+    const allCards = (this._grenier.cards||[]).filter(c=>c.deckId===deckId&&!c.deleted);
+    if (override) {
+      // Reset due dates so ratings will persist but we practice now
+      allCards.forEach(c => { c.nextDue = Date.now(); });
+      this.saveGrenier();
+    }
+    const queue = [...allCards].sort(() => Math.random() - 0.5);
+    this._grenierStudySession = { deckId, queue, idx: 0, stats: { again:0, hard:0, good:0, easy:0 }, practiceMode: true };
+    this._grenierCardRecording = false;
+    this._grenierCardAudioBlob = null;
+    this._grenierCardSettingsOpen = false;
+    this._grRenderStudyCard();
+    this.navHistory.push({ screen: 'grenier-study', params: { deckId } });
+    this.currentScreen = 'grenier-study';
   },
 
   _grSetupLongPress() {
@@ -9148,31 +9209,49 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
   _grDeckCtxMenu(deckId, e) {
     document.querySelector('.grenier-ctx-menu')?.remove();
+    document.querySelector('.grenier-ctx-overlay')?.remove();
     const deck = this._grenier.decks.find(d => d.id === deckId);
     if (!deck) return;
+
+    // Invisible overlay to catch outside taps
+    const overlay = document.createElement('div');
+    overlay.className = 'grenier-ctx-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:199';
+    overlay.addEventListener('click', () => { overlay.remove(); document.querySelector('.grenier-ctx-menu')?.remove(); });
+    document.body.appendChild(overlay);
+
     const menu = document.createElement('div');
     menu.className = 'grenier-ctx-menu';
-    const x = Math.min(e.clientX, window.innerWidth - 200);
-    const y = Math.min(e.clientY, window.innerHeight - 180);
+    const x = Math.min(e.clientX, window.innerWidth - 210);
+    const y = Math.min(e.clientY, window.innerHeight - 220);
     menu.style.cssText = `left:${x}px;top:${y}px`;
-    menu.innerHTML = `
-      <button class="grenier-ctx-item" onclick="App._grImportFolder('${deckId}');App._grCloseCtx()">
-        📂 Importer dossier Répertoire
-      </button>
-      <button class="grenier-ctx-item" onclick="App._grShowRenameDeck('${deckId}');App._grCloseCtx()">
-        ✏️ Renommer
-      </button>
-      <div class="grenier-ctx-sep"></div>
-      <button class="grenier-ctx-item danger" onclick="App._grDeleteDeck('${deckId}');App._grCloseCtx()">
-        🗑️ Supprimer le paquet
-      </button>
-    `;
+
+    const addItem = (emoji, label, fn, danger=false) => {
+      const btn = document.createElement('button');
+      btn.className = 'grenier-ctx-item' + (danger ? ' danger' : '');
+      btn.innerHTML = emoji + ' ' + label;
+      btn.addEventListener('click', ev => {
+        ev.stopPropagation();
+        overlay.remove();
+        menu.remove();
+        fn();
+      });
+      menu.appendChild(btn);
+    };
+
+    addItem('🎨', 'Changer la couleur', () => this._grShowDeckModal(deck));
+    addItem('📂', 'Importer dossier Répertoire', () => this._grImportFolder(deckId));
+    addItem('✏️', 'Renommer', () => this._grShowRenameDeck(deckId));
+    const sep = document.createElement('div'); sep.className = 'grenier-ctx-sep';
+    menu.appendChild(sep);
+    addItem('🗑️', 'Supprimer le paquet', () => this._grDeleteDeck(deckId), true);
+
     document.body.appendChild(menu);
-    setTimeout(() => document.addEventListener('pointerdown', this._grCloseCtxBound = () => this._grCloseCtx(), { once: true }), 50);
   },
 
   _grCloseCtx() {
     document.querySelector('.grenier-ctx-menu')?.remove();
+    document.querySelector('.grenier-ctx-overlay')?.remove();
   },
 
   _grDeleteDeck(deckId) {
@@ -9345,6 +9424,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.saveGrenier();
     this._grCloseDeckModal();
     this.showToast(`${count} mot${count!==1?'s':''} importé${count!==1?'s':''} ✓`);
+    // Re-render deck list so counts update immediately
+    if (this.currentScreen === 'grenier') this.renderGrenier();
   },
 
   // ── Card Creation Screen ──────────────────────────────────────
@@ -9441,15 +9522,27 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!word || word.length < 2) return;
     const ipaEl = document.getElementById('grCardIpaInput');
     if (!ipaEl || ipaEl.value) return;
+    const ipa = await this._grFetchIpaForWord(word.trim());
+    if (ipa && ipaEl && !ipaEl.value) ipaEl.value = ipa;
+  },
+
+  async _grFetchIpaForWord(word) {
     try {
-      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.trim())}`);
+      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
+      if (!resp.ok) return '';
       const data = await resp.json();
-      const entries = data.fr || [];
-      for (const e of entries) {
-        const ipa = e.pronunciations?.find(p => p.ipa)?.ipa;
-        if (ipa && !ipaEl.value) { ipaEl.value = ipa; break; }
+      // Try fr first, then any language key
+      const langs = ['fr', ...Object.keys(data).filter(k => k !== 'fr')];
+      for (const lang of langs) {
+        const entries = data[lang] || [];
+        for (const e of entries) {
+          // pronunciations array on entry
+          const p = e.pronunciations?.find(p => p.ipa);
+          if (p?.ipa) return p.ipa;
+        }
       }
-    } catch(e) {}
+      return '';
+    } catch(e) { return ''; }
   },
 
   _grSaveCard(editId) {
@@ -9562,7 +9655,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               Rimes ✦
             </button>
-            <div id="grRhymesSlot"></div>
+            <div id="grRhymesSlot" style="display:none"></div>
             ` : ''}
           </div>
           <div class="grenier-rating-area">
@@ -9582,35 +9675,43 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!ipa) this._grFetchCardIpa(card);
 
     // Pre-load cached rhymes
-    if (card.showRhymes!==false && this._grenierRhymesCache[card.id]) {
+    const cachedRhymes = this._grenierRhymesCache[card.id] || card._rhymes;
+    if (card.showRhymes!==false && cachedRhymes) {
+      this._grenierRhymesCache[card.id] = cachedRhymes;
       const slot = document.getElementById('grRhymesSlot');
-      if (slot) slot.innerHTML = this._grenierRhymesCache[card.id];
-    }
-    if (card.showRhymes!==false && card._rhymes) {
-      this._grenierRhymesCache[card.id] = card._rhymes;
-      const slot = document.getElementById('grRhymesSlot');
-      if (slot) slot.innerHTML = card._rhymes;
       const btn = document.getElementById('grRhymesBtn');
-      if (btn) btn.style.display = 'none';
+      if (slot) slot.innerHTML = cachedRhymes;
+      if (btn) {
+        const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+        btn.innerHTML = `${svg} Voir les rimes ✦`;
+        btn.onclick = () => App._grToggleRhymes();
+      }
+    }
+  },
+
+  _grToggleRhymes() {
+    const slot = document.getElementById('grRhymesSlot');
+    const btn = document.getElementById('grRhymesBtn');
+    if (!slot) return;
+    const isHidden = slot.style.display === 'none';
+    slot.style.display = isHidden ? '' : 'none';
+    if (btn) {
+      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.innerHTML = isHidden ? `${svg} Masquer les rimes ✦` : `${svg} Voir les rimes ✦`;
     }
   },
 
   async _grFetchCardIpa(card) {
-    try {
-      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(card.word)}`);
-      const data = await resp.json();
-      const entries = data.fr || [];
-      for (const e of entries) {
-        const ipa = e.pronunciations?.find(p=>p.ipa)?.ipa;
-        if (ipa) {
-          card.ipa = ipa;
-          this.saveGrenier();
-          const el = document.getElementById('grIpaLoading');
-          if (el) { el.textContent = ipa; el.style.opacity='0.85'; el.removeAttribute('id'); }
-          break;
-        }
-      }
-    } catch(e) {}
+    const ipa = await this._grFetchIpaForWord(card.word);
+    if (ipa) {
+      card.ipa = ipa;
+      this.saveGrenier();
+      const el = document.getElementById('grIpaLoading');
+      if (el) { el.textContent = ipa; el.style.opacity = '0.85'; el.removeAttribute('id'); }
+    } else {
+      const el = document.getElementById('grIpaLoading');
+      if (el) { el.textContent = ''; }
+    }
   },
 
   _grSpeak(word) {
@@ -9788,9 +9889,13 @@ No preamble, no markdown fences, just the JSON array.`;
       const card = this._grenier.cards.find(c=>c.id===cardId);
       if (card) { card._rhymes = html; this.saveGrenier(); }
       slot.innerHTML = html;
-      btn.style.display = 'none';
+      slot.style.display = '';
+      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.innerHTML = `${svg} Masquer les rimes ✦`;
+      btn.onclick = () => App._grToggleRhymes();
     } catch(e) {
-      btn.style.opacity=''; btn.textContent='Rimes ✦';
+      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.style.opacity=''; btn.innerHTML=`${svg} Rimes ✦`;
       this.showToast('Erreur chargement des rimes');
     }
   },
@@ -9921,7 +10026,24 @@ No preamble, no markdown fences, just the JSON array.`;
     el.closest('.grenier-color-row')?.querySelectorAll('.grenier-color-swatch').forEach(s=>s.classList.remove('selected'));
     el.classList.add('selected');
     const card = this._grenier.cards.find(c=>c.id===cardId);
-    if (card) { card.color = color || null; this.saveGrenier(); }
+    if (!card) return;
+    card.color = color || null;
+    this.saveGrenier();
+    // Live update the card in the DOM
+    const sess = this._grenierStudySession;
+    if (sess) {
+      const deckId = sess.deckId;
+      const deck = this._grenier.decks.find(d=>d.id===deckId);
+      const accent = color || deck?.color || '#FF6B1A';
+      const cardEl = document.querySelector('.grenier-card');
+      if (cardEl) {
+        cardEl.style.setProperty('--card-accent', accent);
+        cardEl.style.setProperty('--card-bg', accent + '18');
+        cardEl.style.setProperty('--card-border', accent + '55');
+        const wordEl = cardEl.querySelector('.grenier-card-word');
+        if (wordEl) wordEl.style.color = accent;
+      }
+    }
   },
 
   _grToggleCardOpt(cardId, key, toggleEl) {
