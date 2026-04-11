@@ -1261,13 +1261,33 @@ body::before {
 }
 
 .settings-group-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text3);
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.settings-group-title:hover { background: var(--surface2); }
+.settings-group-title .settings-chev {
+  width: 16px; height: 16px;
+  transition: transform 0.2s;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.settings-group.open .settings-group-title { border-bottom: 1px solid var(--border); }
+.settings-group.open .settings-chev { transform: rotate(90deg); }
+.settings-group-body {
+  display: none;
+}
+.settings-group.open .settings-group-body {
+  display: block;
 }
 
 .settings-row {
@@ -3302,9 +3322,10 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 /* ── Study Session ───────────────────────────────────────────── */
 .grenier-study-screen {
   background: var(--gr-bg);
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .grenier-study-header {
   display: flex;
@@ -3314,6 +3335,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   border-bottom: 1px solid var(--gr-border);
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 .grenier-study-progress {
   flex: 1;
@@ -3341,21 +3363,24 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 16px;
-  overflow-y: auto;
+  padding: 12px 16px 0;
+  overflow: hidden;
   position: relative;
   z-index: 1;
+  min-height: 0;
 }
-/* The main card — mimics Mot en Focus but orange */
+/* The main card — fixed height, fills available space */
 .grenier-card {
   width: 100%;
   max-width: 480px;
+  flex: 1;
+  min-height: 0;
   background: var(--card-bg, var(--gr-surface));
   border: 1.5px solid var(--card-border, var(--gr-border-bright));
   border-radius: var(--radius-lg);
-  padding: 24px 20px 20px;
+  padding: 20px 20px 16px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(255,107,26,0.1);
 }
 .grenier-card::before {
@@ -3364,6 +3389,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   top: 0; left: 0; right: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--card-accent, var(--gr-orange)), var(--gr-amber));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 .grenier-card-word {
   font-family: var(--font-display);
@@ -3537,7 +3563,9 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-rating-area {
   width: 100%;
   max-width: 480px;
-  margin-top: 14px;
+  padding: 12px 16px 16px;
+  flex-shrink: 0;
+  background: var(--gr-bg);
 }
 .grenier-rating-label {
   text-align: center;
@@ -5549,13 +5577,21 @@ const BILAN_PASSAGES = [
 
         <div class="wf-input-card">
           <div class="wf-input-row">
-            <input class="wf-input" id="wfInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
-              onkeydown="if(event.key==='Enter')App.wfLoadWord()"
-              value="${preloadWord.replace(/"/g,'&quot;')}">
+            <div style="position:relative;flex:1;display:flex;align-items:center">
+              <input class="wf-input" id="wfInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
+                onkeydown="if(event.key==='Enter')App.wfLoadWord()"
+                oninput="App._wfOnInputChange()"
+                value="${preloadWord.replace(/"/g,'&quot;')}"
+                style="width:100%;padding-right:36px">
+              <button id="wfClearBtn" onclick="App._wfClearInput()" title="Effacer"
+                style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;display:${preloadWord ? 'flex' : 'none'};align-items:center;justify-content:center;border-radius:50%;transition:color 0.15s">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
           <div class="wf-btn-row">
             <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
-            <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" style="${preloadWord ? '' : 'display:none'}" title="Ajouter au Grenier">
+            <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" title="Ajouter au Grenier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               Au Grenier
             </button>
@@ -5668,9 +5704,6 @@ const BILAN_PASSAGES = [
     const repNavBtn = document.getElementById('wfRepNavBtn');
     if (repNavBtn) repNavBtn.style.display = '';
     App._wfUpdateRepBtn();
-    // Show Grenier add button
-    const grenierAddBtn = document.getElementById('wfGrenierAddBtn');
-    if (grenierAddBtn) grenierAddBtn.style.display = '';
     // Record this word in lookup history (IPA added after fetch)
     this._wfRecordLookup(word, '');
     // Reset score/playback
@@ -5789,9 +5822,6 @@ const BILAN_PASSAGES = [
     // Update save button state
     const saveBtn2 = document.getElementById('wfSaveBtn');
     if (saveBtn2) { saveBtn2.style.display = ''; App._wfUpdateSaveBtn(); }
-    // Show Grenier add button
-    const grenierBtn2 = document.getElementById('wfGrenierAddBtn');
-    if (grenierBtn2) grenierBtn2.style.display = '';
   },
 
   wfRecordComplete(score, color) {
@@ -6218,17 +6248,27 @@ const BILAN_PASSAGES = [
         try {
           const data = JSON.parse(ev.target.result);
           if (data.folders && data.words) {
-            // Merge: keep existing words not in import, add new ones
-            const existingIds = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
-            const newWords = data.words.filter(w => !existingIds.has(w.word.toLowerCase()));
-            // Merge folders
+            // Merge folders (skip legacy 'default' folder)
             const existingFolderIds = new Set(this._repertoire.folders.map(f => f.id));
-            const newFolders = data.folders.filter(f => !existingFolderIds.has(f.id) && f.id !== 'default');
+            const newFolders = data.folders.filter(f => f.id !== 'default' && !existingFolderIds.has(f.id));
             this._repertoire.folders.push(...newFolders);
+            // Merge words — remap 'default' folderId to first real folder
+            const firstFolderId = this._repertoire.folders[0]?.id;
+            const existingWordSet = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
+            const newWords = data.words
+              .filter(w => !existingWordSet.has(w.word?.toLowerCase()))
+              .map(w => ({
+                ...w,
+                folderId: (w.folderId === 'default' || !w.folderId)
+                  ? (firstFolderId || w.folderId)
+                  : w.folderId
+              }));
             this._repertoire.words.unshift(...newWords);
             this.saveRepertoire();
+            // Auto-sync imported folders/words into Grenier
+            const { decksCreated, cardsAdded } = this.syncRepertoireToGrenier(false);
             this.renderRepertoire();
-            this.showToast(`${newWords.length} mot(s) importé(s) ✓`);
+            this.showToast(`${newWords.length} mot(s) importé(s)${decksCreated > 0 ? `, ${decksCreated} paquet(s) Grenier créé(s)` : ''} ✓`);
           } else {
             this.showToast('Format de fichier invalide.');
           }
@@ -6645,6 +6685,19 @@ const BILAN_PASSAGES = [
     this._repClearSelection();
     this._wfFromBilan = false;
     this.navigate('word-focus', { word: w1.word, compareWord: w2.word });
+  },
+
+  _wfClearInput() {
+    const input = document.getElementById('wfInput');
+    if (input) { input.value = ''; input.focus(); }
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+  },
+
+  _wfOnInputChange() {
+    const input = document.getElementById('wfInput');
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (clearBtn) clearBtn.style.display = input?.value ? 'flex' : 'none';
   },
 
   // ── WF SAVE BUTTON ───────────────────────────────────────────
@@ -7951,6 +8004,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   renderSettings() {
+    const chevSvg = `<svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+    const defPrompt = this.settings.definitionPrompt || '';
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
@@ -7959,139 +8014,273 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         <div class="screen-title">Paramètres</div>
       </div>
       <div class="settings-container">
-        <div class="settings-group">
-          <div class="settings-group-title">Apparence</div>
-          <div class="settings-row">
-            <div class="settings-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              Mode sombre
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="darkModeToggle" ${this.settings.darkMode ? 'checked' : ''} onchange="App.toggleDarkMode(this.checked)">
-              <span class="toggle-slider"></span>
-            </label>
+
+        <!-- APPARENCE -->
+        <div class="settings-group" id="sg-apparence">
+          <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-apparence')">
+            <span>Apparence</span>${chevSvg}
           </div>
-          <div class="settings-row">
-            <div class="settings-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              Variante française
+          <div class="settings-group-body">
+            <div class="settings-row">
+              <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                Mode sombre
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="darkModeToggle" ${this.settings.darkMode ? 'checked' : ''} onchange="App.toggleDarkMode(this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
-            <select class="settings-select" onchange="App.setFrVariant(this.value)">
-              <option value="fr-CA" ${this.settings.frVariant === 'fr-CA' ? 'selected' : ''}>Français canadien</option>
-              <option value="fr-FR" ${this.settings.frVariant === 'fr-FR' ? 'selected' : ''}>Français standard</option>
-            </select>
-          </div>
-          <div class="settings-row">
-            <div class="settings-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
-              Démarrer sur Le Labo
+            <div class="settings-row">
+              <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Variante française
+              </div>
+              <select class="settings-select" onchange="App.setFrVariant(this.value)">
+                <option value="fr-CA" ${this.settings.frVariant === 'fr-CA' ? 'selected' : ''}>Français canadien</option>
+                <option value="fr-FR" ${this.settings.frVariant === 'fr-FR' ? 'selected' : ''}>Français standard</option>
+              </select>
             </div>
-            <label class="toggle">
-              <input type="checkbox" id="launchLaboToggle" ${this.settings.launchScreen === 'labo' ? 'checked' : ''} onchange="App.setLaunchScreen(this.checked ? 'labo' : 'home')">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-row">
+              <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
+                Démarrer sur Le Labo
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="launchLaboToggle" ${this.settings.launchScreen === 'labo' ? 'checked' : ''} onchange="App.setLaunchScreen(this.checked ? 'labo' : 'home')">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
         </div>
 
-        <div class="settings-group">
-          <div class="settings-group-title">Intelligence artificielle</div>
-          <div class="settings-field">
-            <label class="field-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Clé OpenRouter
-            </label>
-            <input class="settings-input" type="password" placeholder="sk-or-..." id="orKey" value="${this.settings.openrouterKey}" oninput="App.settings.openrouterKey=this.value;App.saveSettings()">
+        <!-- INTELLIGENCE ARTIFICIELLE -->
+        <div class="settings-group" id="sg-ia">
+          <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-ia')">
+            <span>Intelligence artificielle</span>${chevSvg}
           </div>
-          <div class="settings-field">
-            <label class="field-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              Modèle OpenRouter
-            </label>
-            <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="orModel" value="${this.settings.openrouterModel}" oninput="App.settings.openrouterModel=this.value;App.saveSettings()">
-          </div>
-          <div class="settings-field">
-            <label class="field-label" style="color:#FBBF24">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              Modèle Rimes ✦
-            </label>
-            <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}" oninput="App.settings.rhymesModel=this.value;App.saveSettings()">
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Recommandé : gemini-2.5-flash ou claude-sonnet-4-5 (meilleure phonétique)</div>
-          </div>
-          <div class="settings-field">
-            <label class="field-label" style="color:#A78BFA">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              Modèle Définitions ✦
-            </label>
-            <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="defModel" value="${this.settings.definitionModel || ''}" oninput="App.settings.definitionModel=this.value;App.saveSettings()">
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Pour le verso des cartes Grenier. Laissez vide pour utiliser le modèle principal.</div>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-group-title">Azure Pronunciation</div>
-          <div class="settings-field">
-            <label class="field-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-              Clé Azure Speech
-            </label>
-            <input class="settings-input" type="password" placeholder="Clé Azure..." id="azKey" value="${this.settings.azureKey}" oninput="App.settings.azureKey=this.value;App.saveSettings()">
-          </div>
-          <div class="settings-field">
-            <label class="field-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              Région Azure
-            </label>
-            <input class="settings-input" type="text" placeholder="eastus" id="azRegion" value="${this.settings.azureRegion}" oninput="App.settings.azureRegion=this.value;App.saveSettings()">
-          </div>
-        </div>
-
-        <button class="settings-btn" style="margin:8px 0 4px;background:rgba(99,179,237,0.15);color:#63B3ED;border:1px solid rgba(99,179,237,0.3);border-radius:8px;padding:10px 16px;width:100%;cursor:pointer;font-size:13px" onclick="App.testAzureConnection()">
-          🔍 Tester la connexion Azure
-        </button>
-        <div id="azureTestResult" style="font-size:12px;padding:6px 8px;border-radius:6px;margin-bottom:8px;display:none"></div>
-
-        <button class="reset-scores-btn" onclick="App.confirmResetScores()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-          Réinitialiser les scores
-        </button>
-
-        <div class="settings-group" style="margin-top:16px">
-          <div class="settings-group-title">Données</div>
-
-          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-            <div style="font-size:12px;color:var(--text3)">Répertoire — mots et dossiers sauvegardés</div>
-            <div style="display:flex;gap:8px;width:100%">
-              <button class="settings-btn" style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="App.repExport()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Exporter
+          <div class="settings-group-body">
+            <div class="settings-field">
+              <label class="field-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Clé OpenRouter
+              </label>
+              <input class="settings-input" type="password" placeholder="sk-or-..." id="orKey" value="${this.settings.openrouterKey}">
+            </div>
+            <div class="settings-field">
+              <label class="field-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                Modèle principal
+              </label>
+              <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="orModel" value="${this.settings.openrouterModel}">
+            </div>
+            <div class="settings-field">
+              <label class="field-label" style="color:#FBBF24">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                Modèle Rimes ✦
+              </label>
+              <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}">
+              <div style="font-size:11px;color:var(--text3)">Recommandé : gemini-2.5-flash ou claude-sonnet-4-5</div>
+            </div>
+            <div class="settings-field">
+              <label class="field-label" style="color:#A78BFA">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                Modèle Définitions ✦
+              </label>
+              <input class="settings-input" type="text" placeholder="(utilise le modèle principal si vide)" id="defModel" value="${this.settings.definitionModel || ''}">
+              <div style="font-size:11px;color:var(--text3)">Pour le verso des cartes Grenier.</div>
+            </div>
+            <div class="settings-field">
+              <label class="field-label" style="color:#A78BFA">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Prompt Définitions ✦
+              </label>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
+                Utilisez <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{word}</code> pour insérer le mot. Laissez vide pour le prompt par défaut.
+              </div>
+              <textarea class="settings-input" id="defPrompt" rows="4" placeholder="Ex: Donne une définition courte en français du mot {word}. Réponds uniquement avec la définition."
+                style="resize:vertical;font-size:13px;line-height:1.5;font-family:var(--font-body)">${defPrompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+              <button onclick="App._settingsPreviewPrompt()" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:#A78BFA;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);margin-top:2px;display:flex;align-items:center;gap:6px;width:fit-content">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Tester le prompt
               </button>
-              <button class="settings-btn" style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="App.repImport()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Importer
+              <div id="defPromptPreview" style="display:none;margin-top:8px;font-size:13px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:10px;line-height:1.6"></div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border)">
+              <button onclick="App._saveIASettings()" style="width:100%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#A78BFA;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                Sauvegarder les paramètres IA
               </button>
             </div>
           </div>
+        </div>
 
-          <div class="settings-row" style="margin-top:8px">
-            <div style="font-size:13px;color:var(--text2)">Vider le cache des rimes</div>
-            <button class="settings-btn" style="background:rgba(251,191,36,0.1);color:#FBBF24;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer" onclick="App.clearRhymesCache()">
-              Effacer
-            </button>
+        <!-- AZURE -->
+        <div class="settings-group" id="sg-azure">
+          <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-azure')">
+            <span>Azure Pronunciation</span>${chevSvg}
           </div>
-
-          <div class="settings-row" style="margin-top:4px">
-            <div>
-              <div style="font-size:13px;color:#F87171">Effacer toutes les données</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">Répertoire, Grenier, scores, historique</div>
+          <div class="settings-group-body">
+            <div class="settings-field">
+              <label class="field-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                Clé Azure Speech
+              </label>
+              <input class="settings-input" type="password" placeholder="Clé Azure..." id="azKey" value="${this.settings.azureKey}">
             </div>
-            <button class="settings-btn" style="background:rgba(248,113,113,0.12);color:#F87171;border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" onclick="App.confirmEraseAll()">
-              Tout effacer
-            </button>
+            <div class="settings-field">
+              <label class="field-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Région Azure
+              </label>
+              <input class="settings-input" type="text" placeholder="eastus" id="azRegion" value="${this.settings.azureRegion}">
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+              <button onclick="App._saveAzureSettings()" style="width:100%;background:rgba(99,179,237,0.12);border:1px solid rgba(99,179,237,0.35);color:#63B3ED;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                Sauvegarder
+              </button>
+              <button onclick="App.testAzureConnection()" style="width:100%;background:rgba(99,179,237,0.08);border:1px solid rgba(99,179,237,0.2);color:#63B3ED;border-radius:8px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--font-body)">
+                🔍 Tester la connexion Azure
+              </button>
+              <div id="azureTestResult" style="font-size:12px;padding:6px 8px;border-radius:6px;display:none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DONNÉES -->
+        <div class="settings-group" id="sg-donnees">
+          <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-donnees')">
+            <span>Données</span>${chevSvg}
+          </div>
+          <div class="settings-group-body">
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+              <div style="font-size:12px;color:var(--text3)">Répertoire — mots et dossiers sauvegardés</div>
+              <div style="display:flex;gap:8px;width:100%">
+                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.repExport()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Exporter
+                </button>
+                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.repImport()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Importer
+                </button>
+              </div>
+            </div>
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">🔗 Synchroniser Répertoire → Grenier</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4">Crée les paquets Grenier manquants et y ajoute les mots de chaque dossier Répertoire.</div>
+              </div>
+              <button onclick="App.syncRepertoireToGrenier()" style="width:100%;background:rgba(139,92,246,0.12);color:#A78BFA;border:1px solid rgba(139,92,246,0.35);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                Synchroniser maintenant
+              </button>
+            </div>
+            <div class="settings-row">
+              <div style="font-size:13px;color:var(--text2)">Vider le cache des rimes</div>
+              <button style="background:rgba(251,191,36,0.1);color:#FBBF24;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body)" onclick="App.clearRhymesCache()">
+                Effacer
+              </button>
+            </div>
+            <div class="settings-row">
+              <div style="font-size:13px;color:var(--text2)">Réinitialiser les scores</div>
+              <button style="background:rgba(251,191,36,0.1);color:#FBBF24;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body)" onclick="App.confirmResetScores()">
+                Réinitialiser
+              </button>
+            </div>
+            <div class="settings-row" style="border-bottom:none">
+              <div>
+                <div style="font-size:13px;color:#F87171">Effacer toutes les données</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Répertoire, Grenier, scores, historique</div>
+              </div>
+              <button style="background:rgba(248,113,113,0.12);color:#F87171;border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--font-body)" onclick="App.confirmEraseAll()">
+                Tout effacer
+              </button>
+            </div>
           </div>
         </div>
 
       </div>
     `;
+  },
+
+  _toggleSettingsGroup(id) {
+    document.getElementById(id)?.classList.toggle('open');
+  },
+
+  _saveIASettings() {
+    this.settings.openrouterKey   = document.getElementById('orKey')?.value || '';
+    this.settings.openrouterModel = document.getElementById('orModel')?.value || '';
+    this.settings.rhymesModel     = document.getElementById('rhymesModel')?.value || '';
+    this.settings.definitionModel = document.getElementById('defModel')?.value || '';
+    this.settings.definitionPrompt= document.getElementById('defPrompt')?.value.trim() || '';
+    this.saveSettings();
+    this.showToast('Paramètres IA sauvegardés ✓');
+  },
+
+  _saveAzureSettings() {
+    this.settings.azureKey    = document.getElementById('azKey')?.value || '';
+    this.settings.azureRegion = document.getElementById('azRegion')?.value || '';
+    this.saveSettings();
+    this.showToast('Paramètres Azure sauvegardés ✓');
+  },
+
+  async _settingsPreviewPrompt() {
+    const word = 'portable';
+    const rawPrompt = document.getElementById('defPrompt')?.value.trim();
+    const prompt = rawPrompt
+      ? rawPrompt.replace(/\{word\}/g, word)
+      : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition.`;
+    const key = document.getElementById('orKey')?.value || this.settings.openrouterKey;
+    const model = document.getElementById('defModel')?.value || document.getElementById('orModel')?.value || this.settings.openrouterModel || 'openai/gpt-4o-mini';
+    const preview = document.getElementById('defPromptPreview');
+    if (!preview) return;
+    if (!key) { preview.style.display = ''; preview.textContent = '⚠️ Clé OpenRouter requise.'; return; }
+    preview.style.display = '';
+    preview.textContent = 'Génération…';
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method:'POST',
+        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+      });
+      const data = await resp.json();
+      const result = data.choices?.[0]?.message?.content?.trim() || '(aucune réponse)';
+      preview.innerHTML = `<div style="font-size:10px;color:var(--text3);margin-bottom:4px">Test avec « ${word} » :</div>${result.replace(/</g,'&lt;')}`;
+    } catch(e) { preview.textContent = '⚠️ Erreur : ' + e.message; }
+  },
+
+  syncRepertoireToGrenier(showToast = true) {
+    if (!this._grenier) this.loadGrenier();
+    let decksCreated = 0, cardsAdded = 0;
+    for (const folder of this._repertoire.folders) {
+      // Find or create matching Grenier deck
+      let deck = this._grenier.decks.find(d => d.name === folder.name);
+      if (!deck) {
+        deck = { id: this._gid(), name: folder.name, color: this.GRENIER_COLORS[decksCreated % this.GRENIER_COLORS.length], _emoji: folder.emoji || '📁', createdAt: Date.now() };
+        this._grenier.decks.push(deck);
+        decksCreated++;
+      }
+      // Add words from this folder that aren't already in the deck
+      const folderWords = this._repertoire.words.filter(w => w.folderId === folder.id);
+      const existingWords = new Set(this._grenier.cards.filter(c => c.deckId === deck.id && !c.deleted).map(c => c.word?.toLowerCase()));
+      for (const w of folderWords) {
+        if (!existingWords.has(w.word?.toLowerCase())) {
+          this._grenier.cards.push({
+            id: this._gid(), deckId: deck.id, word: w.word, ipa: w.ipa || '',
+            interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+            showListen: true, showRecord: true, showRhymes: true,
+            color: null, definition: '', createdAt: Date.now()
+          });
+          existingWords.add(w.word?.toLowerCase());
+          cardsAdded++;
+        }
+      }
+    }
+    this.saveGrenier();
+    if (showToast) this.showToast(`Sync terminée — ${decksCreated} paquet(s) créé(s), ${cardsAdded} carte(s) ajoutée(s) ✓`);
+    return { decksCreated, cardsAdded };
   },
 
   toggleDarkMode(val) {
@@ -9959,14 +10148,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
             </button>
           </div>
-          <div class="grenier-rating-area">
-            <div class="grenier-rating-label">Comment était-ce ?</div>
-            <div class="grenier-rating-btns">
-              <button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>maintenant</span></button>
-              <button class="grenier-rate-btn gr-rate-hard"  onclick="App._grRate(1)">Difficile<span>+1j</span></button>
-              <button class="grenier-rate-btn gr-rate-good"  onclick="App._grRate(2)">Bien<span>+${Math.max(1,Math.round((card.interval||1)*2.5))}j</span></button>
-              <button class="grenier-rate-btn gr-rate-easy"  onclick="App._grRate(3)">Facile<span>+${Math.max(4,Math.round((card.interval||1)*3.5))}j</span></button>
-            </div>
+        </div>
+        <div class="grenier-rating-area">
+          <div class="grenier-rating-label">Comment était-ce ?</div>
+          <div class="grenier-rating-btns">
+            <button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>maintenant</span></button>
+            <button class="grenier-rate-btn gr-rate-hard"  onclick="App._grRate(1)">Difficile<span>+1j</span></button>
+            <button class="grenier-rate-btn gr-rate-good"  onclick="App._grRate(2)">Bien<span>+${Math.max(1,Math.round((card.interval||1)*2.5))}j</span></button>
+            <button class="grenier-rate-btn gr-rate-easy"  onclick="App._grRate(3)">Facile<span>+${Math.max(4,Math.round((card.interval||1)*3.5))}j</span></button>
           </div>
         </div>
       </div>
@@ -10558,24 +10747,10 @@ Réponds UNIQUEMENT avec ce JSON :
     if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Génération…'; }
     try {
       const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
-      const systemPrompt = `L’utilisateur parle français.
-Utiliser un ton décontracté. Viser un style : ~30 ans, relax, instruit, humble.
-Répondre lentement, avec des phrases courtes et naturelles.
-
-Le mot ou la phrase à analyser est : "${word}".
-
-Toujours réécrire la phrase corrigée de l’utilisateur, avec les erreurs en gras. S'il n'y a pas d'erreurs, utilise simplement un ✅.
-
-Ensuite, pour chaque mot demandé, inclus systématiquement les parties suivantes sur une seule ligne chacune, séparées par une ligne vide :
-
-1. 🧠 S'il y a plusieurs usages, explique les 2 ou 3 plus courants. Si tu mentionnes un deuxième usage, commence la phrase avec un emoji pertinent.
-2. 👶 Préciser si l'expression est liée à un groupe d’âge.
-3. 🍁 Alternative plus courante au Québec (sinon, dire 'même usage partout').
-4. 🖉 Mots similaires (ex: pour 'surfait', mentionne 'surcoté').
-5. 💬 Version plus naturelle/relax utilisable partout. Explique le contexte (amis, public, travail).
-6. 📖 Exemples d'usage (sens courant, oral québécois si différent, et exemples pour les synonymes ou sens multiples mentionnés plus haut).
-
-Respecte strictement ce format : Partie 1, 2, 3, 4, 5, 6 à chaque fois. Formate le texte de façon très concise pour collage sur flashcard.`;
+      const customPrompt = this.settings?.definitionPrompt?.trim();
+      const prompt = customPrompt
+        ? customPrompt.replace(/\{word\}/g, word)
+        : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
@@ -10597,10 +10772,41 @@ Respecte strictement ce format : Partie 1, 2, 3, 4, 5, 6 à chaque fois. Formate
   },
 
   // ── Smart Add to Grenier (from Mot en Focus) ─────────────────
-  _wfSmartAddToGrenier() {
-    const word = this._wfCurrentWord;
-    const ipa = this._wfCurrentIpa;
-    if (!word) return;
+  async _wfSmartAddToGrenier() {
+    // Use whatever is currently typed in the input, falling back to _wfCurrentWord
+    const input = document.getElementById('wfInput');
+    const typedWord = (input?.value || '').trim().toLowerCase().replace(/\s+/g,' ');
+    const word = typedWord || this._wfCurrentWord;
+    if (!word) { this.showToast('Entrez un mot d\'abord'); return; }
+
+    // If a different word is typed than the one in focus, load it first
+    if (typedWord && typedWord !== this._wfCurrentWord) {
+      // Update the input and load the word silently (IPA will fetch in background)
+      if (input) input.value = typedWord;
+      this._wfCurrentWord = typedWord;
+      this._wfCurrentIpa = '';
+      // Update word display card
+      const card = document.getElementById('wfWordCard');
+      const wordDisplay = document.getElementById('wfWordDisplay');
+      const ipaEl = document.getElementById('wfIpa');
+      const listenBtn = document.getElementById('wfListenBtn');
+      const recordBtn = document.getElementById('wfRecordBtn');
+      if (card) card.style.display = '';
+      if (wordDisplay) wordDisplay.textContent = typedWord;
+      if (ipaEl) { ipaEl.textContent = 'Chargement IPA…'; ipaEl.className = 'wf-ipa wf-ipa-loading'; }
+      if (listenBtn) listenBtn.disabled = false;
+      if (recordBtn) recordBtn.disabled = false;
+      const saveBtn = document.getElementById('wfSaveBtn');
+      if (saveBtn) { saveBtn.style.display = ''; this._wfUpdateSaveBtn(); }
+      const repNavBtn = document.getElementById('wfRepNavBtn');
+      if (repNavBtn) repNavBtn.style.display = '';
+      this._wfUpdateRepBtn();
+      this._wfRecordLookup(typedWord, '');
+      this.retryRecording();
+      // Fetch IPA in background — don't await so we show modal immediately
+      this._wfFetchIpa(typedWord);
+    }
+
     if (!this._grenier) this.loadGrenier();
     const decks = this._grenier.decks;
 
@@ -10620,6 +10826,7 @@ Respecte strictement ce format : Partie 1, 2, 3, 4, 5, 6 à chaque fois. Formate
           </button>`;
         }).join('');
 
+    const ipa = this._wfCurrentIpa || '';
     const overlay = document.createElement('div');
     overlay.className = 'rep-overlay';
     overlay.id = 'wfGrenierModal';
@@ -10769,7 +10976,10 @@ Respecte strictement ce format : Partie 1, 2, 3, 4, 5, 6 à chaque fois. Formate
     if (!key) return;
     try {
       const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
-      const prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      const customPrompt = this.settings?.definitionPrompt?.trim();
+      const prompt = customPrompt
+        ? customPrompt.replace(/\{word\}/g, word)
+        : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
