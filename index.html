@@ -1790,6 +1790,59 @@ body::before {
 .rep-new-folder-btn:hover { border-color: #14B8A6; color: #14B8A6; background: rgba(20,184,166,0.04); }
 .rep-new-folder-btn svg { width: 16px; height: 16px; }
 
+/* Glowing state when no folders exist */
+.rep-new-folder-btn--glow {
+  border-color: rgba(139,92,246,0.7);
+  color: #A78BFA;
+  background: rgba(139,92,246,0.06);
+  box-shadow: 0 0 0 0 rgba(139,92,246,0.4);
+  animation: repFolderGlow 2.2s ease-in-out infinite;
+}
+.rep-new-folder-btn--glow svg { color: #A78BFA; }
+.rep-new-folder-btn--glow:hover {
+  border-color: #8B5CF6;
+  color: #C4B5FD;
+  background: rgba(139,92,246,0.14);
+  box-shadow: 0 0 20px rgba(139,92,246,0.35);
+  animation: none;
+}
+@keyframes repFolderGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.0); border-color: rgba(139,92,246,0.4); }
+  50%       { box-shadow: 0 0 18px 4px rgba(139,92,246,0.28); border-color: rgba(139,92,246,0.85); }
+}
+
+/* Empty state for repertoire */
+.rep-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 16px;
+  text-align: center;
+}
+.rep-empty-icon { font-size: 38px; margin-bottom: 10px; }
+.rep-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.rep-empty-sub {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.5;
+  max-width: 260px;
+  margin-bottom: 12px;
+}
+.rep-empty-arrow {
+  font-size: 22px;
+  color: rgba(139,92,246,0.6);
+  animation: repArrowBounce 1.4s ease-in-out infinite;
+}
+@keyframes repArrowBounce {
+  0%,100% { transform: translateY(0); opacity: 0.6; }
+  50%     { transform: translateY(5px); opacity: 1; }
+}
+
 /* ── Export / Import bar ── */
 .rep-data-bar {
   display: flex;
@@ -1896,6 +1949,33 @@ body::before {
 .wf-rhymes-btn:hover { background: rgba(251,191,36,0.15); border-color: #FBBF24; color: #FBBF24; }
 .wf-rhymes-btn svg { width: 13px; height: 13px; }
 .wf-rhymes-btn.loading { opacity: 0.6; cursor: wait; }
+
+/* Grenier smart-add button — same height as Analyser, sits right below it */
+.wf-grenier-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.15) 100%);
+  border: 1.5px solid rgba(139,92,246,0.55);
+  border-radius: 10px;
+  color: #A78BFA;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wf-grenier-add-btn:hover {
+  background: linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.28) 100%);
+  border-color: #8B5CF6;
+  color: #C4B5FD;
+  box-shadow: 0 0 14px rgba(139,92,246,0.3);
+}
+.wf-grenier-add-btn svg { flex-shrink: 0; }
 
 /* ── Rhymes result strip ── */
 .wf-rhymes-strip {
@@ -2412,44 +2492,54 @@ body::before {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .wf-input-row {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
 }
 .wf-input {
   flex: 1;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 500;
   outline: none;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 .wf-input:focus { border-color: #14B8A6; }
-.wf-input::placeholder { color: var(--text3); font-size: 15px; }
+.wf-input::placeholder { color: var(--text3); font-size: 18px; font-weight: 400; }
 .wf-go-btn {
   background: linear-gradient(135deg, #14B8A6, #0D9488);
   border: none;
   border-radius: 10px;
-  padding: 10px 18px;
+  padding: 12px 20px;
   color: #fff;
   font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: stretch;
 }
 .wf-go-btn:hover { opacity: 0.88; }
 .wf-go-btn:active { transform: scale(0.96); }
+/* Second-row buttons area */
+.wf-btn-row {
+  display: flex;
+  gap: 10px;
+}
 
 .wf-word-card {
   background: var(--surface);
@@ -3347,6 +3437,102 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-record-btn svg { width: 28px; height: 28px; }
 .grenier-record-label { font-size: 12px; color: var(--card-accent, var(--gr-orange2)); margin-top: 6px; opacity: 0.8; }
 
+/* Card flip button — lower right */
+.grenier-flip-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 15%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 45%, transparent);
+  color: var(--card-accent, var(--gr-orange));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 2;
+}
+.grenier-flip-btn:hover {
+  background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 28%, transparent);
+  transform: scale(1.1) rotate(12deg);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 35%, transparent);
+}
+.grenier-flip-btn svg { width: 18px; height: 18px; }
+
+/* Card back / definition side */
+.grenier-card-back {
+  padding: 4px 0 8px;
+  animation: grFadeIn 0.3s ease;
+}
+@keyframes grFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.grenier-card-back-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 60%, transparent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.grenier-card-def {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text2);
+  background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 20%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  min-height: 60px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.grenier-card-def:empty::before {
+  content: 'Aucune définition.';
+  color: var(--text3);
+  font-style: italic;
+}
+.grenier-def-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 30%, transparent);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 80%, var(--text2));
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.grenier-def-edit-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 12%, transparent); }
+.grenier-def-textarea {
+  width: 100%;
+  background: var(--gr-bg2);
+  border: 1.5px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  margin-top: 8px;
+}
+.grenier-def-textarea:focus { border-color: var(--card-accent, var(--gr-orange)); }
+
 /* Rating buttons */
 .grenier-rating-area {
   width: 100%;
@@ -3389,26 +3575,27 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 
 /* rhymes slot in card */
 .grenier-rhymes-btn {
-  background: none;
-  border: 1.5px solid rgba(255,179,71,0.5);
-  border-radius: var(--radius-sm);
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gr-amber);
-  cursor: pointer;
+  background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 10%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 35%, transparent);
+  border-radius: 20px;
+  padding: 5px 10px 5px 7px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 10px 0 0;
-  width: 100%;
-  white-space: nowrap;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--card-accent, var(--gr-orange));
   font-family: var(--font-body);
-  transition: background 0.15s;
+  font-size: 11px;
+  font-weight: 600;
+  align-self: flex-start;
+  margin: 8px 0 0;
+  white-space: nowrap;
 }
-.grenier-rhymes-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-.grenier-rhymes-btn:hover { background: rgba(255,179,71,0.1); }
+.grenier-rhymes-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.grenier-rhymes-btn .gr-star { color: #FFB347; }
+.grenier-rhymes-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 18%, transparent); border-color: var(--card-accent, var(--gr-orange)); }
+.grenier-rhymes-btn.loading { opacity: 0.6; cursor: wait; }
 
 /* Card settings panel */
 .grenier-card-settings-panel {
@@ -5197,7 +5384,14 @@ const BILAN_PASSAGES = [
         case 'repertoire': this.renderRepertoire(); break;
         case 'grenier': this.renderGrenier(); break;
         case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
-        case 'grenier-study': this.renderGrenierStudy(params?.deckId || null); break;
+        case 'grenier-study':
+          // If a session is already active for this deck, just re-render current card
+          if (this._grenierStudySession && this._grenierStudySession.deckId === params?.deckId) {
+            this._grRenderStudyCard();
+          } else {
+            this.renderGrenierStudy(params?.deckId || null);
+          }
+          break;
       }
       setTimeout(() => main.classList.remove('screen-enter'), 400);
     }, 150);
@@ -5358,7 +5552,13 @@ const BILAN_PASSAGES = [
             <input class="wf-input" id="wfInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
               onkeydown="if(event.key==='Enter')App.wfLoadWord()"
               value="${preloadWord.replace(/"/g,'&quot;')}">
-            <button class="wf-go-btn" onclick="App.wfLoadWord()">Analyser</button>
+          </div>
+          <div class="wf-btn-row">
+            <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
+            <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" style="${preloadWord ? '' : 'display:none'}" title="Ajouter au Grenier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Au Grenier
+            </button>
           </div>
         </div>
 
@@ -5468,6 +5668,9 @@ const BILAN_PASSAGES = [
     const repNavBtn = document.getElementById('wfRepNavBtn');
     if (repNavBtn) repNavBtn.style.display = '';
     App._wfUpdateRepBtn();
+    // Show Grenier add button
+    const grenierAddBtn = document.getElementById('wfGrenierAddBtn');
+    if (grenierAddBtn) grenierAddBtn.style.display = '';
     // Record this word in lookup history (IPA added after fetch)
     this._wfRecordLookup(word, '');
     // Reset score/playback
@@ -5586,6 +5789,9 @@ const BILAN_PASSAGES = [
     // Update save button state
     const saveBtn2 = document.getElementById('wfSaveBtn');
     if (saveBtn2) { saveBtn2.style.display = ''; App._wfUpdateSaveBtn(); }
+    // Show Grenier add button
+    const grenierBtn2 = document.getElementById('wfGrenierAddBtn');
+    if (grenierBtn2) grenierBtn2.style.display = '';
   },
 
   wfRecordComplete(score, color) {
@@ -5738,11 +5944,20 @@ const BILAN_PASSAGES = [
       const r = localStorage.getItem('phonetique_repertoire');
       if (r) this._repertoire = JSON.parse(r);
     } catch(e) {}
-    // Ensure default folder exists
     if (!this._repertoire.folders) this._repertoire.folders = [];
     if (!this._repertoire.words) this._repertoire.words = [];
-    if (!this._repertoire.folders.find(f => f.id === 'default')) {
-      this._repertoire.folders.unshift({ id: 'default', name: 'Mes mots', emoji: '📚', createdAt: Date.now() });
+    // Remove legacy 'default' / 'Mes mots' folder — words will float to first real folder
+    this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== 'default');
+    // Reassign any words still pointing to 'default' to the first real folder (if any)
+    if (this._repertoire.words.some(w => !w.folderId || w.folderId === 'default')) {
+      const firstFolder = this._repertoire.folders[0];
+      if (firstFolder) {
+        this._repertoire.words.forEach(w => {
+          if (!w.folderId || w.folderId === 'default') w.folderId = firstFolder.id;
+        });
+        this.saveRepertoire();
+      }
+      // If no folders yet, words will be shown once a folder is created
     }
   },
 
@@ -5886,7 +6101,7 @@ const BILAN_PASSAGES = [
     return this._repertoire.words.some(w => w.word.toLowerCase() === word.toLowerCase());
   },
 
-  repAddWord(word, ipa, folderId = 'default') {
+  repAddWord(word, ipa, folderId = 'default', source = 'mot-en-focus') {
     // Remove existing entry if present (re-add fresh)
     this._repertoire.words = this._repertoire.words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
     this._repertoire.words.unshift({
@@ -5894,9 +6109,39 @@ const BILAN_PASSAGES = [
       word, ipa: ipa || '',
       folderId,
       addedAt: Date.now(),
-      source: 'mot-en-focus'
+      source
     });
     this.saveRepertoire();
+    // Sync: also add to linked Grenier deck if one matches this folder name (but not if already coming from Grenier)
+    if (source !== 'grenier') this._repSyncWordToGrenier(word, ipa, folderId);
+  },
+
+  // Sync a word to the Grenier deck that shares the name of this repertoire folder
+  _repSyncWordToGrenier(word, ipa, folderId) {
+    if (!this._grenier) return;
+    const folder = this._repertoire.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const deck = this._grenier.decks.find(d => d.name === folder.name);
+    if (!deck) return;
+    const alreadyIn = this._grenier.cards.some(c => c.deckId === deck.id && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
+    if (alreadyIn) return;
+    this._grenier.cards.push({
+      id: this._gid(), deckId: deck.id, word, ipa: ipa || '',
+      interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+      showListen: true, showRecord: true, showRhymes: true,
+      color: null, definition: '', createdAt: Date.now()
+    });
+    this.saveGrenier();
+  },
+
+  // Sync: create a Grenier deck when a new Répertoire folder is created
+  _repSyncFolderToGrenier(folderName, folderColor) {
+    if (!this._grenier) return;
+    const already = this._grenier.decks.find(d => d.name === folderName);
+    if (already) return;
+    const deckColor = folderColor || this.GRENIER_COLORS[Math.floor(Math.random() * this.GRENIER_COLORS.length)];
+    this._grenier.decks.push({ id: this._gid(), name: folderName, color: deckColor, createdAt: Date.now() });
+    this.saveGrenier();
   },
 
   repRemoveWord(wordId, skipNavigate = false) {
@@ -5930,14 +6175,22 @@ const BILAN_PASSAGES = [
     const id = 'folder_' + Date.now();
     this._repertoire.folders.push({ id, name, emoji: emoji || '📁', createdAt: Date.now() });
     this.saveRepertoire();
+    // Also create a matching Grenier deck
+    this._repSyncFolderToGrenier(name);
     return id;
   },
 
   repDeleteFolder(folderId) {
-    // Move words to default
-    this._repertoire.words.forEach(w => { if (w.folderId === folderId) w.folderId = 'default'; });
+    // Move words to first other folder, or leave them unassigned temporarily
+    const others = this._repertoire.folders.filter(f => f.id !== folderId);
+    const fallback = others[0];
+    this._repertoire.words.forEach(w => {
+      if (w.folderId === folderId) w.folderId = fallback ? fallback.id : null;
+    });
     this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folderId);
     this.saveRepertoire();
+    // Also delete matching Grenier deck
+    const folder = this._repertoire.folders.find(f => f.id === folderId); // already removed above; use name from before
     this.renderRepertoire();
   },
 
@@ -6026,16 +6279,15 @@ const BILAN_PASSAGES = [
     const foldersHtml = folders.map(folder => {
       const folderWords = words.filter(w => w.folderId === folder.id);
       const isOpen = this._repOpenFolders.has(folder.id);
-      const isDefault = folder.id === 'default';
       return `
         <div class="rep-folder" id="repFolder_${folder.id}">
           <div class="rep-folder-header" onclick="App._repToggleFolder('${folder.id}')">
             <span class="rep-folder-icon">${folder.emoji}</span>
             <span class="rep-folder-name">${folder.name}</span>
             <span class="rep-folder-count">${folderWords.length}</span>
-            ${!isDefault ? `<button onclick="event.stopPropagation();App._repDeleteFolderConfirm('${folder.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:6px;display:flex;align-items:center;" title="Supprimer le dossier">
+            <button onclick="event.stopPropagation();App._repDeleteFolderConfirm('${folder.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:6px;display:flex;align-items:center;" title="Supprimer le dossier">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>` : ''}
+            </button>
             <svg class="rep-folder-chev ${isOpen ? 'open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="rep-folder-body ${isOpen ? 'open' : ''}">
@@ -6064,6 +6316,14 @@ const BILAN_PASSAGES = [
           </div>
         </div>`;
     }).join('');
+
+    const emptyStateHtml = folders.length === 0 ? `
+      <div class="rep-empty-state">
+        <div class="rep-empty-icon">🗂️</div>
+        <div class="rep-empty-title">Aucun dossier</div>
+        <div class="rep-empty-sub">Créez votre premier dossier pour organiser vos mots.</div>
+        <div class="rep-empty-arrow">↓</div>
+      </div>` : '';
 
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
@@ -6104,27 +6364,16 @@ const BILAN_PASSAGES = [
             <button class="rep-compare-cancel" onclick="App._repClearSelection()" title="Annuler">✕</button>
           </div>
           <div class="rep-folders-area">
+            ${emptyStateHtml}
             ${foldersHtml}
-            <button class="rep-new-folder-btn" onclick="App._repShowNewFolderOverlay()">
+            <button class="rep-new-folder-btn ${folders.length === 0 ? 'rep-new-folder-btn--glow' : ''}" id="repNewFolderBtn" onclick="App._repShowNewFolderOverlay()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
               Nouveau dossier…
             </button>
           </div>
         </div>
 
-        <div>
-          <div class="rep-section-title">Données</div>
-          <div class="rep-data-bar">
-            <button class="rep-data-btn" onclick="App.repExport()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exporter
-            </button>
-            <button class="rep-data-btn" onclick="App.repImport()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Importer
-            </button>
-          </div>
-        </div>
+
 
       </div>
     `;
@@ -6162,8 +6411,10 @@ const BILAN_PASSAGES = [
     const folder = this._repertoire.folders.find(f => f.id === folderId);
     if (!folder) return;
     const count = this._repertoire.words.filter(w => w.folderId === folderId).length;
+    const others = this._repertoire.folders.filter(f => f.id !== folderId);
+    const fallbackName = others[0]?.name;
     const msg = count > 0
-      ? `Supprimer le dossier "${folder.name}" ? Les ${count} mot(s) seront déplacés dans "Mes mots".`
+      ? `Supprimer le dossier "${folder.name}" ? Les ${count} mot(s) seront déplacés${fallbackName ? ` dans "${fallbackName}"` : ''}.`
       : `Supprimer le dossier "${folder.name}" ?`;
     if (confirm(msg)) this.repDeleteFolder(folderId);
   },
@@ -6220,7 +6471,7 @@ const BILAN_PASSAGES = [
         <div class="rep-overlay-title">Sauvegarder dans Le Répertoire</div>
         <div class="rep-overlay-subtitle" style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
         ${ipa ? `<div class="rep-overlay-subtitle" style="font-family:var(--font-display);font-size:12px;color:#14B8A6;margin-bottom:8px">${ipa}</div>` : ''}
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Choisir un dossier :</div>
+        ${folders.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:6px 0 4px;font-style:italic">Aucun dossier — créez-en un ci-dessous.</div>` : `<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Choisir un dossier :</div>`}
         ${folders.map(f => `
           <button class="rep-overlay-folder-btn" onclick="App._repConfirmSave('${word.replace(/'/g,"\\'")}','${(ipa||'').replace(/'/g,"\\'")}','${f.id}')">
             <span>${f.emoji}</span> ${f.name}
@@ -6289,6 +6540,10 @@ const BILAN_PASSAGES = [
   },
 
   _repConfirmSave(word, ipa, folderId) {
+    // If folderId is 'default' but that folder no longer exists, use first real folder
+    if (folderId === 'default' || !this._repertoire.folders.find(f => f.id === folderId)) {
+      folderId = this._repertoire.folders[0]?.id || folderId;
+    }
     this.repAddWord(word, ipa, folderId);
     this._repCloseOverlay();
     this._wfUpdateSaveBtn();
@@ -6418,11 +6673,16 @@ const BILAN_PASSAGES = [
   },
 
   _wfGoToRepertoire() {
-    // Find which folder this word is in and open it
     const word = this._wfCurrentWord;
     const entry = this._repertoire.words.find(w => w.word.toLowerCase() === word.toLowerCase());
     if (entry) {
       this._repOpenFolders.add(entry.folderId);
+    }
+    // Replace the current word-focus history entry with one that carries the word,
+    // so that goBack() from Répertoire restores the focused word.
+    const top = this.navHistory[this.navHistory.length - 1];
+    if (top && top.screen === 'word-focus') {
+      this.navHistory[this.navHistory.length - 1] = { screen: 'word-focus', params: { word } };
     }
     this.navigate('repertoire');
   },
@@ -6474,58 +6734,29 @@ const BILAN_PASSAGES = [
     if (btn) btn.classList.add('loading');
     if (slot) slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.6);font-size:12px;padding:4px 0">Recherche de rimes…</div></div>`;
 
-    // Build IPA rhyme tail: last vowel cluster + everything after
-    const ipaCore = ipa ? ipa.replace(/^\/|\/$/g, '') : '';
-    const vowels = 'aàâæeéèêëiîïoôœøuùûüyɑɛɔœəɐɪʊɥɛ̃ɔ̃ɑ̃œ̃';
-    const vowelRe = new RegExp(`[${vowels}][^]*$`);
-    const rhymeTail = ipaCore ? (ipaCore.match(vowelRe)?.[0] || ipaCore) : '';
-    const rhymeHint = ipaCore
-      ? `"${word}" se prononce /${ipaCore}/ en IPA. La terminaison sonore à faire rimer est : /${rhymeTail}/.`
-      : `Le mot cible est "${word}".`;
-
-    const prompt = `Tu es un expert en versification et phonétique françaises. ${rhymeHint}
-
-ÉTAPE 1 — ANALYSE (raisonne à voix haute en 2-3 lignes) :
-Quelle est la terminaison sonore exacte de "${word}" ? (voyelle + coda)
-Quels mots français partagent cette même terminaison sonore ?
-Élimine tout candidat dont la coda finale diffère (ex: /ɛj/ ≠ /ɛl/).
-
-ÉTAPE 2 — SÉLECTION FINALE :
-Retiens exactement 6 mots. Priorité : même coda exacte. Si moins de 6, complète avec coda très proche.
-Ne laisse jamais la liste vide.
-
-EXEMPLES CORRECTS :
-- sel /sɛl/ → belle /bɛl/ ✓, celle /sɛl/ ✓, nouvelle /nuvɛl/ ✓ — tous finissent en /ɛl/
-- sel /sɛl/ → pareil /paʁɛj/ ✗ — coda /j/ ≠ /l/, EXCLURE
-- chien /ʃjɛ̃/ → bien /bjɛ̃/ ✓, ancien /ɑ̃sjɛ̃/ ✓ — tous finissent en /jɛ̃/
-
-RÉPONSE FORMAT : D'abord ton analyse (texte libre), puis le JSON sur une nouvelle ligne :
-{"rhymes":[{"word":"...","ipa":"/.../","match":"terminaison /xx/ commune"},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."},{"word":"...","ipa":"/.../","match":"..."}]}`;
-
+    // Strip slashes, use last-vowel logic (handled inside _grBuildRhymesPrompt)
+    const ipaCore = ipa ? ipa.replace(/^\/|\/$/g, '').replace(/[\[\]]/g, '').trim() : '';
+    const prompt = this._grBuildRhymesPrompt(word, ipaCore);
+    const model = this.settings.rhymesModel || this.settings.openrouterModel;
+    console.log(`[Rimes/wf] "${word}" | model: ${model} | tail: /${ipaCore}/`);
     try {
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + this.settings.openrouterKey,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.href,
-        },
-        body: JSON.stringify({
-          model: this.settings.rhymesModel || this.settings.openrouterModel,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 600,
-        }),
+        headers: { 'Authorization': 'Bearer ' + this.settings.openrouterKey, 'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 400 }),
       });
+      console.log(`[Rimes/wf] HTTP ${resp.status}`);
       const data = await resp.json();
-      let text = data.choices?.[0]?.message?.content?.trim() || '';
-      // Robustly extract the JSON object — find the first { ... } block
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON found in response');
-      const parsed = JSON.parse(jsonMatch[0]);
-      const rhymes = (parsed.rhymes || []).slice(0, 6).filter(r => r.word);
-      this._wfRhymesCache[word] = rhymes;
-      this._wfRenderRhymes(word, rhymes);
+      if (data.error) throw new Error(`API: ${data.error.message || JSON.stringify(data.error)}`);
+      const text = data.choices?.[0]?.message?.content?.trim() || '';
+      console.log(`[Rimes/wf] finish=${data.choices?.[0]?.finish_reason} len=${text.length}`, text.slice(0, 400));
+      const rhymes = this._grParseRhymesFromText(text);
+      console.log(`[Rimes/wf] parsed:`, rhymes);
+      if (!rhymes || rhymes.length === 0) throw new Error('No rhymes parsed');
+      this._wfRhymesCache[word] = rhymes.slice(0, 5);
+      this._wfRenderRhymes(word, rhymes.slice(0, 5));
     } catch(e) {
+      console.error(`[Rimes/wf] FAILED "${word}":`, e.message);
       if (slot) slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.5);font-size:12px">Impossible de trouver des rimes.</div></div>`;
     }
     if (btn) btn.classList.remove('loading');
@@ -6538,19 +6769,40 @@ RÉPONSE FORMAT : D'abord ton analyse (texte libre), puis le JSON sur une nouvel
       slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.5);font-size:12px">Aucune rime trouvée.</div></div>`;
       return;
     }
-    const chips = rhymes.map(r => `
-      <div class="wf-rhyme-chip" onclick="App._wfFromBilan=false;App.wfLoadRhymeWord('${r.word.replace(/'/g,"\\'")}')" title="${r.match ? r.match.replace(/"/g,'&quot;') : ''}">
+    // Filter out quality 1 (unreliable), show only q2 and q3
+    const visibleRhymes = rhymes.filter(r => (r.quality || 2) >= 2);
+    if (!visibleRhymes.length) {
+      slot.innerHTML = `<div class="wf-rhymes-strip"><div style="color:rgba(251,191,36,0.5);font-size:12px">Aucune rime fiable trouvée.</div></div>`;
+      return;
+    }
+    const chips = visibleRhymes.map(r => {
+      const q = Math.min(3, Math.max(2, r.quality || 2));
+      const extraStyle = q === 3
+        ? 'background:rgba(251,191,36,0.14);border-color:rgba(251,191,36,0.55);color:#FBBF24;font-weight:700'
+        : '';
+      return `<div class="wf-rhyme-chip${q===3?' wf-rhyme-chip-strong':''}" style="${extraStyle}" onclick="App._wfFromBilan=false;App.wfLoadRhymeWord('${r.word.replace(/'/g,"\\'")}')" title="${r.match ? r.match.replace(/"/g,'&quot;') : ''}">
         ${r.word}
         ${r.ipa ? `<span class="wf-rhyme-chip-ipa">${r.ipa}</span>` : ''}
-      </div>`).join('');
+      </div>`;
+    }).join('');
     slot.innerHTML = `
       <div class="wf-rhymes-strip">
         <div class="wf-rhymes-header">
           <span class="wf-rhymes-title">✦ Rimes pour « ${word} »</span>
-          <button class="wf-rhymes-dismiss" onclick="document.getElementById('wfRhymesSlot').innerHTML=''" title="Fermer">✕</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="generate-btn" onclick="App._wfRegenRhymes()" title="Regénérer les rimes" style="width:28px;height:28px;color:rgba(251,191,36,0.8);border-color:rgba(251,191,36,0.3)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            </button>
+            <button class="wf-rhymes-dismiss" onclick="document.getElementById('wfRhymesSlot').innerHTML=''" title="Fermer">✕</button>
+          </div>
         </div>
         <div class="wf-rhymes-chips">${chips}</div>
       </div>`;
+  },
+
+  _wfRegenRhymes() {
+    delete this._wfRhymesCache[this._wfCurrentWord];
+    this._wfFetchRhymes();
   },
 
   wfLoadRhymeWord(word) {
@@ -7765,6 +8017,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}" oninput="App.settings.rhymesModel=this.value;App.saveSettings()">
             <div style="font-size:11px;color:var(--text3);margin-top:4px">Recommandé : gemini-2.5-flash ou claude-sonnet-4-5 (meilleure phonétique)</div>
           </div>
+          <div class="settings-field">
+            <label class="field-label" style="color:#A78BFA">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Modèle Définitions ✦
+            </label>
+            <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="defModel" value="${this.settings.definitionModel || ''}" oninput="App.settings.definitionModel=this.value;App.saveSettings()">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Pour le verso des cartes Grenier. Laissez vide pour utiliser le modèle principal.</div>
+          </div>
         </div>
 
         <div class="settings-group">
@@ -7794,6 +8054,42 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
           Réinitialiser les scores
         </button>
+
+        <div class="settings-group" style="margin-top:16px">
+          <div class="settings-group-title">Données</div>
+
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+            <div style="font-size:12px;color:var(--text3)">Répertoire — mots et dossiers sauvegardés</div>
+            <div style="display:flex;gap:8px;width:100%">
+              <button class="settings-btn" style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="App.repExport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exporter
+              </button>
+              <button class="settings-btn" style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="App.repImport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importer
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-row" style="margin-top:8px">
+            <div style="font-size:13px;color:var(--text2)">Vider le cache des rimes</div>
+            <button class="settings-btn" style="background:rgba(251,191,36,0.1);color:#FBBF24;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer" onclick="App.clearRhymesCache()">
+              Effacer
+            </button>
+          </div>
+
+          <div class="settings-row" style="margin-top:4px">
+            <div>
+              <div style="font-size:13px;color:#F87171">Effacer toutes les données</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">Répertoire, Grenier, scores, historique</div>
+            </div>
+            <button class="settings-btn" style="background:rgba(248,113,113,0.12);color:#F87171;border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" onclick="App.confirmEraseAll()">
+              Tout effacer
+            </button>
+          </div>
+        </div>
+
       </div>
     `;
   },
@@ -7820,6 +8116,44 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       this.saveScores();
       alert('Scores réinitialisés.');
     }
+  },
+
+  clearRhymesCache() {
+    // Clear in-memory caches
+    this._wfRhymesCache = {};
+    this._grenierRhymesCache = {};
+    // Clear persisted rhymes from grenier cards
+    if (this._grenier && this._grenier.cards) {
+      this._grenier.cards.forEach(c => { delete c._rhymes; });
+      this.saveGrenier();
+    }
+    this.showToast('Cache des rimes vidé ✓');
+  },
+
+  confirmEraseAll() {
+    if (!confirm('Effacer TOUTES les données de l\'application ? (Répertoire, Grenier, scores, historique)\n\nCette action est irréversible.')) return;
+    // Wipe all known localStorage keys
+    const keys = [
+      'phonetique_repertoire','phonetique_lookup_history',
+      'phonetique_scores','phonetique_bilan',
+      'phonetique_passage_scores','phonetique_ai_passages',
+      'phonetique_grenier'
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+    // Re-initialize in-memory state
+    this._repertoire = { folders: [], words: [] };
+    this.loadRepertoire();
+    this._lookupHistory = [];
+    this.scores = {};
+    this._grenier = { decks: [], cards: [] };
+    this._grenierRhymesCache = {};
+    this._wfRhymesCache = {};
+    this._wfHistory = [];
+    this.passageScores = {};
+    this.aiPassages = {};
+    this._lookupHistory = [];
+    this.showToast('Toutes les données effacées ✓');
+    setTimeout(() => this.renderSettings(), 300);
   },
 
   // ── TTS ─────────────────────────────────────────────────────
@@ -9024,6 +9358,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   renderGrenier() {
     if (!this._grenier) this.loadGrenier();
     this.currentScreen = 'grenier';
+    // Remove any stale grenier-study entries from history so back works cleanly
+    this.navHistory = this.navHistory.filter(e => e.screen !== 'grenier-study');
+    // Ensure navHistory has exactly one grenier entry at the top
+    const top = this.navHistory[this.navHistory.length - 1];
+    if (!top || top.screen !== 'grenier') {
+      this.navHistory.push({ screen: 'grenier', params: {} });
+    }
     const decks = this._grenier.decks;
     const view = this._grenierView;
     this._grenierFabOpen = false;
@@ -9067,9 +9408,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     document.getElementById('main').innerHTML = `
       <div class="grenier-screen">
         <div class="grenier-header">
-          <div>
-            <div class="grenier-title">Le Grenier</div>
-            <div class="grenier-tagline">Répétition espacée</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="grenier-icon-btn" onclick="App.goBack()" title="Retour" style="flex-shrink:0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div>
+              <div class="grenier-title">Le Grenier</div>
+              <div class="grenier-tagline">Répétition espacée</div>
+            </div>
           </div>
           <div class="grenier-header-actions">
             <button class="grenier-icon-btn" onclick="App.navigate('labo')" title="Le Labo">
@@ -9187,7 +9533,6 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this._grenierCardAudioBlob = null;
     this._grenierCardSettingsOpen = false;
     this._grRenderStudyCard();
-    this.navHistory.push({ screen: 'grenier-study', params: { deckId } });
     this.currentScreen = 'grenier-study';
   },
 
@@ -9239,8 +9584,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       menu.appendChild(btn);
     };
 
-    addItem('🎨', 'Changer la couleur', () => this._grShowDeckModal(deck));
-    addItem('📂', 'Importer dossier Répertoire', () => this._grImportFolder(deckId));
+    addItem('🎨', 'Changer la couleur / emoji', () => this._grShowDeckModal(deck));
     addItem('✏️', 'Renommer', () => this._grShowRenameDeck(deckId));
     const sep = document.createElement('div'); sep.className = 'grenier-ctx-sep';
     menu.appendChild(sep);
@@ -9278,14 +9622,11 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
   _grShowDeckModal(existingDeck) {
     document.querySelector('.grenier-modal-bg')?.remove();
-    const folders = (this._repertoire?.folders || []).filter(f => f.id !== 'default');
-    const allFolders = (this._repertoire?.folders || []);
+    const EMOJIS = ['📁','📂','🗂️','⭐','🔤','💬','🎯','🧠','💡','🎵','🏷️','📌','📦','🔥','💎','🌟'];
+    const curEmoji = existingDeck?._emoji || '📦';
     const colorSwatches = this.GRENIER_COLORS.map((c, i) =>
       `<span class="grenier-color-swatch ${(!existingDeck && i===0)||existingDeck?.color===c?'selected':''}"
         style="background:${c}" data-color="${c}" onclick="App._grSelectColor(this,'${c}')"></span>`
-    ).join('');
-    const folderChips = allFolders.map(f =>
-      `<span class="grenier-folder-chip" data-folder-id="${f.id}" onclick="App._grToggleFolderChip(this)">${f.emoji||'📁'} ${f.name}</span>`
     ).join('');
 
     const bg = document.createElement('div');
@@ -9293,14 +9634,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     bg.innerHTML = `
       <div class="grenier-modal" onclick="event.stopPropagation()">
         <div class="grenier-modal-title">${existingDeck ? 'Modifier le paquet' : 'Nouveau paquet'}</div>
+        <div class="grenier-modal-label">Icône</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px" id="grDeckEmojiRow">
+          ${EMOJIS.map(e=>`<button onclick="App._grSelectDeckEmoji(this,'${e}')" style="background:${e===curEmoji?'rgba(255,107,26,0.2)':'var(--gr-surface)'};border:1px solid ${e===curEmoji?'var(--gr-orange)':'var(--gr-border)'};border-radius:8px;padding:5px 8px;cursor:pointer;font-size:17px;transition:all 0.15s">${e}</button>`).join('')}
+        </div>
         <div class="grenier-modal-label">Nom du paquet</div>
         <input class="grenier-modal-input" id="grDeckNameInput" placeholder="Ex: Vocabulaire quotidien" value="${existingDeck?.name||''}">
-        <div class="grenier-modal-label">Couleur du paquet</div>
+        <div class="grenier-modal-label">Couleur</div>
         <div class="grenier-color-row" id="grColorRow">${colorSwatches}</div>
-        ${!existingDeck ? `
-        <div class="grenier-modal-label">Importer depuis Répertoire (optionnel)</div>
-        <div class="grenier-folder-chips" id="grFolderChips">${folderChips||'<span style="color:var(--text3);font-size:13px">Aucun dossier disponible</span>'}</div>
-        ` : ''}
         <div class="grenier-modal-actions">
           <button class="grenier-btn-secondary" onclick="App._grCloseDeckModal()">Annuler</button>
           <button class="grenier-btn-primary" onclick="App._grSaveDeck('${existingDeck?.id||''}')">
@@ -9313,16 +9654,23 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     document.body.appendChild(bg);
     setTimeout(() => document.getElementById('grDeckNameInput')?.focus(), 100);
     this._grSelectedColor = existingDeck?.color || this.GRENIER_COLORS[0];
+    this._grSelectedDeckEmoji = curEmoji;
+  },
+
+  _grSelectDeckEmoji(btn, emoji) {
+    btn.closest('#grDeckEmojiRow').querySelectorAll('button').forEach(b => {
+      b.style.background = 'var(--gr-surface)';
+      b.style.borderColor = 'var(--gr-border)';
+    });
+    btn.style.background = 'rgba(255,107,26,0.2)';
+    btn.style.borderColor = 'var(--gr-orange)';
+    this._grSelectedDeckEmoji = emoji;
   },
 
   _grSelectColor(el, color) {
     document.querySelectorAll('#grColorRow .grenier-color-swatch').forEach(s => s.classList.remove('selected'));
     el.classList.add('selected');
     this._grSelectedColor = color;
-  },
-
-  _grToggleFolderChip(el) {
-    el.classList.toggle('selected');
   },
 
   _grCloseDeckModal() {
@@ -9333,10 +9681,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const name = document.getElementById('grDeckNameInput')?.value.trim();
     if (!name) { document.getElementById('grDeckNameInput')?.focus(); return; }
     const color = this._grSelectedColor || this.GRENIER_COLORS[0];
+    const emoji = this._grSelectedDeckEmoji || '📦';
 
     if (existingId) {
       const deck = this._grenier.decks.find(d => d.id === existingId);
-      if (deck) { deck.name = name; deck.color = color; }
+      if (deck) { deck.name = name; deck.color = color; deck._emoji = emoji; }
+      // Update matching Répertoire folder name too
+      const folder = this._repertoire.folders.find(f => f.name === (deck?._prevName || deck?.name));
+      if (folder) { folder.name = name; folder.emoji = emoji; this.saveRepertoire(); }
       this.saveGrenier();
       this._grCloseDeckModal();
       this.renderGrenier();
@@ -9345,87 +9697,18 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
     // New deck
     const deckId = this._gid();
-    this._grenier.decks.push({ id: deckId, name, color, createdAt: Date.now() });
+    this._grenier.decks.push({ id: deckId, name, color, _emoji: emoji, createdAt: Date.now() });
 
-    // Import selected repertoire folders
-    const selectedFolderIds = [...document.querySelectorAll('#grFolderChips .grenier-folder-chip.selected')]
-      .map(el => el.dataset.folderId);
-    let importCount = 0;
-    if (selectedFolderIds.length > 0) {
-      const existingWords = new Set(this._grenier.cards.filter(c=>c.deckId===deckId).map(c=>c.word?.toLowerCase()));
-      selectedFolderIds.forEach(fid => {
-        const words = (this._repertoire?.words || []).filter(w => w.folderId === fid || (fid==='default'&&!w.folderId));
-        words.forEach(w => {
-          if (!existingWords.has(w.word?.toLowerCase())) {
-            this._grenier.cards.push({
-              id: this._gid(), deckId, word: w.word, ipa: w.ipa||'',
-              interval:1, ease:2.5, reps:0, nextDue: Date.now(),
-              showListen:true, showRecord:true, showRhymes:true,
-              color: null, createdAt: Date.now()
-            });
-            existingWords.add(w.word?.toLowerCase());
-            importCount++;
-          }
-        });
-      });
+    // Also create a matching Répertoire folder if none exists with this name
+    if (!this._repertoire.folders.find(f => f.name === name)) {
+      this._repertoire.folders.push({ id: 'folder_' + Date.now(), name, emoji, createdAt: Date.now() });
+      this.saveRepertoire();
     }
 
     this.saveGrenier();
     this._grCloseDeckModal();
     this.renderGrenier();
-    this.showToast(`Paquet "${name}" créé${importCount>0?' ('+importCount+' mots importés)':''}! 🎉`);
-  },
-
-  _grImportFolder(deckId) {
-    const deck = this._grenier.decks.find(d => d.id === deckId);
-    if (!deck) return;
-    const allFolders = (this._repertoire?.folders || []);
-    if (allFolders.length === 0) { this.showToast('Aucun dossier dans le Répertoire'); return; }
-    const colorSwatches = '';
-    const bg = document.createElement('div');
-    bg.className = 'grenier-modal-bg';
-    const chips = allFolders.map(f =>
-      `<span class="grenier-folder-chip" data-folder-id="${f.id}" onclick="App._grToggleFolderChip(this)">${f.emoji||'📁'} ${f.name}</span>`
-    ).join('');
-    bg.innerHTML = `
-      <div class="grenier-modal" onclick="event.stopPropagation()">
-        <div class="grenier-modal-title">Importer dans "${deck.name}"</div>
-        <div class="grenier-modal-label">Choisir des dossiers</div>
-        <div class="grenier-folder-chips" id="grFolderChips">${chips}</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Les mots déjà présents dans le paquet seront ignorés.</div>
-        <div class="grenier-modal-actions">
-          <button class="grenier-btn-secondary" onclick="App._grCloseDeckModal()">Annuler</button>
-          <button class="grenier-btn-primary" onclick="App._grDoImportFolder('${deckId}')">Importer</button>
-        </div>
-      </div>`;
-    bg.addEventListener('pointerdown', e => { if (e.target === bg) this._grCloseDeckModal(); });
-    document.body.appendChild(bg);
-  },
-
-  _grDoImportFolder(deckId) {
-    const selectedFolderIds = [...document.querySelectorAll('#grFolderChips .grenier-folder-chip.selected')]
-      .map(el => el.dataset.folderId);
-    if (selectedFolderIds.length === 0) { this.showToast('Sélectionnez au moins un dossier'); return; }
-    const existingWords = new Set(this._grenier.cards.filter(c=>c.deckId===deckId&&!c.deleted).map(c=>c.word?.toLowerCase()));
-    let count = 0;
-    selectedFolderIds.forEach(fid => {
-      (this._repertoire?.words||[]).filter(w=>w.folderId===fid||(fid==='default'&&!w.folderId)).forEach(w => {
-        if (!existingWords.has(w.word?.toLowerCase())) {
-          this._grenier.cards.push({
-            id:this._gid(), deckId, word:w.word, ipa:w.ipa||'',
-            interval:1, ease:2.5, reps:0, nextDue:Date.now(),
-            showListen:true, showRecord:true, showRhymes:true, color:null, createdAt:Date.now()
-          });
-          existingWords.add(w.word?.toLowerCase());
-          count++;
-        }
-      });
-    });
-    this.saveGrenier();
-    this._grCloseDeckModal();
-    this.showToast(`${count} mot${count!==1?'s':''} importé${count!==1?'s':''} ✓`);
-    // Re-render deck list so counts update immediately
-    if (this.currentScreen === 'grenier') this.renderGrenier();
+    this.showToast(`Paquet "${name}" créé 🎉`);
   },
 
   // ── Card Creation Screen ──────────────────────────────────────
@@ -9484,9 +9767,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Options</div>
             <div style="display:flex;flex-direction:column;gap:10px">
-              ${['showListen','showRecord','showRhymes'].map(k => {
-                const labels = {showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦'};
-                const on = editCard ? editCard[k]!==false : true;
+              ${['showListen','showRecord','showRhymes','showDefinition'].map(k => {
+                const labels = {showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦',showDefinition:'Verso — Définition'};
+                const on = editCard ? (k==='showDefinition' ? editCard[k]===true : editCard[k]!==false) : (k!=='showDefinition');
                 return `<div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
                   <span>${labels[k]}</span>
                   <div class="grenier-toggle ${on?'on':''}" id="grOpt_${k}" onclick="this.classList.toggle('on')"></div>
@@ -9555,19 +9838,34 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       deckId = this._grenier.decks[0].id;
     }
     const color = this._grSelectedCardColor || null;
-    const showListen = document.getElementById('grOpt_showListen')?.classList.contains('on');
-    const showRecord = document.getElementById('grOpt_showRecord')?.classList.contains('on');
-    const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on');
+    const showListen     = document.getElementById('grOpt_showListen')?.classList.contains('on');
+    const showRecord     = document.getElementById('grOpt_showRecord')?.classList.contains('on');
+    const showRhymes     = document.getElementById('grOpt_showRhymes')?.classList.contains('on');
+    const showDefinition = document.getElementById('grOpt_showDefinition')?.classList.contains('on') || false;
 
     if (editId) {
       const card = this._grenier.cards.find(c=>c.id===editId);
-      if (card) Object.assign(card, { word, ipa, color, showListen, showRecord, showRhymes });
+      if (card) Object.assign(card, { word, ipa, color, showListen, showRecord, showRhymes, showDefinition });
     } else {
-      this._grenier.cards.push({
+      const newCard = {
         id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
-        nextDue:Date.now(), showListen, showRecord, showRhymes,
-        color, createdAt:Date.now()
-      });
+        nextDue:Date.now(), showListen, showRecord, showRhymes, showDefinition,
+        color, definition:'', createdAt:Date.now()
+      };
+      this._grenier.cards.push(newCard);
+      // Sync to matching Répertoire folder
+      const deck = this._grenier.decks.find(d => d.id === deckId);
+      if (deck) {
+        const matchFolder = this._repertoire.folders.find(f => f.name === deck.name);
+        if (matchFolder && !this.repIsWordSaved(word)) {
+          this._repertoire.words.unshift({
+            id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+            word, ipa: ipa || '', folderId: matchFolder.id,
+            addedAt: Date.now(), source: 'grenier'
+          });
+          this.saveRepertoire();
+        }
+      }
     }
     this.saveGrenier();
     this.showToast(editId ? 'Carte modifiée ✓' : `"${word}" ajouté au paquet ✓`);
@@ -9653,10 +9951,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             ${card.showRhymes!==false ? `
             <button class="grenier-rhymes-btn" id="grRhymesBtn" onclick="App._grFetchRhymes('${card.id}','${card.word.replace(/'/g,"\\'")}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              Rimes ✦
+              Rimes <span class="gr-star">✦</span>
             </button>
             <div id="grRhymesSlot" style="display:none"></div>
             ` : ''}
+            <button class="grenier-flip-btn" id="grFlipBtn" onclick="App._grFlipCard('${card.id}')" title="Voir le verso">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            </button>
           </div>
           <div class="grenier-rating-area">
             <div class="grenier-rating-label">Comment était-ce ?</div>
@@ -9683,7 +9984,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       if (slot) slot.innerHTML = cachedRhymes;
       if (btn) {
         const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-        btn.innerHTML = `${svg} Voir les rimes ✦`;
+        btn.innerHTML = `${svg} Voir les rimes <span class="gr-star">✦</span>`;
         btn.onclick = () => App._grToggleRhymes();
       }
     }
@@ -9697,7 +9998,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     slot.style.display = isHidden ? '' : 'none';
     if (btn) {
       const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-      btn.innerHTML = isHidden ? `${svg} Masquer les rimes ✦` : `${svg} Voir les rimes ✦`;
+      btn.innerHTML = isHidden ? `${svg} Masquer les rimes <span class="gr-star">✦</span>` : `${svg} Voir les rimes <span class="gr-star">✦</span>`;
     }
   },
 
@@ -9715,21 +10016,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   _grSpeak(word) {
-    const key = this.settings?.azureKey;
-    const region = this.settings?.azureRegion || 'eastus';
-    if (!key) { this.showToast('Clé Azure requise pour la synthèse vocale'); return; }
-    try {
-      const sc = SpeechSDK.SpeechConfig.fromSubscription(key, region);
-      sc.speechSynthesisLanguage = 'fr-FR';
-      sc.speechSynthesisVoiceName = 'fr-FR-DeniseNeural';
-      const synth = new SpeechSDK.SpeechSynthesizer(sc, null);
-      const btn = document.getElementById('grListenBtn');
-      if (btn) btn.style.opacity = '0.5';
-      synth.speakTextAsync(word, result => {
-        synth.close();
-        if (btn) btn.style.opacity = '';
-      }, err => { synth.close(); if (btn) btn.style.opacity=''; });
-    } catch(e) { this.showToast('Erreur synthèse vocale'); }
+    const btn = document.getElementById('grListenBtn');
+    if (btn) { btn.style.opacity = '0.5'; setTimeout(() => { if (btn) btn.style.opacity = ''; }, 1500); }
+    this.speakText(word, false);
   },
 
   _grMediaRecorder: null,
@@ -9849,6 +10138,57 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     } catch(e) { return new Blob([arrayBuf],{type:'audio/webm'}); }
   },
 
+  _grBuildRhymesPrompt(word, ipaCore) {
+    // Find LAST vowel in IPA (walk backwards through Unicode chars)
+    const plainVowels = 'aàâæeéèêëiîïoôœøuùûüyɑɛɔœəɐɪʊɥ';
+    let rhymeTail = ipaCore || word;
+    if (ipaCore) {
+      const chars = [...ipaCore];
+      let lastVowelIdx = -1;
+      for (let i = chars.length - 1; i >= 0; i--) {
+        if (plainVowels.includes(chars[i])) { lastVowelIdx = i; break; }
+      }
+      if (lastVowelIdx >= 0) rhymeTail = chars.slice(lastVowelIdx).join('');
+    }
+    const ipaLine = ipaCore
+      ? `"${word}" = /${ipaCore}/. Terminaison à rimer (depuis la DERNIÈRE voyelle) : /${rhymeTail}/.`
+      : `Mot cible : "${word}".`;
+    return `${ipaLine}
+Trouve des mots FRANÇAIS du dictionnaire courant rimant avec "${word}".
+Règle : la rime commence à la DERNIÈRE voyelle tonique. Ignore tout ce qui précède. Pour /${rhymeTail}/, cherche des mots qui se terminent par ce son.
+
+RÈGLES :
+- Mots réels du dictionnaire français seulement. N'invente aucun mot.
+- Aucun mot anglais.
+- Qualité 3 = même finale phonétique /${rhymeTail}/ ET mot très courant.
+- Qualité 2 = même finale phonétique /${rhymeTail}/, mot moins courant mais réel.
+- Pas de qualité 1. Retourne 1 à 5 mots seulement selon ce qui existe.
+
+Réponds UNIQUEMENT avec ce JSON :
+{"rhymes":[{"word":"...","ipa":"/.../","quality":3},{"word":"...","ipa":"/.../","quality":2}]}`;
+  },
+
+  _grParseRhymesFromText(text) {
+    // Strategy 1: {"rhymes":[...]}
+    const arrMatch = text.match(/"rhymes"\s*:\s*(\[[\s\S]*?\])/);
+    if (arrMatch) {
+      try { const r = JSON.parse(arrMatch[1]); if (r.length) return r.filter(x => x.word); } catch(e) {}
+    }
+    // Strategy 2: bare [...]
+    const bare = text.match(/\[[\s\S]*?\]/);
+    if (bare) {
+      try { const r = JSON.parse(bare[0]); if (Array.isArray(r) && r.length) return r.filter(x => x.word); } catch(e) {}
+    }
+    // Strategy 3: collect individual {"word":"...",...} objects
+    const objs = [];
+    const re = /\{[^{}]*"word"\s*:\s*"([^"]+)"[^{}]*\}/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      try { objs.push(JSON.parse(m[0])); } catch(e) {}
+    }
+    return objs.length ? objs.filter(x => x.word) : null;
+  },
+
   async _grFetchRhymes(cardId, word) {
     const key = this.settings?.openrouterKey;
     if (!key) { this.showToast('Clé OpenRouter requise pour les rimes'); return; }
@@ -9856,48 +10196,123 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const slot = document.getElementById('grRhymesSlot');
     if (!btn || !slot) return;
     if (this._grenierRhymesCache[cardId]) {
-      slot.innerHTML = this._grenierRhymesCache[cardId]; btn.style.display='none'; return;
+      slot.innerHTML = this._grenierRhymesCache[cardId];
+      slot.style.display = '';
+      const svgI = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.innerHTML = `${svgI} Masquer les rimes <span class="gr-star">✦</span>`;
+      btn.onclick = () => App._grToggleRhymes();
+      return;
     }
-    btn.style.opacity='0.5'; btn.textContent='Chargement…';
+    const svgIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    btn.style.opacity='0.6';
+    btn.innerHTML = `${svgIcon} Chargement… <span class="gr-star">✦</span>`;
     try {
       const model = this.settings?.rhymesModel || 'google/gemini-2.5-flash-lite-preview-09-2025';
-      const prompt = `For the French word "${word}", provide 8 French words that rhyme with it.
-For each rhyming word, give its IPA pronunciation.
-Think through the IPA carefully step by step first, then output ONLY a JSON array like:
-[{"word":"chat","ipa":"/ʃa/"},...]
-No preamble, no markdown fences, just the JSON array.`;
-      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      // Get IPA of current card
+      const sess = this._grenierStudySession;
+      const card = sess ? sess.queue[sess.idx] : null;
+      const ipaRaw = card?.ipa || '';
+      const ipaCore = ipaRaw.replace(/[\/\[\]]/g, '').trim();
+
+      const prompt = this._grBuildRhymesPrompt(word, ipaCore);
+      console.log(`[Rimes/gr] "${word}" | model: ${model} | tail: /${ipaCore}/`);
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
-        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-        body:JSON.stringify({model,messages:[{role:'user',content:prompt}],max_tokens:600})
+        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
+        body:JSON.stringify({model, messages:[{role:'user',content:prompt}], max_tokens:400})
       });
+      console.log(`[Rimes/gr] HTTP ${resp.status}`);
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      const match = text.match(/\[[\s\S]*\]/);
-      if (!match) throw new Error('No JSON');
-      const rhymes = JSON.parse(match[0]);
-      const html = `<div style="margin-top:10px">
-        <div style="font-size:11px;color:var(--gr-amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Rimes pour « ${word} »</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          ${rhymes.map(r=>`<div style="background:var(--gr-surface2);border:1px solid var(--gr-border-bright);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--gr-orange2)">
-            ${r.word}<span style="font-size:11px;color:var(--text3);margin-left:5px;font-weight:400">${r.ipa||''}</span>
-          </div>`).join('')}
-        </div>
-      </div>`;
+      if (data.error) throw new Error(`API: ${data.error.message || JSON.stringify(data.error)}`);
+      const text = data.choices?.[0]?.message?.content?.trim() || '';
+      console.log(`[Rimes/gr] finish=${data.choices?.[0]?.finish_reason} len=${text.length}`, text.slice(0, 400));
+      const rhymes = this._grParseRhymesFromText(text);
+      console.log(`[Rimes/gr] parsed:`, rhymes);
+      if (!rhymes || rhymes.length === 0) throw new Error('No rhymes parsed');
+
+      const html = this._grRhymesHtml(word, rhymes.slice(0, 5));
       this._grenierRhymesCache[cardId] = html;
-      // Persist on card
-      const card = this._grenier.cards.find(c=>c.id===cardId);
       if (card) { card._rhymes = html; this.saveGrenier(); }
       slot.innerHTML = html;
       slot.style.display = '';
-      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-      btn.innerHTML = `${svg} Masquer les rimes ✦`;
+      btn.style.opacity = '';
+      btn.innerHTML = `${svgIcon} Masquer les rimes <span class="gr-star">✦</span>`;
       btn.onclick = () => App._grToggleRhymes();
     } catch(e) {
-      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-      btn.style.opacity=''; btn.innerHTML=`${svg} Rimes ✦`;
-      this.showToast('Erreur chargement des rimes');
+      console.error(`[Rimes/gr] FAILED "${word}":`, e.message);
+      btn.style.opacity = '';
+      btn.classList.remove('loading');
+      const svgI = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.innerHTML = `${svgI} Rimes <span class="gr-star">✦</span>`;
+      if (slot) { slot.innerHTML = `<div style="font-size:12px;color:color-mix(in srgb,var(--card-accent,var(--gr-orange)) 60%,transparent);padding:6px 2px">Impossible de trouver des rimes.</div>`; slot.style.display = ''; }
     }
+  },
+
+  _grRhymesHtml(word, rhymes) {
+    // Only show quality 2 and 3 — drop quality 1 entirely
+    const visibleRhymes = rhymes.filter(r => (r.quality || 2) >= 2);
+    if (visibleRhymes.length === 0) return '<div style="font-size:12px;color:var(--text3);padding:6px 0">Aucune rime fiable trouvée.</div>';
+    const chips = visibleRhymes.map(r => {
+      const q = Math.min(3, Math.max(2, r.quality || 2));
+      // q3: vivid accent (perfect + common) | q2: standard accent (solid rhyme)
+      const style = q === 3
+        ? `background:color-mix(in srgb,var(--card-accent,var(--gr-orange)) 20%,transparent);border:1.5px solid color-mix(in srgb,var(--card-accent,var(--gr-orange)) 75%,transparent);color:var(--card-accent,var(--gr-orange))`
+        : `background:color-mix(in srgb,var(--card-accent,var(--gr-orange)) 10%,transparent);border:1px solid color-mix(in srgb,var(--card-accent,var(--gr-orange)) 45%,transparent);color:color-mix(in srgb,var(--card-accent,var(--gr-orange)) 85%,var(--text2))`;
+      const safeWord = r.word.replace(/'/g, "\\'");
+      return `<div style="${style};border-radius:10px;padding:7px 12px;font-size:13px;font-weight:${q===3?'700':'600'};display:inline-flex;align-items:center;gap:5px;cursor:pointer"
+        onclick="App._grOpenRhymeInWF('${safeWord}')"
+        title="Voir dans Mot en Focus">
+        ${r.word}<span style="font-size:11px;font-weight:400;opacity:0.7">${r.ipa||''}</span>
+      </div>`;
+    }).join('');
+    const safeWordEsc = word.replace(/'/g, "\\'");
+    return `<div style="margin-top:10px;padding:12px;background:color-mix(in srgb,var(--card-accent,var(--gr-orange)) 6%,transparent);border:1px solid color-mix(in srgb,var(--card-accent,var(--gr-orange)) 20%,transparent);border-radius:var(--radius-sm)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:10px;color:var(--card-accent,var(--gr-orange));opacity:0.7;text-transform:uppercase;letter-spacing:.1em">Rimes pour « ${word} »</div>
+        <button onclick="App._grRegenRhymes('${safeWordEsc}')" title="Regénérer les rimes"
+          style="background:none;border:1px solid color-mix(in srgb,var(--card-accent,var(--gr-orange)) 35%,transparent);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;color:var(--card-accent,var(--gr-orange));opacity:0.75;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:4px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+          Regénérer
+        </button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>
+    </div>`;
+  },
+
+  _grRegenRhymes(word) {
+    // Clear cache for current card and re-fetch
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+    if (!card) return;
+    delete this._grenierRhymesCache[card.id];
+    if (card._rhymes) { delete card._rhymes; this.saveGrenier(); }
+    // Reset slot and button
+    const slot = document.getElementById('grRhymesSlot');
+    const btn = document.getElementById('grRhymesBtn');
+    if (slot) { slot.innerHTML = ''; slot.style.display = 'none'; }
+    if (btn) {
+      const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      btn.innerHTML = `${svg} Rimes <span class="gr-star">✦</span>`;
+      btn.onclick = () => App._grFetchRhymes(card.id, card.word);
+    }
+    this._grFetchRhymes(card.id, card.word);
+  },
+
+  _grOpenRhymeInWF(word) {
+    this._wfFromBilan = false;
+    // Manually push current session screen so goBack() returns to it
+    this.navHistory.push({ screen: 'grenier-study', params: { deckId: this._grenierStudySession?.deckId } });
+    // Navigate directly without adding another history entry
+    this.currentScreen = 'word-focus';
+    const main = document.getElementById('main');
+    main.classList.add('screen-exit');
+    setTimeout(() => {
+      main.classList.remove('screen-exit');
+      main.classList.add('screen-enter');
+      this.renderWordFocus(word);
+      setTimeout(() => main.classList.remove('screen-enter'), 400);
+    }, 150);
   },
 
   _grRate(rating) {
@@ -9995,14 +10410,25 @@ No preamble, no markdown fences, just the JSON array.`;
         <span>Couleur de la carte</span>
         <div class="grenier-color-row" style="margin:0">${noColor}${colorSwatches}</div>
       </div>
-      ${['showListen','showRecord','showRhymes'].map(k=>{
-        const labels={showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦'};
-        const on = card[k]!==false;
+      ${['showListen','showRecord','showRhymes','showDefinition'].map(k=>{
+        const labels={showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦',showDefinition:'Verso — Définition'};
+        const on = k==='showDefinition' ? card[k]===true : card[k]!==false;
         return `<div class="grenier-settings-row">
           <span>${labels[k]}</span>
           <div class="grenier-toggle ${on?'on':''}" onclick="App._grToggleCardOpt('${cardId}','${k}',this)"></div>
         </div>`;
       }).join('')}
+      <div class="grenier-settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+        <span>Verso (définition)</span>
+        <div style="display:flex;gap:8px;width:100%">
+          <button style="flex:1;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);color:#A78BFA;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body)" onclick="App._grOpenCardBack('${cardId}')">
+            ✏️ Modifier le verso
+          </button>
+          ${this.settings.openrouterKey ? `<button style="flex:1;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);color:#A78BFA;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body)" onclick="App._grGenerateDefFromSettings('${cardId}','${card.word.replace(/'/g,"\\'")}')">
+            ⚡ Générer (IA)
+          </button>` : ''}
+        </div>
+      </div>
       <div class="grenier-settings-row">
         <span style="color:#F87171">Supprimer la carte</span>
         <button style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#F87171;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13px;font-family:var(--font-body)"
@@ -10020,6 +10446,342 @@ No preamble, no markdown fences, just the JSON array.`;
   _grCloseCardSettings() {
     document.querySelector('.grenier-card-settings-panel')?.remove();
     this._grenierCardSettingsOpen = false;
+  },
+
+  // ── Card Flip (Front ↔ Back) ──────────────────────────────────
+  _grFlipCard(cardId) {
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+    if (!card) return;
+    this._grShowCardBack(card);
+  },
+
+  _grShowCardBack(card) {
+    const cardEl = document.querySelector('.grenier-card');
+    if (!cardEl) return;
+    const def = card.definition || '';
+    const accent = cardEl.style.getPropertyValue('--card-accent') || 'var(--gr-orange)';
+    // Store original card inner so we can restore
+    if (!cardEl.dataset.frontHtml) {
+      cardEl.dataset.frontHtml = cardEl.innerHTML;
+    }
+    const safeWord = card.word.replace(/'/g, "\\'");
+    const safeId = card.id;
+    cardEl.innerHTML = `
+      <div class="grenier-card-back">
+        <div class="grenier-card-back-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Verso — Définition de « ${card.word} »
+        </div>
+        <div class="grenier-card-def" id="grDefDisplay">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Modifier
+          </button>
+          ${this.settings.openrouterKey ? `
+          <button class="grenier-def-edit-btn" id="grDefGenBtn" onclick="App._grGenerateDef('${safeId}','${safeWord}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Générer (IA)
+          </button>` : ''}
+        </div>
+        <div id="grDefEditArea" style="display:none">
+          <textarea class="grenier-def-textarea" id="grDefTextarea" placeholder="Entrez une définition, exemple, traduction…">${def}</textarea>
+          <button class="grenier-def-edit-btn" style="margin-top:4px" onclick="App._grSaveDef('${safeId}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
+            Sauvegarder
+          </button>
+        </div>
+      </div>
+      <button class="grenier-flip-btn" onclick="App._grShowCardFront()" title="Retourner au recto" style="bottom:16px;right:16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      </button>
+    `;
+  },
+
+  _grShowCardFront() {
+    const cardEl = document.querySelector('.grenier-card');
+    if (!cardEl || !cardEl.dataset.frontHtml) return;
+    cardEl.innerHTML = cardEl.dataset.frontHtml;
+    delete cardEl.dataset.frontHtml;
+    // Re-attach rhymes cache if needed
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+    if (!card) return;
+    const cachedRhymes = this._grenierRhymesCache[card.id] || card._rhymes;
+    if (card.showRhymes!==false && cachedRhymes) {
+      this._grenierRhymesCache[card.id] = cachedRhymes;
+      const slot = document.getElementById('grRhymesSlot');
+      const btn = document.getElementById('grRhymesBtn');
+      if (slot && slot.style.display !== 'none') { slot.innerHTML = cachedRhymes; }
+      if (btn) {
+        const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+        btn.innerHTML = `${svg} Voir les rimes <span class="gr-star">✦</span>`;
+        btn.onclick = () => App._grToggleRhymes();
+      }
+    }
+  },
+
+  _grToggleDefEdit(cardId) {
+    const area = document.getElementById('grDefEditArea');
+    const btn = document.getElementById('grDefEditBtn');
+    if (!area) return;
+    const isHidden = area.style.display === 'none';
+    area.style.display = isHidden ? '' : 'none';
+    if (btn) btn.innerHTML = isHidden
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fermer`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
+    if (isHidden) setTimeout(() => document.getElementById('grDefTextarea')?.focus(), 80);
+  },
+
+  _grSaveDef(cardId) {
+    const ta = document.getElementById('grDefTextarea');
+    if (!ta) return;
+    const def = ta.value.trim();
+    const card = this._grenier.cards.find(c => c.id === cardId);
+    if (card) { card.definition = def; this.saveGrenier(); }
+    // Also update the display
+    const display = document.getElementById('grDefDisplay');
+    if (display) display.textContent = def;
+    document.getElementById('grDefEditArea').style.display = 'none';
+    const editBtn = document.getElementById('grDefEditBtn');
+    if (editBtn) editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
+    this.showToast('Définition sauvegardée ✓');
+  },
+
+  async _grGenerateDef(cardId, word) {
+    const key = this.settings?.openrouterKey;
+    if (!key) { this.showToast('Clé OpenRouter requise'); return; }
+    const btn = document.getElementById('grDefGenBtn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Génération…'; }
+    try {
+      const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
+      const systemPrompt = `L’utilisateur parle français.
+Utiliser un ton décontracté. Viser un style : ~30 ans, relax, instruit, humble.
+Répondre lentement, avec des phrases courtes et naturelles.
+
+Le mot ou la phrase à analyser est : "${word}".
+
+Toujours réécrire la phrase corrigée de l’utilisateur, avec les erreurs en gras. S'il n'y a pas d'erreurs, utilise simplement un ✅.
+
+Ensuite, pour chaque mot demandé, inclus systématiquement les parties suivantes sur une seule ligne chacune, séparées par une ligne vide :
+
+1. 🧠 S'il y a plusieurs usages, explique les 2 ou 3 plus courants. Si tu mentionnes un deuxième usage, commence la phrase avec un emoji pertinent.
+2. 👶 Préciser si l'expression est liée à un groupe d’âge.
+3. 🍁 Alternative plus courante au Québec (sinon, dire 'même usage partout').
+4. 🖉 Mots similaires (ex: pour 'surfait', mentionne 'surcoté').
+5. 💬 Version plus naturelle/relax utilisable partout. Explique le contexte (amis, public, travail).
+6. 📖 Exemples d'usage (sens courant, oral québécois si différent, et exemples pour les synonymes ou sens multiples mentionnés plus haut).
+
+Respecte strictement ce format : Partie 1, 2, 3, 4, 5, 6 à chaque fois. Formate le texte de façon très concise pour collage sur flashcard.`;
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method:'POST',
+        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+      });
+      const data = await resp.json();
+      const def = data.choices?.[0]?.message?.content?.trim() || '';
+      if (def) {
+        const card = this._grenier.cards.find(c => c.id === cardId);
+        if (card) { card.definition = def; this.saveGrenier(); }
+        const display = document.getElementById('grDefDisplay');
+        if (display) display.textContent = def;
+        const ta = document.getElementById('grDefTextarea');
+        if (ta) ta.value = def;
+        this.showToast('Définition générée ✓');
+      }
+    } catch(e) { this.showToast('Erreur lors de la génération'); }
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Générer (IA)`; }
+  },
+
+  // ── Smart Add to Grenier (from Mot en Focus) ─────────────────
+  _wfSmartAddToGrenier() {
+    const word = this._wfCurrentWord;
+    const ipa = this._wfCurrentIpa;
+    if (!word) return;
+    if (!this._grenier) this.loadGrenier();
+    const decks = this._grenier.decks;
+
+    // Remove existing modal if any
+    document.getElementById('wfGrenierModal')?.remove();
+
+    const hasKey = !!this.settings.openrouterKey;
+    const deckOptions = decks.length === 0
+      ? ''
+      : decks.map(d => {
+          const alreadyIn = this._grenier.cards.some(c => c.deckId === d.id && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
+          return `<button class="rep-overlay-folder-btn" onclick="App._wfGrenierSelectDeck('${d.id}')"
+            style="${alreadyIn ? 'opacity:0.5;cursor:default;' : ''}border-color:${d.color||'#FF6B1A'}33;color:${alreadyIn?'var(--text3)':'var(--text)'}">
+            <span style="width:10px;height:10px;border-radius:50%;background:${d.color||'#FF6B1A'};display:inline-block;flex-shrink:0"></span>
+            ${d.name}
+            ${alreadyIn ? '<span style="font-size:11px;color:var(--text3);margin-left:auto">Déjà ajouté</span>' : `<span style="font-size:11px;color:var(--text3);margin-left:auto">${(this._grenier.cards||[]).filter(c=>c.deckId===d.id&&!c.deleted).length} cartes</span>`}
+          </button>`;
+        }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'wfGrenierModal';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel" onclick="event.stopPropagation()">
+        <div class="rep-overlay-title" style="color:#A78BFA">✦ Au Grenier</div>
+        <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
+        ${ipa ? `<div style="font-family:var(--font-display);font-size:12px;color:#A78BFA;margin-bottom:10px">${ipa}</div>` : '<div style="margin-bottom:10px"></div>'}
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Choisir un paquet :</div>
+        ${decks.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:8px 0 4px;font-style:italic">Aucun paquet pour l'instant.</div>` : ''}
+        ${deckOptions}
+        <button class="rep-overlay-folder-btn" onclick="App._wfGrenierNewDeckInline()" style="border-style:dashed;color:var(--text3);margin-top:4px">
+          <span>📦</span> Nouveau paquet…
+        </button>
+        <div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+            <div class="grenier-toggle ${hasKey ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on')" ${hasKey ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Générer une définition (verso)</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${hasKey ? 'Le verso de la carte aura une définition IA' : 'Requiert une clé OpenRouter'}</div>
+            </div>
+          </label>
+        </div>
+        <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Annuler</button>
+      </div>`;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    // Store word/ipa for use in deck selection
+    this._wfGrenierPendingWord = word;
+    this._wfGrenierPendingIpa = ipa;
+  },
+
+  _wfGrenierSelectDeck(deckId) {
+    const word = this._wfGrenierPendingWord;
+    const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa;
+    if (!word) return;
+    const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
+    if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
+    const genDef = document.getElementById('wfGrenierDefToggle')?.classList.contains('on');
+    const cardId = this._gid();
+    this._grenier.cards.push({
+      id: cardId, deckId, word, ipa: ipa || '',
+      interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+      showListen: true, showRecord: true, showRhymes: true,
+      color: null, definition: '', createdAt: Date.now()
+    });
+    // Also add to corresponding repertoire folder if one is linked
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    if (deck) {
+      const matchFolder = this._repertoire.folders.find(f => f.name === deck.name);
+      if (matchFolder && !this.repIsWordSaved(word)) {
+        this.repAddWord(word, ipa, matchFolder.id);
+      }
+    }
+    this.saveGrenier();
+    document.getElementById('wfGrenierModal')?.remove();
+    this.showToast(`"${word}" ajouté au Grenier ✓`);
+    // Generate definition if requested
+    if (genDef && this.settings.openrouterKey) {
+      this._grGenerateDefForNewCard(cardId, word);
+    }
+    this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
+  },
+
+  _wfGrenierNewDeck() {
+    document.getElementById('wfGrenierModal')?.remove();
+    this.showToast('Créez un paquet dans Le Grenier, puis revenez!');
+    this.navigate('grenier');
+    setTimeout(() => this._grShowNewDeck(), 400);
+  },
+
+  _wfGrenierNewDeckInline() {
+    // Replace the overlay content with an inline deck creator
+    const panel = document.querySelector('#wfGrenierModal .rep-overlay-panel');
+    if (!panel) return;
+    const EMOJIS = ['📁','📂','🗂️','⭐','🔤','💬','🎯','🧠','💡','🎵','🏷️','📌','📦'];
+    let selEmoji = '📁';
+    const colorSwatches = this.GRENIER_COLORS.map((c,i) =>
+      `<span class="grenier-color-swatch ${i===0?'selected':''}" style="background:${c};width:26px;height:26px" data-color="${c}" onclick="App._grSelectNewDeckColor(this,'${c}')"></span>`
+    ).join('');
+    panel.innerHTML = `
+      <div class="rep-overlay-title" style="color:#A78BFA">📦 Nouveau paquet</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+        ${EMOJIS.map(e=>`<button onclick="App._wfSelectDeckEmoji(this,'${e}')" style="background:${e===selEmoji?'rgba(167,139,250,0.2)':'var(--surface)'};border:1px solid ${e===selEmoji?'#A78BFA':'var(--border)'};border-radius:8px;padding:5px 8px;cursor:pointer;font-size:17px;transition:all 0.15s">${e}</button>`).join('')}
+      </div>
+      <input class="rep-overlay-input" id="wfNewDeckNameInput" type="text" placeholder="Nom du paquet…" maxlength="40" autocomplete="off" style="margin-bottom:10px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wfNewDeckColorRow">${colorSwatches}</div>
+      <button class="rep-overlay-confirm" onclick="App._wfCreateDeckAndSelect()">Créer et ajouter</button>
+      <button class="rep-overlay-cancel" onclick="App._wfSmartAddToGrenier()">← Retour</button>
+    `;
+    this._wfNewDeckEmoji = selEmoji;
+    this._wfNewDeckColor = this.GRENIER_COLORS[0];
+    setTimeout(() => document.getElementById('wfNewDeckNameInput')?.focus(), 80);
+  },
+
+  _wfSelectDeckEmoji(btn, emoji) {
+    btn.closest('div').querySelectorAll('button').forEach(b => {
+      b.style.background = 'var(--surface)';
+      b.style.borderColor = 'var(--border)';
+    });
+    btn.style.background = 'rgba(167,139,250,0.2)';
+    btn.style.borderColor = '#A78BFA';
+    this._wfNewDeckEmoji = emoji;
+  },
+
+  _grSelectNewDeckColor(el, color) {
+    document.querySelectorAll('#wfNewDeckColorRow .grenier-color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    this._wfNewDeckColor = color;
+  },
+
+  _wfCreateDeckAndSelect() {
+    const name = document.getElementById('wfNewDeckNameInput')?.value.trim();
+    if (!name) { document.getElementById('wfNewDeckNameInput')?.focus(); return; }
+    const emoji = this._wfNewDeckEmoji || '📁';
+    const color = this._wfNewDeckColor || this.GRENIER_COLORS[0];
+    const deckId = this._gid();
+    this._grenier.decks.push({ id: deckId, name, color, createdAt: Date.now() });
+    // Mirror in Répertoire
+    if (!this._repertoire.folders.find(f => f.name === name)) {
+      this._repertoire.folders.push({ id: 'folder_' + Date.now(), name, emoji, createdAt: Date.now() });
+      this.saveRepertoire();
+    }
+    this.saveGrenier();
+    document.getElementById('wfGrenierModal')?.remove();
+    // Now add the word to this new deck
+    this._wfGrenierPendingWord = this._wfCurrentWord;
+    this._wfGrenierPendingIpa = this._wfCurrentIpa;
+    // Re-open modal briefly to pick up genDef state — just do it directly
+    const genDef = false; // no toggle available in inline flow; user can do it from card settings
+    const cardId = this._gid();
+    this._grenier.cards.push({
+      id: cardId, deckId, word: this._wfCurrentWord, ipa: this._wfCurrentIpa || '',
+      interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+      showListen: true, showRecord: true, showRhymes: true,
+      color: null, definition: '', createdAt: Date.now()
+    });
+    this.saveGrenier();
+    this.showToast(`Paquet "${name}" créé et "${this._wfCurrentWord}" ajouté ✓`);
+    this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
+  },
+
+  async _grGenerateDefForNewCard(cardId, word) {
+    const key = this.settings?.openrouterKey;
+    if (!key) return;
+    try {
+      const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
+      const prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method:'POST',
+        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+      });
+      const data = await resp.json();
+      const def = data.choices?.[0]?.message?.content?.trim() || '';
+      if (def) {
+        const card = this._grenier.cards.find(c => c.id === cardId);
+        if (card) { card.definition = def; this.saveGrenier(); }
+      }
+    } catch(e) { /* silent */ }
   },
 
   _grCardSettingColorChange(cardId, el, color) {
@@ -10059,6 +10821,22 @@ No preamble, no markdown fences, just the JSON array.`;
     const sess = this._grenierStudySession;
     if (sess) { sess.idx++; this._grRenderStudyCard(); }
     this.showToast('Carte supprimée');
+  },
+
+  _grOpenCardBack(cardId) {
+    this._grCloseCardSettings();
+    const sess = this._grenierStudySession;
+    if (!sess) return;
+    const card = sess.queue[sess.idx];
+    if (!card || card.id !== cardId) return;
+    this._grFlipCard(cardId);
+    setTimeout(() => this._grToggleDefEdit(cardId), 100);
+  },
+
+  async _grGenerateDefFromSettings(cardId, word) {
+    this._grCloseCardSettings();
+    this.showToast('Génération en cours…');
+    await this._grGenerateDef(cardId, word);
   },
 
 };
