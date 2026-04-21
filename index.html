@@ -1997,6 +1997,65 @@ body::before {
 }
 .wf-grenier-add-btn svg { flex-shrink: 0; }
 
+/* ── Context (AI) button ── */
+.wf-context-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.1) 100%);
+  border: 1.5px solid rgba(251,191,36,0.45);
+  border-radius: 10px;
+  color: #FBBF24;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.wf-context-btn:hover:not(:disabled) { background: linear-gradient(135deg,rgba(251,191,36,0.28) 0%,rgba(245,158,11,0.2) 100%); border-color: #FBBF24; box-shadow: 0 0 12px rgba(251,191,36,0.25); }
+.wf-context-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.wf-context-btn svg { width: 16px; height: 16px; }
+
+/* ── Context input row ── */
+.wf-context-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 2px;
+  animation: fadeInCtx 0.22s ease both;
+}
+@keyframes fadeInCtx {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wf-context-input {
+  flex: 1;
+  background: rgba(251,191,36,0.06);
+  border: 1.5px solid rgba(251,191,36,0.3);
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.wf-context-input:focus { border-color: rgba(251,191,36,0.65); }
+.wf-context-input::placeholder { color: var(--text3); }
+.wf-context-clear {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.wf-context-clear:hover { color: var(--text); }
+
 /* ── Rhymes result strip ── */
 .wf-rhymes-strip {
   width: 100%;
@@ -2117,6 +2176,26 @@ body::before {
   transition: color 0.15s;
 }
 .wf-compare-dismiss:hover { color: var(--text); }
+
+.wf-swap-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  background: rgba(20,184,166,0.08);
+  border: 1px solid rgba(20,184,166,0.35);
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  color: #14B8A6;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+.wf-swap-btn:hover { background: rgba(20,184,166,0.15); border-color: #14B8A6; transform: scale(1.01); }
 
 /* ── Move-to-folder overlay ── */
 .rep-overlay {
@@ -5133,6 +5212,8 @@ const BILAN_PASSAGES = [
     this.loadGrenier();
     this.applyTheme();
     if (this.settings.launchScreen === 'labo') this.renderLabo();
+    else if (this.settings.launchScreen === 'word-focus') { this._wfFromBilan = false; this.currentScreen = 'word-focus'; this.renderWordFocus(); }
+    else if (this.settings.launchScreen === 'grenier') { this.currentScreen = 'grenier'; this.renderGrenier(); }
     else this.renderHome();
     this.setupSpeechSynthVoices();
     this._setupLongPress();
@@ -5559,6 +5640,9 @@ const BILAN_PASSAGES = [
   renderWordFocus(preloadWord = '', compareWord = '') {
     this.currentScreen = 'word-focus';
     this._wfCompareWord = compareWord || '';
+    this._wfContextOpen = false;
+    this._wfCompareCurrentWord = '';
+    this._wfCompareCurrentIpa = '';
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
@@ -5591,11 +5675,17 @@ const BILAN_PASSAGES = [
           </div>
           <div class="wf-btn-row">
             <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
+            <button class="wf-context-btn" id="wfContextBtn" onclick="App._wfToggleContext()" title="Ajouter un contexte (IA)" ${!this.settings.openrouterKey ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
             <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" title="Ajouter au Grenier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               Au Grenier
             </button>
           </div>
+          <div id="wfContextRow" style="display:none"></div>
         </div>
 
         <div id="wfWordCard" class="wf-word-card" style="${preloadWord ? '' : 'display:none'}">
@@ -5932,6 +6022,10 @@ const BILAN_PASSAGES = [
   _wfRenderCompareSlot(word, ipa = '') {
     const slot = document.getElementById('wfCompareSlot');
     if (!slot) return;
+    // Store compare word for swapping
+    this._wfCompareCurrentWord = word;
+    this._wfCompareCurrentIpa = ipa;
+    const safeWord = word.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     slot.innerHTML = `
       <div class="wf-compare-card">
         <button class="wf-compare-dismiss" onclick="App._wfDismissCompare()" title="Fermer">✕</button>
@@ -5948,8 +6042,109 @@ const BILAN_PASSAGES = [
             Lent
           </button>
         </div>
-        <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Enregistrez le mot principal pour comparer</div>
+        <button class="wf-swap-btn" id="wfSwapBtn" onclick="App._wfSwapWords()" title="Échanger les mots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px">
+            <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+          </svg>
+          Échanger
+        </button>
+        <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px">Enregistrez le mot principal pour comparer</div>
       </div>`;
+    // Mark compare button as active (keep label as Comparer)
+    const cmpBtn = document.getElementById('wfCompareBtn');
+    if (cmpBtn) cmpBtn.classList.add('active');
+  },
+
+  _wfSwapWords() {
+    const currentWord = this._wfCurrentWord;
+    const currentIpa = this._wfCurrentIpa;
+    const compareWord = this._wfCompareCurrentWord;
+    const compareIpa = this._wfCompareCurrentIpa;
+    if (!currentWord || !compareWord) return;
+
+    // Update main input and word card with compare word
+    const input = document.getElementById('wfInput');
+    const wordDisplay = document.getElementById('wfWordDisplay');
+    const ipaEl = document.getElementById('wfIpa');
+    const listenBtn = document.getElementById('wfListenBtn');
+    const recordBtn = document.getElementById('wfRecordBtn');
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (input) input.value = compareWord;
+    if (clearBtn) clearBtn.style.display = 'flex';
+    if (wordDisplay) wordDisplay.textContent = compareWord;
+    if (ipaEl) {
+      if (compareIpa) { ipaEl.textContent = compareIpa; ipaEl.className = 'wf-ipa'; }
+      else { ipaEl.textContent = 'Chargement IPA…'; ipaEl.className = 'wf-ipa wf-ipa-loading'; }
+    }
+    if (listenBtn) listenBtn.disabled = false;
+    if (recordBtn) recordBtn.disabled = false;
+
+    this._wfCurrentWord = compareWord;
+    this._wfCurrentIpa = compareIpa || '';
+    if (!compareIpa) this._wfFetchIpa(compareWord);
+
+    // Update compare slot with old main word
+    this._wfCompareCurrentWord = currentWord;
+    this._wfCompareCurrentIpa = currentIpa;
+    this._wfRenderCompareSlot(currentWord, currentIpa);
+
+    // Reset recording/score areas
+    this.retryRecording();
+    const relistenBtn = document.getElementById('wfRelistenBtn');
+    if (relistenBtn) { relistenBtn.disabled = true; relistenBtn.style.color = ''; relistenBtn.style.borderColor = ''; }
+
+    // Record new main word in history
+    this._wfRecordLookup(compareWord, compareIpa || '');
+    this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
+    this.showToast(`Mots échangés ✓`);
+  },
+
+  // ── Context (AI gold button) ────────────────────────────────
+  _wfContextOpen: false,
+
+  _wfToggleContext() {
+    const row = document.getElementById('wfContextRow');
+    const btn = document.getElementById('wfContextBtn');
+    if (!row) return;
+    if (this._wfContextOpen) {
+      // Close
+      row.style.display = 'none';
+      row.innerHTML = '';
+      this._wfContextOpen = false;
+      if (btn) { btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`; btn.style.background = ''; btn.style.borderColor = ''; }
+    } else {
+      // Open
+      this._wfContextOpen = true;
+      row.style.display = '';
+      row.innerHTML = `
+        <div class="wf-context-row">
+          <input class="wf-context-input" id="wfContextInput" type="text"
+            placeholder="Phrase ou contexte d'usage…"
+            autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="wf-context-clear" onclick="App._wfCloseContext()" title="Fermer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div style="font-size:10px;color:rgba(251,191,36,0.6);padding:2px 2px 0;display:flex;align-items:center;gap:5px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Contexte IA — s'intègre dans la définition du Grenier
+        </div>`;
+      if (btn) { btn.style.background = 'rgba(251,191,36,0.22)'; btn.style.borderColor = '#FBBF24'; }
+      setTimeout(() => document.getElementById('wfContextInput')?.focus(), 80);
+    }
+  },
+
+  _wfCloseContext() {
+    const row = document.getElementById('wfContextRow');
+    const btn = document.getElementById('wfContextBtn');
+    if (row) { row.style.display = 'none'; row.innerHTML = ''; }
+    this._wfContextOpen = false;
+    if (btn) { btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`; btn.style.background = ''; btn.style.borderColor = ''; }
+  },
+
+  _wfGetContext() {
+    return (document.getElementById('wfContextInput')?.value || '').trim();
   },
 
   _wfDismissCompare() {
@@ -8043,13 +8238,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             </div>
             <div class="settings-row">
               <div class="settings-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
-                Démarrer sur Le Labo
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Écran de démarrage
               </div>
-              <label class="toggle">
-                <input type="checkbox" id="launchLaboToggle" ${this.settings.launchScreen === 'labo' ? 'checked' : ''} onchange="App.setLaunchScreen(this.checked ? 'labo' : 'home')">
-                <span class="toggle-slider"></span>
-              </label>
+              <select class="settings-select" onchange="App.setLaunchScreen(this.value)">
+                <option value="home" ${(this.settings.launchScreen||'home') === 'home' ? 'selected' : ''}>Accueil</option>
+                <option value="labo" ${this.settings.launchScreen === 'labo' ? 'selected' : ''}>Le Labo</option>
+                <option value="word-focus" ${this.settings.launchScreen === 'word-focus' ? 'selected' : ''}>Mot en focus</option>
+                <option value="grenier" ${this.settings.launchScreen === 'grenier' ? 'selected' : ''}>Le Grenier</option>
+              </select>
             </div>
           </div>
         </div>
@@ -8243,7 +8440,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
-        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:600 })
       });
       const data = await resp.json();
       const result = data.choices?.[0]?.message?.content?.trim() || '(aucune réponse)';
@@ -9917,20 +10114,21 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
     const colorSwatches = this.GRENIER_COLORS.map((c,i) =>
       `<span class="grenier-color-swatch ${(!editCard&&i===0)||(editCard?.color===c)?'selected':''}"
-        style="background:${c}" data-color="${c}" onclick="App._grSelectCardColor(this,'${c}')"></span>`
+        style="background:${c};width:26px;height:26px" data-color="${c}" onclick="App._grSelectCardColor(this,'${c}')"></span>`
     ).join('');
     const noColorSwatch = `<span class="grenier-color-swatch ${!editCard?.color?'selected':''}"
-      style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright)" data-color=""
+      style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright);width:26px;height:26px;font-size:11px;display:flex;align-items:center;justify-content:center" data-color=""
       onclick="App._grSelectCardColor(this,'')" title="Par défaut">✕</span>`;
 
     this._grSelectedCardColor = editCard?.color || '';
+    const isEdit = !!editCard;
     document.getElementById('main').innerHTML = `
       <div class="grenier-card-create-screen">
         <div class="screen-header">
-          <button class="back-btn" onclick="App.goBack()">
+          <button class="back-btn" onclick="${isEdit ? 'App._grEditCardBack()' : 'App.goBack()'}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <div class="screen-title" style="color:var(--gr-orange)">${editCard?'Modifier la carte':'Nouvelle carte'}</div>
+          <div class="screen-title" style="color:var(--gr-orange)">${isEdit ? 'Options de la carte' : 'Nouvelle carte'}</div>
         </div>
         <div style="padding:0 0 100px;overflow-y:auto;max-height:calc(100vh - 60px)">
           <div class="grenier-form-section" style="padding:16px 16px 0">
@@ -9951,14 +10149,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           </div>
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Couleur de la carte (optionnel)</div>
-            <div class="grenier-color-row">${noColorSwatch}${colorSwatches}</div>
+            <div class="grenier-color-row" style="gap:6px">${noColorSwatch}${colorSwatches}</div>
           </div>
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Options</div>
             <div style="display:flex;flex-direction:column;gap:10px">
-              ${['showListen','showRecord','showRhymes','showDefinition'].map(k => {
-                const labels = {showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦',showDefinition:'Verso — Définition'};
-                const on = editCard ? (k==='showDefinition' ? editCard[k]===true : editCard[k]!==false) : (k!=='showDefinition');
+              ${['showListen','showRecord','showRhymes'].map(k => {
+                const labels = {showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦'};
+                const on = editCard ? editCard[k]!==false : true;
                 return `<div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
                   <span>${labels[k]}</span>
                   <div class="grenier-toggle ${on?'on':''}" id="grOpt_${k}" onclick="this.classList.toggle('on')"></div>
@@ -9966,10 +10164,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               }).join('')}
             </div>
           </div>
-          <div style="padding:16px">
+          <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
             <button class="grenier-btn-primary" onclick="App._grSaveCard('${editCard?.id||''}')">
-              ${editCard?'Enregistrer':'Ajouter la carte'}
+              ${isEdit ? 'Enregistrer' : 'Ajouter la carte'}
             </button>
+            ${isEdit ? `
+            <button onclick="App._grDeleteCardFromEdit('${editCard.id}')"
+              style="width:100%;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#F87171;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body)">
+              Supprimer la carte
+            </button>` : ''}
           </div>
         </div>
       </div>
@@ -10027,18 +10230,24 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       deckId = this._grenier.decks[0].id;
     }
     const color = this._grSelectedCardColor || null;
-    const showListen     = document.getElementById('grOpt_showListen')?.classList.contains('on');
-    const showRecord     = document.getElementById('grOpt_showRecord')?.classList.contains('on');
-    const showRhymes     = document.getElementById('grOpt_showRhymes')?.classList.contains('on');
-    const showDefinition = document.getElementById('grOpt_showDefinition')?.classList.contains('on') || false;
+    const showListen = document.getElementById('grOpt_showListen')?.classList.contains('on') ?? true;
+    const showRecord = document.getElementById('grOpt_showRecord')?.classList.contains('on') ?? true;
+    const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on') ?? true;
 
     if (editId) {
       const card = this._grenier.cards.find(c=>c.id===editId);
-      if (card) Object.assign(card, { word, ipa, color, showListen, showRecord, showRhymes, showDefinition });
+      if (card) {
+        const oldDeckId = card.deckId;
+        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes });
+        // If deck changed, update the study session reference too
+        if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
+          this._grenierStudySession.deckId = deckId;
+        }
+      }
     } else {
       const newCard = {
         id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
-        nextDue:Date.now(), showListen, showRecord, showRhymes, showDefinition,
+        nextDue:Date.now(), showListen, showRecord, showRhymes,
         color, definition:'', createdAt:Date.now()
       };
       this._grenier.cards.push(newCard);
@@ -10058,7 +10267,66 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     }
     this.saveGrenier();
     this.showToast(editId ? 'Carte modifiée ✓' : `"${word}" ajouté au paquet ✓`);
-    this.goBack();
+    // After editing a card, return to the study session if one is active
+    if (editId && this._grEditReturnDeckId) {
+      const returnDeck = this._grEditReturnDeckId;
+      this._grEditReturnDeckId = null;
+      this.currentScreen = 'grenier-study';
+      const main = document.getElementById('main');
+      main.classList.add('screen-exit');
+      setTimeout(() => {
+        main.classList.remove('screen-exit');
+        main.classList.add('screen-enter');
+        this._grRenderStudyCard();
+        setTimeout(() => main.classList.remove('screen-enter'), 400);
+      }, 150);
+    } else {
+      this.goBack();
+    }
+  },
+
+  // Navigate back from card edit screen to study session (or grenier list)
+  _grEditCardBack() {
+    this._grEditReturnDeckId = null;
+    if (this._grenierStudySession) {
+      this.currentScreen = 'grenier-study';
+      const main = document.getElementById('main');
+      main.classList.add('screen-exit');
+      setTimeout(() => {
+        main.classList.remove('screen-exit');
+        main.classList.add('screen-enter');
+        this._grRenderStudyCard();
+        setTimeout(() => main.classList.remove('screen-enter'), 400);
+      }, 150);
+    } else {
+      this.goBack();
+    }
+  },
+
+  // Delete card from the edit screen (not overlay)
+  _grDeleteCardFromEdit(cardId) {
+    if (!confirm('Supprimer cette carte ? Cette action est irréversible.')) return;
+    const card = this._grenier.cards.find(c => c.id === cardId);
+    if (card) { card.deleted = true; this.saveGrenier(); }
+    this.showToast('Carte supprimée');
+    // Return to study session, advancing past deleted card
+    if (this._grenierStudySession) {
+      this._grEditReturnDeckId = null;
+      const sess = this._grenierStudySession;
+      // Advance index so the deleted card is skipped
+      sess.idx++;
+      this.currentScreen = 'grenier-study';
+      const main = document.getElementById('main');
+      main.classList.add('screen-exit');
+      setTimeout(() => {
+        main.classList.remove('screen-exit');
+        main.classList.add('screen-enter');
+        this._grRenderStudyCard();
+        setTimeout(() => main.classList.remove('screen-enter'), 400);
+      }, 150);
+    } else {
+      this.goBack();
+    }
   },
 
   // ── Study Session ─────────────────────────────────────────────
@@ -10575,61 +10843,12 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // ── Card Settings Panel ───────────────────────────────────────
   _grOpenCardSettings(cardId) {
-    document.querySelector('.grenier-card-settings-panel')?.remove();
-    const card = this._grenier.cards.find(c=>c.id===cardId);
-    if (!card) return;
-    const deckName = this._grenier.decks.find(d=>d.id===card.deckId)?.name || '';
-    const colorSwatches = this.GRENIER_COLORS.map((c,i)=>
-      `<span class="grenier-color-swatch ${card.color===c?'selected':''}" style="background:${c}" data-color="${c}"
-        onclick="App._grCardSettingColorChange('${cardId}',this,'${c}')"></span>`
-    ).join('');
-    const noColor=`<span class="grenier-color-swatch ${!card.color?'selected':''}"
-      style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright)" data-color=""
-      onclick="App._grCardSettingColorChange('${cardId}',this,'')">✕</span>`;
-
-    const panel = document.createElement('div');
-    panel.className = 'grenier-card-settings-panel';
-    panel.innerHTML = `
-      <div class="grenier-card-settings-title">⚙️ Options de la carte</div>
-      <div class="grenier-settings-row">
-        <span style="font-size:12px;color:var(--text3)">Paquet</span>
-        <span style="font-size:13px;color:var(--gr-orange2)">${deckName}</span>
-      </div>
-      <div class="grenier-settings-row">
-        <span>Couleur de la carte</span>
-        <div class="grenier-color-row" style="margin:0">${noColor}${colorSwatches}</div>
-      </div>
-      ${['showListen','showRecord','showRhymes','showDefinition'].map(k=>{
-        const labels={showListen:'Bouton Écouter',showRecord:'Enregistrement / Score',showRhymes:'Rimes ✦',showDefinition:'Verso — Définition'};
-        const on = k==='showDefinition' ? card[k]===true : card[k]!==false;
-        return `<div class="grenier-settings-row">
-          <span>${labels[k]}</span>
-          <div class="grenier-toggle ${on?'on':''}" onclick="App._grToggleCardOpt('${cardId}','${k}',this)"></div>
-        </div>`;
-      }).join('')}
-      <div class="grenier-settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-        <span>Verso (définition)</span>
-        <div style="display:flex;gap:8px;width:100%">
-          <button style="flex:1;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);color:#A78BFA;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body)" onclick="App._grOpenCardBack('${cardId}')">
-            ✏️ Modifier le verso
-          </button>
-          ${this.settings.openrouterKey ? `<button style="flex:1;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);color:#A78BFA;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body)" onclick="App._grGenerateDefFromSettings('${cardId}','${card.word.replace(/'/g,"\\'")}')">
-            ⚡ Générer (IA)
-          </button>` : ''}
-        </div>
-      </div>
-      <div class="grenier-settings-row">
-        <span style="color:#F87171">Supprimer la carte</span>
-        <button style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#F87171;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13px;font-family:var(--font-body)"
-          onclick="App._grDeleteCardFromSession('${cardId}')">Supprimer</button>
-      </div>
-      <button class="grenier-btn-secondary" style="margin-top:14px" onclick="App._grCloseCardSettings()">Fermer</button>
-    `;
-    document.body.appendChild(panel);
-    this._grenierCardSettingsOpen = true;
-    setTimeout(()=>document.addEventListener('pointerdown', this._grSettingsBg = e=>{
-      if (!panel.contains(e.target)) this._grCloseCardSettings();
-    },{once:true}),100);
+    // Navigate to the unified card create/edit screen
+    const sess = this._grenierStudySession;
+    // Store session so we can return to it after editing
+    this._grEditReturnDeckId = sess?.deckId || null;
+    this._grCloseCardSettings();
+    this.navigate('grenier-card-create', { editCardId: cardId });
   },
 
   _grCloseCardSettings() {
@@ -10754,7 +10973,7 @@ Réponds UNIQUEMENT avec ce JSON :
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
-        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:600 })
       });
       const data = await resp.json();
       const def = data.choices?.[0]?.message?.content?.trim() || '';
@@ -10827,6 +11046,9 @@ Réponds UNIQUEMENT avec ce JSON :
         }).join('');
 
     const ipa = this._wfCurrentIpa || '';
+    const context = this._wfGetContext();
+    // If user has typed context, default genDef toggle to on regardless
+    const defToggleOn = hasKey && (context ? true : true);
     const overlay = document.createElement('div');
     overlay.className = 'rep-overlay';
     overlay.id = 'wfGrenierModal';
@@ -10835,6 +11057,7 @@ Réponds UNIQUEMENT avec ce JSON :
         <div class="rep-overlay-title" style="color:#A78BFA">✦ Au Grenier</div>
         <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
         ${ipa ? `<div style="font-family:var(--font-display);font-size:12px;color:#A78BFA;margin-bottom:10px">${ipa}</div>` : '<div style="margin-bottom:10px"></div>'}
+        ${context ? `<div style="font-size:12px;padding:8px 10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:rgba(251,191,36,0.9);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span style="line-height:1.4">${context}</span></div>` : ''}
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Choisir un paquet :</div>
         ${decks.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:8px 0 4px;font-style:italic">Aucun paquet pour l'instant.</div>` : ''}
         ${deckOptions}
@@ -10843,10 +11066,10 @@ Réponds UNIQUEMENT avec ce JSON :
         </button>
         <div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm)">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
-            <div class="grenier-toggle ${hasKey ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on')" ${hasKey ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
+            <div class="grenier-toggle ${defToggleOn ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on')" ${hasKey ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--text)">Générer une définition (verso)</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">${hasKey ? 'Le verso de la carte aura une définition IA' : 'Requiert une clé OpenRouter'}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${hasKey ? (context ? 'Le contexte sera intégré dans la définition IA ✦' : 'Le verso de la carte aura une définition IA') : 'Requiert une clé OpenRouter'}</div>
             </div>
           </label>
         </div>
@@ -10854,14 +11077,16 @@ Réponds UNIQUEMENT avec ce JSON :
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
-    // Store word/ipa for use in deck selection
+    // Store word/ipa/context for use in deck selection
     this._wfGrenierPendingWord = word;
     this._wfGrenierPendingIpa = ipa;
+    this._wfGrenierPendingContext = context;
   },
 
   _wfGrenierSelectDeck(deckId) {
     const word = this._wfGrenierPendingWord;
     const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa;
+    const context = this._wfGrenierPendingContext || '';
     if (!word) return;
     const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
     if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
@@ -10884,9 +11109,9 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveGrenier();
     document.getElementById('wfGrenierModal')?.remove();
     this.showToast(`"${word}" ajouté au Grenier ✓`);
-    // Generate definition if requested
+    // Generate definition if requested — pass context if present
     if (genDef && this.settings.openrouterKey) {
-      this._grGenerateDefForNewCard(cardId, word);
+      this._grGenerateDefForNewCard(cardId, word, context);
     }
     this._wfUpdateSaveBtn();
     this._wfUpdateRepBtn();
@@ -10971,19 +11196,25 @@ Réponds UNIQUEMENT avec ce JSON :
     this._wfUpdateRepBtn();
   },
 
-  async _grGenerateDefForNewCard(cardId, word) {
+  async _grGenerateDefForNewCard(cardId, word, context = '') {
     const key = this.settings?.openrouterKey;
     if (!key) return;
     try {
       const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
       const customPrompt = this.settings?.definitionPrompt?.trim();
-      const prompt = customPrompt
-        ? customPrompt.replace(/\{word\}/g, word)
-        : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      let prompt;
+      if (customPrompt) {
+        prompt = customPrompt.replace(/\{word\}/g, word);
+        if (context) prompt += `\n\nContexte ou exemple d'usage fourni par l'utilisateur : « ${context} »\nAssurez-vous que cet exemple figure dans la définition et que cette utilisation du mot est reflétée dans votre analyse.`;
+      } else if (context) {
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}".\n\nL'utilisateur a fourni ce contexte ou exemple d'usage : « ${context} »\nInclus cet exemple dans ta réponse et assure-toi de refléter ce sens du mot. Inclus aussi d'autres usages courants du mot si pertinent.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      } else {
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
-        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:200 })
+        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:600 })
       });
       const data = await resp.json();
       const def = data.choices?.[0]?.message?.content?.trim() || '';
