@@ -1281,14 +1281,41 @@ body::before {
   opacity: 0.5;
   flex-shrink: 0;
 }
-.settings-group.open .settings-group-title { border-bottom: 1px solid var(--border); }
-.settings-group.open .settings-chev { transform: rotate(90deg); }
+.settings-group.open > .settings-group-title { border-bottom: 1px solid var(--border); }
+.settings-group.open > .settings-group-title .settings-chev { transform: rotate(90deg); }
 .settings-group-body {
   display: none;
 }
-.settings-group.open .settings-group-body {
+.settings-group.open > .settings-group-body {
   display: block;
 }
+
+.settings-sub-group {
+  border-top: 1px solid var(--border);
+  margin: 0 16px 4px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin: 8px 16px;
+}
+.settings-sub-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  background: var(--surface2);
+  transition: background 0.15s;
+}
+.settings-sub-title:hover { background: var(--bg3); }
+.settings-sub-title .settings-chev { width: 14px; height: 14px; transition: transform 0.2s; opacity: 0.5; }
+.settings-sub-group.open .settings-sub-title { border-bottom: 1px solid var(--border); }
+.settings-sub-group.open .settings-chev { transform: rotate(90deg); }
+.settings-sub-group .settings-group-body { display: none; padding: 0 12px; }
+.settings-sub-group.open .settings-group-body { display: block; }
 
 .settings-row {
   display: flex;
@@ -1893,46 +1920,33 @@ body::before {
 .wf-rep-nav-btn {
   position: absolute;
   top: 12px;
-  right: 58px; /* sits left of the 38px save btn + 8px gap */
+  right: 12px;
   background: rgba(20,184,166,0.08);
   border: 1.5px solid rgba(20,184,166,0.2);
   border-radius: 10px;
-  width: 34px; height: 34px;
-  display: flex; /* always visible when word is loaded */
+  width: 38px; height: 38px;
+  display: flex;
   align-items: center; justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: rgba(20,184,166,0.45);
-  opacity: 0.6;
+  color: rgba(20,184,166,0.55);
+  opacity: 0.75;
 }
 .wf-rep-nav-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; color: #14B8A6; opacity: 1; }
 .wf-rep-nav-btn.visible { color: #14B8A6; border-color: rgba(20,184,166,0.5); opacity: 1; }
 .wf-rep-nav-btn svg { width: 15px; height: 15px; }
 
-/* ── Save-to-workbook button on Mot en Focus ── */
+/* ── Save-to-workbook button on Mot en Focus — hidden, kept for JS ── */
 .wf-save-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(20,184,166,0.1);
-  border: 1.5px solid rgba(20,184,166,0.35);
-  border-radius: 10px;
-  width: 38px; height: 38px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #14B8A6;
-  gap: 0;
+  display: none !important;
 }
-.wf-save-btn:hover { background: rgba(20,184,166,0.22); border-color: #14B8A6; transform: scale(1.08); }
-.wf-save-btn.saved { background: #14B8A6; border-color: #14B8A6; color: #05060F; }
-.wf-save-btn svg { width: 17px; height: 17px; }
 
-/* ── Compare pill button — bottom-right of word card ── */
+/* ── Compare pill button — absolute bottom-centre of word card ── */
 .wf-compare-btn {
   position: absolute;
   bottom: 12px;
-  right: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(20,184,166,0.08);
   border: 1.5px solid rgba(20,184,166,0.25);
   border-radius: 20px;
@@ -1944,10 +1958,117 @@ body::before {
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .wf-compare-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; color: #14B8A6; }
 .wf-compare-btn svg { width: 13px; height: 13px; }
 .wf-compare-btn.active { background: rgba(20,184,166,0.15); border-color: #14B8A6; color: #14B8A6; }
+
+/* ── Action row: zero-height wrapper for JS visibility toggle ── */
+.wf-action-row {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.wf-action-row > * { pointer-events: all; }
+.wf-action-row .wf-rhymes-btn { flex: unset; margin: 0; }
+.wf-action-row .wf-compare-btn { flex: unset; margin: 0; }
+
+.wf-flip-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: rgba(20,184,166,0.08);
+  border: 1px solid rgba(20,184,166,0.3);
+  border-radius: 10px;
+  color: #14B8A6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wf-flip-btn:hover { background: rgba(20,184,166,0.18); border-color: #14B8A6; }
+.wf-flip-btn.active { background: rgba(20,184,166,0.2); border-color: #14B8A6; }
+.wf-flip-btn svg { width: 16px; height: 16px; }
+
+/* ── MOF Definition panel ── */
+.wf-def-panel {
+  background: rgba(20,184,166,0.06);
+  border: 1px solid rgba(20,184,166,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 14px 12px;
+  animation: fadeInCtx 0.22s ease both;
+}
+.wf-def-content {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.wf-def-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(20,184,166,0.1);
+  border: 1px solid rgba(20,184,166,0.3);
+  border-radius: 7px;
+  padding: 5px 10px;
+  color: #14B8A6;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wf-def-action-btn:hover { background: rgba(20,184,166,0.2); border-color: #14B8A6; }
+.wf-def-ai-btn { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.35); color: #A78BFA; }
+.wf-def-ai-btn:hover { background: rgba(167,139,250,0.2); border-color: #A78BFA; }
+.wf-def-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.wf-def-textarea:focus { border-color: rgba(20,184,166,0.5); }
+
+/* ── MOF card back (flip) ── */
+.wf-card-back {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 52px; /* space for flip btn */
+  min-height: 160px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.wf-card-back::-webkit-scrollbar { width: 3px; }
+.wf-card-back::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.3); border-radius: 2px; }
+.wf-card-back-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #14B8A6;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
 
 /* ── Rhymes pill button — bottom-left of word card ── */
 .wf-rhymes-btn {
@@ -2650,6 +2771,8 @@ body::before {
   align-items: center;
   gap: 6px;
   position: relative;
+  min-height: 260px;
+  box-sizing: border-box;
 }
 .wf-word-display {
   font-family: var(--font-display);
@@ -5182,6 +5305,10 @@ const BILAN_PASSAGES = [
     azureRegion: 'eastus',
     speechSynthVoice: null,
     launchScreen: 'home',
+    defSimpleModel: '',
+    defSimplePrompt: '',
+    defComplexModel: '',
+    defComplexPrompt: '',
   },
   scores: {},
   recording: false,
@@ -5636,6 +5763,7 @@ const BILAN_PASSAGES = [
   _wfHistory: [], // [{ word, ipa, score, color }]
   _wfCurrentWord: '',
   _wfCurrentIpa: '',
+  _wfCurrentGender: '',
 
   renderWordFocus(preloadWord = '', compareWord = '') {
     this.currentScreen = 'word-focus';
@@ -5643,6 +5771,16 @@ const BILAN_PASSAGES = [
     this._wfContextOpen = false;
     this._wfCompareCurrentWord = '';
     this._wfCompareCurrentIpa = '';
+    // Only reset def/gender if navigating to a different word
+    const incomingWord = preloadWord.trim().toLowerCase();
+    if (incomingWord && incomingWord !== this._wfCurrentWord) {
+      this._wfCurrentDef = '';
+      this._wfCurrentGender = '';
+      this._wfDefPanelOpen = false;
+    }
+    // Always close the panel visually on re-render (it will be re-opened after if needed)
+    const wasDefOpen = this._wfDefPanelOpen;
+    this._wfDefPanelOpen = false;
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
@@ -5689,11 +5827,7 @@ const BILAN_PASSAGES = [
         </div>
 
         <div id="wfWordCard" class="wf-word-card" style="${preloadWord ? '' : 'display:none'}">
-          <button class="wf-save-btn" id="wfSaveBtn" onclick="App.wfToggleSaveToRepertoire()" title="Sauvegarder dans Le Répertoire" ${preloadWord ? '' : 'style="display:none"'}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-          </button>
+          <button class="wf-save-btn" id="wfSaveBtn" onclick="App.wfToggleSaveToRepertoire()" aria-hidden="true"></button>
           <button class="wf-rep-nav-btn" id="wfRepNavBtn" onclick="App._wfGoToRepertoire()" title="Le Répertoire" style="${preloadWord ? '' : 'display:none'}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -5722,13 +5856,19 @@ const BILAN_PASSAGES = [
             <div id="playbackArea" class="playback-area hidden"></div>
             <div id="scoreArea" class="score-area hidden"></div>
           </div>
-          <button class="wf-compare-btn" id="wfCompareBtn" onclick="App._wfToggleCompare()" style="${preloadWord ? '' : 'display:none'}" title="Comparer avec un autre mot">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Comparer
-          </button>
-          <button class="wf-rhymes-btn" id="wfRhymesBtn" onclick="App._wfFetchRhymes()" style="${preloadWord ? '' : 'display:none'}" title="Trouver des rimes (IA)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            Rimes ✦
+          <div class="wf-action-row" style="${preloadWord ? '' : 'display:none'}" id="wfActionRow">
+            <button class="wf-rhymes-btn" id="wfRhymesBtn" onclick="App._wfFetchRhymes()" title="Trouver des rimes (IA)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Rimes ✦
+            </button>
+            <button class="wf-compare-btn" id="wfCompareBtn" onclick="App._wfToggleCompare()" title="Comparer avec un autre mot">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Comparer
+            </button>
+          </div>
+          <!-- Flip button — absolute bottom-right inside card, like Grenier -->
+          <button class="wf-flip-btn" id="wfFlipBtn" onclick="App._wfToggleDefinition()" title="Voir la définition" ${!this.settings.openrouterKey ? 'style="opacity:0.35;cursor:not-allowed;position:absolute;bottom:12px;right:12px"' : 'style="position:absolute;bottom:12px;right:12px"'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
           </button>
         </div>
 
@@ -5758,6 +5898,10 @@ const BILAN_PASSAGES = [
     if (!preloadWord) setTimeout(() => document.getElementById('wfInput')?.focus(), 200);
     // Render compare slot if a second word was passed (from Répertoire compare)
     if (compareWord) setTimeout(() => App._wfRenderCompareSlot(compareWord), 100);
+    // Re-open def panel if it was open before navigation (same word)
+    if (wasDefOpen && this._wfCurrentDef) {
+      setTimeout(() => this._wfToggleDefinition(), 80);
+    }
   },
 
   async wfLoadWord() {
@@ -5768,6 +5912,20 @@ const BILAN_PASSAGES = [
     if (input) input.value = word;
     this._wfCurrentWord = word;
     this._wfCurrentIpa = '';
+    this._wfCurrentGender = '';
+    // If definition panel (back) is open, restore to front first
+    if (this._wfDefPanelOpen) {
+      const card = document.getElementById('wfWordCard');
+      if (card && card.dataset.frontHtml) {
+        card.innerHTML = card.dataset.frontHtml;
+        delete card.dataset.frontHtml;
+      }
+      this._wfDefPanelOpen = false;
+    }
+    // Clear context box
+    const contextRow = document.getElementById('wfContextRow');
+    if (contextRow) contextRow.innerHTML = '';
+    this._wfContextOpen = false;
     // Reset UI
     const card = document.getElementById('wfWordCard');
     const wordDisplay = document.getElementById('wfWordDisplay');
@@ -5794,6 +5952,12 @@ const BILAN_PASSAGES = [
     const repNavBtn = document.getElementById('wfRepNavBtn');
     if (repNavBtn) repNavBtn.style.display = '';
     App._wfUpdateRepBtn();
+    // Show action row (Rimes / Comparer / Flip)
+    const actionRow = document.getElementById('wfActionRow');
+    if (actionRow) actionRow.style.display = '';
+    // Reset definition state for new word (panel lives inside card via flip)
+    this._wfCurrentDef = '';
+    this._wfDefPanelOpen = false;
     // Record this word in lookup history (IPA added after fetch)
     this._wfRecordLookup(word, '');
     // Reset score/playback
@@ -5807,54 +5971,75 @@ const BILAN_PASSAGES = [
   async _wfFetchIpa(word) {
     const ipaEl = document.getElementById('wfIpa');
     try {
-      // Try Wiktionary REST API (French section)
-      const lang = this.settings.frVariant === 'fr-CA' ? 'fr' : 'fr';
-      const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.toLowerCase())}`;
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const data = await resp.json();
-        const frSection = data?.fr;
-        if (frSection) {
-          // Look for IPA in pronunciations
-          for (const entry of frSection) {
-            if (entry.pronunciations) {
-              for (const p of entry.pronunciations) {
-                const match = p.match(/\/([^/]+)\//);
-                if (match) {
-                  this._wfCurrentIpa = `/${match[1]}/`;
-                  if (ipaEl) { ipaEl.textContent = this._wfCurrentIpa; ipaEl.className = 'wf-ipa'; }
-                  // Backfill IPA into lookup history
-                  const lh = this._lookupHistory.find(h => h.word === word);
-                  if (lh) { lh.ipa = this._wfCurrentIpa; this.saveLookupHistory(); }
-                  return;
-                }
+      // ── Primary: FR Wiktionary wikitext (authoritative for French) ──
+      const frUrl = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
+      const frResp = await fetch(frUrl);
+      if (frResp.ok) {
+        const frData = await frResp.json();
+        const rev = Object.values(frData?.query?.pages || {})[0]?.revisions?.[0] || {};
+        const content = rev['*'] || rev?.slots?.main?.['*'] || '';
+        if (content) {
+          let ipa = '';
+          const ipaPatterns = [
+            /\{\{pron\|([^|}\]]+)\|fr/i,
+            /\{\{pron\|([^|}\]]+)\}/i,
+            /\{\{API\|\/([^/}]+)\//i,
+            /\{\{phon\|([^|}\]]+)\|fr/i,
+            /\{\{phon\|([^|}\]]+)\}/i,
+            /prononciation[^:]*:\s*\/([^/\n]+)\//i,
+            /\{\{AFI\|\/([^/}]+)\//i,
+            /\|pron=([^|\n}]+)/i,
+          ];
+          for (const pat of ipaPatterns) {
+            const m = content.match(pat);
+            if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
+          }
+          // Gender — use shared parser
+          const gender = this._parseGenderFromWikitext(content);
+          if (ipa) {
+            this._wfCurrentIpa = ipa;
+            this._wfCurrentGender = gender;
+            this._wfUpdateWordDisplay();
+            if (ipaEl) { ipaEl.textContent = ipa; ipaEl.className = 'wf-ipa'; }
+            const lh = this._lookupHistory.find(h => h.word === word);
+            if (lh) { lh.ipa = ipa; this.saveLookupHistory(); }
+            return;
+          }
+        }
+      }
+      // ── Fallback: EN Wiktionary REST API ──
+      const enUrl = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.toLowerCase())}`;
+      const enResp = await fetch(enUrl);
+      if (enResp.ok) {
+        const enData = await enResp.json();
+        const frSection = enData?.fr || [];
+        for (const entry of frSection) {
+          if (entry.pronunciations) {
+            for (const p of entry.pronunciations) {
+              const raw = typeof p === 'string' ? p : (p.ipa || '');
+              const match = raw.match(/\/([^/]+)\//);
+              if (match) {
+                this._wfCurrentIpa = `/${match[1]}/`;
+                if (ipaEl) { ipaEl.textContent = this._wfCurrentIpa; ipaEl.className = 'wf-ipa'; }
+                const lh = this._lookupHistory.find(h => h.word === word);
+                if (lh) { lh.ipa = this._wfCurrentIpa; this.saveLookupHistory(); }
+                return;
               }
             }
           }
         }
       }
-      // Fallback: try French Wiktionary
-      const url2 = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
-      const resp2 = await fetch(url2);
-      if (resp2.ok) {
-        const data2 = await resp2.json();
-        const pages = data2?.query?.pages;
-        if (pages) {
-          const content = Object.values(pages)[0]?.revisions?.[0]?.['*'] || '';
-          const ipaMatch = content.match(/\{\{pron\|([^|}\]]+)/i) || content.match(/IPA[^\n]*\/([^/\n]+)\//i);
-          if (ipaMatch) {
-            this._wfCurrentIpa = `/${ipaMatch[1]}/`;
-            if (ipaEl) { ipaEl.textContent = this._wfCurrentIpa; ipaEl.className = 'wf-ipa'; }
-            // Backfill IPA into lookup history
-            const lh2 = this._lookupHistory.find(h => h.word === word);
-            if (lh2) { lh2.ipa = this._wfCurrentIpa; this.saveLookupHistory(); }
-            return;
-          }
-        }
-      }
     } catch(e) { /* silent */ }
-    // If nothing found
     if (ipaEl) { ipaEl.textContent = 'IPA non disponible'; ipaEl.className = 'wf-ipa wf-ipa-loading'; }
+  },
+
+  // Update word display to show gender badge if present
+  _wfUpdateWordDisplay() {
+    const wordDisplay = document.getElementById('wfWordDisplay');
+    if (!wordDisplay) return;
+    const g = this._wfCurrentGender;
+    wordDisplay.innerHTML = this._wfCurrentWord +
+      (g ? `<em style="font-size:0.42em;font-weight:400;color:#14B8A6;opacity:0.75;margin-left:7px;vertical-align:middle">(${g})</em>` : '');
   },
 
   wfSpeak() {
@@ -5984,6 +6169,7 @@ const BILAN_PASSAGES = [
     if (result) result.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">Chargement IPA…</div>`;
     // Fetch IPA for compare word using same Wiktionary approach
     let ipa = '';
+    let gender = '';
     try {
       const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`;
       const resp = await fetch(url);
@@ -6001,36 +6187,56 @@ const BILAN_PASSAGES = [
         }
       }
     } catch(e) {}
-    if (!ipa) {
-      try {
-        const url2 = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
-        const resp2 = await fetch(url2);
-        if (resp2.ok) {
-          const data2 = await resp2.json();
-          const pages = data2?.query?.pages;
-          if (pages) {
-            const content = Object.values(pages)[0]?.revisions?.[0]?.['*'] || '';
-            const m = content.match(/\{\{pron\|([^|}\]]+)/i) || content.match(/IPA[^\n]*\/([^/\n]+)\//i);
-            if (m) ipa = `/${m[1]}/`;
+    // FR Wiktionary — primary for French IPA + gender
+    try {
+      const url2 = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
+      const resp2 = await fetch(url2);
+      if (resp2.ok) {
+        const data2 = await resp2.json();
+        const pages = data2?.query?.pages;
+        if (pages) {
+          const rev2 = Object.values(pages)[0]?.revisions?.[0] || {};
+          const content = rev2['*'] || rev2?.slots?.main?.['*'] || '';
+          if (content) {
+            // IPA (FR Wiktionary is authoritative — override EN if found)
+            const ipaPatterns = [
+              /\{\{pron\|([^|}\]]+)\|fr/i,
+              /\{\{pron\|([^|}\]]+)\}/i,
+              /\{\{API\|\/([^/}]+)\//i,
+              /\{\{phon\|([^|}\]]+)\|fr/i,
+              /\{\{phon\|([^|}\]]+)\}/i,
+              /\{\{AFI\|\/([^/}]+)\//i,
+              /\|pron=([^|\n}]+)/i,
+              /prononciation[^:]*:\s*\/([^/\n]+)\//i,
+            ];
+            for (const pat of ipaPatterns) {
+              const m = content.match(pat);
+              if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
+            }
+            gender = this._parseGenderFromWikitext(content);
           }
         }
-      } catch(e) {}
-    }
-    this._wfRenderCompareSlot(word, ipa);
+      }
+    } catch(e) {}
+    this._wfRenderCompareSlot(word, ipa, gender);
   },
 
-  _wfRenderCompareSlot(word, ipa = '') {
+  _wfRenderCompareSlot(word, ipa = '', gender = '') {
     const slot = document.getElementById('wfCompareSlot');
     if (!slot) return;
     // Store compare word for swapping
     this._wfCompareCurrentWord = word;
     this._wfCompareCurrentIpa = ipa;
+    this._wfCompareCurrentGender = gender;
     const safeWord = word.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const genderBadge = gender
+      ? `<em style="font-size:0.42em;font-weight:400;color:#14B8A6;opacity:0.75;margin-left:7px;vertical-align:middle">(${gender})</em>`
+      : '';
     slot.innerHTML = `
       <div class="wf-compare-card">
         <button class="wf-compare-dismiss" onclick="App._wfDismissCompare()" title="Fermer">✕</button>
         <div class="wf-compare-label">Comparaison</div>
-        <div class="wf-word-display" style="font-size:26px;margin-bottom:4px">${word}</div>
+        <div class="wf-word-display" style="font-size:26px;margin-bottom:4px">${word}${genderBadge}</div>
         ${ipa ? `<div class="wf-ipa" style="margin-bottom:12px">${ipa}</div>` : '<div style="height:12px"></div>'}
         <div class="wf-listen-row">
           <button class="wf-listen-btn" onclick="App.speakText('${word.replace(/'/g,"\\'")}', false)">
@@ -6145,6 +6351,152 @@ const BILAN_PASSAGES = [
 
   _wfGetContext() {
     return (document.getElementById('wfContextInput')?.value || '').trim();
+  },
+
+  // ── MOF Definition panel — full card-back flip like Grenier ────
+  _wfCurrentDef: '',
+  _wfDefPanelOpen: false,
+
+  _wfToggleDefinition() {
+    if (!this.settings.openrouterKey) return;
+    const card = document.getElementById('wfWordCard');
+    if (!card) return;
+    if (this._wfDefPanelOpen) {
+      // Restore front
+      if (card.dataset.frontHtml) {
+        card.innerHTML = card.dataset.frontHtml;
+        delete card.dataset.frontHtml;
+      }
+      this._wfDefPanelOpen = false;
+    } else {
+      // Store front, show back
+      card.dataset.frontHtml = card.innerHTML;
+      this._wfDefPanelOpen = true;
+      const word = this._wfCurrentWord;
+      const def = this._wfCurrentDef;
+      const hasKey = !!this.settings.openrouterKey;
+      card.innerHTML = `
+        <div class="wf-card-back" id="wfCardBack">
+          <div class="wf-card-back-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            Définition de « ${word} »
+          </div>
+          <div class="wf-def-content" id="wfDefContent">${def ? def.replace(/\n/g, '<br>') : '<span style="opacity:0.4;font-style:italic;font-size:13px">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier
+            </button>
+            ${hasKey ? `
+            <button class="wf-def-action-btn wf-def-ai-btn" id="wfDefGenSimple" onclick="App._wfGenerateDef('simple')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Simple ✦
+            </button>
+            <button class="wf-def-action-btn wf-def-ai-btn" id="wfDefGenComplex" onclick="App._wfGenerateDef('complex')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Complexe ✦
+            </button>` : ''}
+          </div>
+          <div id="wfDefEditArea" style="display:none;margin-top:8px">
+            <textarea class="wf-def-textarea" id="wfDefTextarea" placeholder="Entrez une définition, traduction, note…" rows="4">${def}</textarea>
+            <button class="wf-def-action-btn" style="margin-top:6px" onclick="App._wfSaveDef()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
+              Sauvegarder
+            </button>
+          </div>
+        </div>
+        <!-- Flip back button — absolute bottom-right -->
+        <button class="wf-flip-btn" onclick="App._wfToggleDefinition()" title="Retourner" style="position:absolute;bottom:12px;right:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        </button>`;
+    }
+  },
+
+  _wfToggleDefEdit() {
+    const area = document.getElementById('wfDefEditArea');
+    if (!area) return;
+    const isHidden = area.style.display === 'none';
+    area.style.display = isHidden ? '' : 'none';
+    if (isHidden) {
+      const ta = document.getElementById('wfDefTextarea');
+      if (ta) { ta.value = this._wfCurrentDef; setTimeout(() => ta.focus(), 60); }
+    }
+  },
+
+  _wfSaveDef() {
+    const ta = document.getElementById('wfDefTextarea');
+    if (!ta) return;
+    this._wfCurrentDef = ta.value.trim();
+    const content = document.getElementById('wfDefContent');
+    if (content) content.innerHTML = this._wfCurrentDef.replace(/\n/g, '<br>') || '<span style="opacity:0.4;font-style:italic;font-size:13px">Vide.</span>';
+    const area = document.getElementById('wfDefEditArea');
+    if (area) area.style.display = 'none';
+    this.showToast('Définition sauvegardée ✓');
+  },
+
+  async _wfGenerateDef(type = 'simple') {
+    if (!this.settings.openrouterKey) return;
+    const word = this._wfCurrentWord;
+    if (!word) return;
+    const btnId = type === 'complex' ? 'wfDefGenComplex' : 'wfDefGenSimple';
+    const btn = document.getElementById(btnId);
+    const origHtml = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '…'; }
+    try {
+      const isComplex = type === 'complex';
+      const model = (isComplex ? this.settings.defComplexModel : this.settings.defSimpleModel)
+        || this.settings.openrouterModel || 'openai/gpt-4o-mini';
+      const customPrompt = isComplex ? this.settings.defComplexPrompt : this.settings.defSimplePrompt;
+      const context = this._wfGetContext();
+      let prompt;
+      if (customPrompt?.trim()) {
+        prompt = customPrompt.replace(/\{word\}/g, word);
+        if (context) prompt += `\n\nContexte : « ${context} »`;
+      } else if (isComplex) {
+        prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage\n4. Synonymes (2-3)\n5. Exemple en contexte${context ? ` (intègre : « ${context} »)` : ''}\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
+      } else if (context) {
+        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ».\nContexte : « ${context} » — intègre cet exemple. Inclus d'autres usages courants.\nRéponds UNIQUEMENT avec la définition.`;
+      } else {
+        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ». Inclus un exemple. Réponds UNIQUEMENT avec la définition.`;
+      }
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${this.settings.openrouterKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 600 })
+      });
+      const data = await resp.json();
+      const def = data.choices?.[0]?.message?.content?.trim() || '';
+      if (def) {
+        this._wfCurrentDef = def;
+        const content = document.getElementById('wfDefContent');
+        if (content) content.textContent = def;
+        const ta = document.getElementById('wfDefTextarea');
+        if (ta) ta.value = def;
+        this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
+      }
+    } catch(e) { this.showToast('Erreur lors de la génération'); }
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; if (origHtml) btn.innerHTML = origHtml; }
+  },
+
+  _wfGrenierToggleDef(toggleEl) {
+    const on = toggleEl.classList.contains('on');
+    const row = document.getElementById('wfGrenierDefTypeRow');
+    if (row) row.style.display = on ? 'flex' : 'none';
+  },
+
+  _wfDefType: 'simple', // 'simple' | 'complex'
+  _wfSetDefType(type) {
+    this._wfDefType = type;
+    const simple = document.getElementById('wfDefTypeSimple');
+    const complex = document.getElementById('wfDefTypeComplex');
+    if (!simple || !complex) return;
+    if (type === 'simple') {
+      simple.style.background = 'rgba(167,139,250,0.2)'; simple.style.border = '1.5px solid #A78BFA'; simple.style.color = '#A78BFA'; simple.style.fontWeight = '700';
+      complex.style.background = 'var(--surface)'; complex.style.border = '1px solid var(--border)'; complex.style.color = 'var(--text3)'; complex.style.fontWeight = '600';
+    } else {
+      complex.style.background = 'rgba(167,139,250,0.2)'; complex.style.border = '1.5px solid #A78BFA'; complex.style.color = '#A78BFA'; complex.style.fontWeight = '700';
+      simple.style.background = 'var(--surface)'; simple.style.border = '1px solid var(--border)'; simple.style.color = 'var(--text3)'; simple.style.fontWeight = '600';
+    }
   },
 
   _wfDismissCompare() {
@@ -8200,7 +8552,6 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
   renderSettings() {
     const chevSvg = `<svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
-    const defPrompt = this.settings.definitionPrompt || '';
     document.getElementById('main').innerHTML = `
       <div class="screen-header">
         <button class="home-btn" onclick="App.navigate('home')"><span class="logo-ph">Ph</span><span class="logo-onetique">o</span></button>
@@ -8271,38 +8622,59 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               </label>
               <input class="settings-input" type="text" placeholder="openai/gpt-4o-mini" id="orModel" value="${this.settings.openrouterModel}">
             </div>
-            <div class="settings-field">
-              <label class="field-label" style="color:#FBBF24">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                Modèle Rimes ✦
-              </label>
-              <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}">
-              <div style="font-size:11px;color:var(--text3)">Recommandé : gemini-2.5-flash ou claude-sonnet-4-5</div>
-            </div>
-            <div class="settings-field">
-              <label class="field-label" style="color:#A78BFA">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                Modèle Définitions ✦
-              </label>
-              <input class="settings-input" type="text" placeholder="(utilise le modèle principal si vide)" id="defModel" value="${this.settings.definitionModel || ''}">
-              <div style="font-size:11px;color:var(--text3)">Pour le verso des cartes Grenier.</div>
-            </div>
-            <div class="settings-field">
-              <label class="field-label" style="color:#A78BFA">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Prompt Définitions ✦
-              </label>
-              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
-                Utilisez <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{word}</code> pour insérer le mot. Laissez vide pour le prompt par défaut.
+            <!-- Modèle Rimes -->
+            <div class="settings-sub-group" id="sg-rimes">
+              <div class="settings-sub-title" onclick="event.stopPropagation();App._toggleSettingsGroup('sg-rimes')">
+                <span style="color:#FBBF24">✦ Modèle Rimes</span>
+                <svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </div>
-              <textarea class="settings-input" id="defPrompt" rows="4" placeholder="Ex: Donne une définition courte en français du mot {word}. Réponds uniquement avec la définition."
-                style="resize:vertical;font-size:13px;line-height:1.5;font-family:var(--font-body)">${defPrompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-              <button onclick="App._settingsPreviewPrompt()" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:#A78BFA;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);margin-top:2px;display:flex;align-items:center;gap:6px;width:fit-content">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Tester le prompt
-              </button>
-              <div id="defPromptPreview" style="display:none;margin-top:8px;font-size:13px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:10px;line-height:1.6"></div>
+              <div class="settings-group-body" style="padding:0">
+                <div class="settings-field">
+                  <label class="field-label" style="color:#FBBF24">Modèle Rimes ✦</label>
+                  <input class="settings-input" type="text" placeholder="google/gemini-2.5-flash-preview-05-20" id="rhymesModel" value="${this.settings.rhymesModel || 'google/gemini-2.5-flash-preview-05-20'}">
+                  <div style="font-size:11px;color:var(--text3)">Recommandé : gemini-2.5-flash ou claude-sonnet-4-6</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Définition simple -->
+            <div class="settings-sub-group" id="sg-def-simple">
+              <div class="settings-sub-title" onclick="event.stopPropagation();App._toggleSettingsGroup('sg-def-simple')">
+                <span style="color:#A78BFA">✦ Définition simple</span>
+                <svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="settings-group-body" style="padding:0">
+                <div class="settings-field">
+                  <label class="field-label" style="color:#A78BFA">Modèle (simple) ✦</label>
+                  <input class="settings-input" type="text" placeholder="(utilise le modèle principal si vide)" id="defSimpleModel" value="${this.settings.defSimpleModel || ''}">
+                </div>
+                <div class="settings-field">
+                  <label class="field-label" style="color:#A78BFA">Prompt (simple) ✦</label>
+                  <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Utilisez <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{word}</code> et optionnellement <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{context}</code>. Laissez vide pour le prompt par défaut.</div>
+                  <textarea class="settings-input" id="defSimplePrompt" rows="3" placeholder="Ex: Donne une définition courte (1-2 phrases) de {word}. Réponds uniquement avec la définition." style="resize:vertical;font-size:13px;line-height:1.5;font-family:var(--font-body)">${(this.settings.defSimplePrompt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Définition complexe -->
+            <div class="settings-sub-group" id="sg-def-complex">
+              <div class="settings-sub-title" onclick="event.stopPropagation();App._toggleSettingsGroup('sg-def-complex')">
+                <span style="color:#A78BFA">✦ Définition complexe</span>
+                <svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="settings-group-body" style="padding:0">
+                <div class="settings-field">
+                  <label class="field-label" style="color:#A78BFA">Modèle (complexe) ✦</label>
+                  <input class="settings-input" type="text" placeholder="(utilise le modèle principal si vide)" id="defComplexModel" value="${this.settings.defComplexModel || ''}">
+                </div>
+                <div class="settings-field">
+                  <label class="field-label" style="color:#A78BFA">Prompt (complexe) ✦</label>
+                  <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Utilisez <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{word}</code> et optionnellement <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px">{context}</code>. Laissez vide pour le prompt par défaut.</div>
+                  <textarea class="settings-input" id="defComplexPrompt" rows="3" placeholder="Ex: Analyse complète du mot {word} : étymologie, sens, registres, exemples (1-6). Réponds uniquement avec la définition." style="resize:vertical;font-size:13px;line-height:1.5;font-family:var(--font-body)">${(this.settings.defComplexPrompt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+                </div>
+              </div>
+            </div>
+
             <div style="padding:12px 16px;border-top:1px solid var(--border)">
               <button onclick="App._saveIASettings()" style="width:100%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#A78BFA;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
@@ -8407,11 +8779,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   _saveIASettings() {
-    this.settings.openrouterKey   = document.getElementById('orKey')?.value || '';
-    this.settings.openrouterModel = document.getElementById('orModel')?.value || '';
-    this.settings.rhymesModel     = document.getElementById('rhymesModel')?.value || '';
-    this.settings.definitionModel = document.getElementById('defModel')?.value || '';
-    this.settings.definitionPrompt= document.getElementById('defPrompt')?.value.trim() || '';
+    this.settings.openrouterKey    = document.getElementById('orKey')?.value || '';
+    this.settings.openrouterModel  = document.getElementById('orModel')?.value || '';
+    this.settings.rhymesModel      = document.getElementById('rhymesModel')?.value || '';
+    this.settings.defSimpleModel   = document.getElementById('defSimpleModel')?.value || '';
+    this.settings.defSimplePrompt  = document.getElementById('defSimplePrompt')?.value.trim() || '';
+    this.settings.defComplexModel  = document.getElementById('defComplexModel')?.value || '';
+    this.settings.defComplexPrompt = document.getElementById('defComplexPrompt')?.value.trim() || '';
     this.saveSettings();
     this.showToast('Paramètres IA sauvegardés ✓');
   },
@@ -8421,31 +8795,6 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.settings.azureRegion = document.getElementById('azRegion')?.value || '';
     this.saveSettings();
     this.showToast('Paramètres Azure sauvegardés ✓');
-  },
-
-  async _settingsPreviewPrompt() {
-    const word = 'portable';
-    const rawPrompt = document.getElementById('defPrompt')?.value.trim();
-    const prompt = rawPrompt
-      ? rawPrompt.replace(/\{word\}/g, word)
-      : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition.`;
-    const key = document.getElementById('orKey')?.value || this.settings.openrouterKey;
-    const model = document.getElementById('defModel')?.value || document.getElementById('orModel')?.value || this.settings.openrouterModel || 'openai/gpt-4o-mini';
-    const preview = document.getElementById('defPromptPreview');
-    if (!preview) return;
-    if (!key) { preview.style.display = ''; preview.textContent = '⚠️ Clé OpenRouter requise.'; return; }
-    preview.style.display = '';
-    preview.textContent = 'Génération…';
-    try {
-      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method:'POST',
-        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
-        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:600 })
-      });
-      const data = await resp.json();
-      const result = data.choices?.[0]?.message?.content?.trim() || '(aucune réponse)';
-      preview.innerHTML = `<div style="font-size:10px;color:var(--text3);margin-bottom:4px">Test avec « ${word} » :</div>${result.replace(/</g,'&lt;')}`;
-    } catch(e) { preview.textContent = '⚠️ Erreur : ' + e.message; }
   },
 
   syncRepertoireToGrenier(showToast = true) {
@@ -9668,7 +10017,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   // ── Data ──────────────────────────────────────────────────────
   _grenier: null,   // { decks: [...], cards: [...] }
   _grenierFabOpen: false,
-  _grenierView: 'grid',   // 'grid' | 'list'
+  _grenierView: 'list',   // 'grid' | 'list'
   _grenierStudySession: null, // { deckId, queue:[], idx, stats }
   _grenierCardRecording: false,
   _grenierCardAudioBlob: null,
@@ -10162,6 +10511,20 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                   <div class="grenier-toggle ${on?'on':''}" id="grOpt_${k}" onclick="this.classList.toggle('on')"></div>
                 </div>`;
               }).join('')}
+              <div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span>Afficher l'IPA</span>
+                  <button onclick="App._grRefetchIpa()" style="background:none;border:none;color:var(--gr-orange2);font-size:11px;cursor:pointer;padding:0;text-align:left;font-family:var(--font-body)">↺ Récupérer l'IPA</button>
+                </div>
+                <div class="grenier-toggle ${editCard ? (editCard.showIpa!==false?'on':'') : 'on'}" id="grOpt_showIpa" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span>Afficher le genre <em style="color:var(--text3);font-size:12px">(m/f)</em></span>
+                  <button onclick="App._grRefetchGender()" style="background:none;border:none;color:var(--gr-orange2);font-size:11px;cursor:pointer;padding:0;text-align:left;font-family:var(--font-body)">↺ Récupérer le genre</button>
+                </div>
+                <div class="grenier-toggle ${editCard ? (editCard.showGender!==false?'on':'') : 'on'}" id="grOpt_showGender" onclick="this.classList.toggle('on')"></div>
+              </div>
             </div>
           </div>
           <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
@@ -10197,27 +10560,113 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!word || word.length < 2) return;
     const ipaEl = document.getElementById('grCardIpaInput');
     if (!ipaEl || ipaEl.value) return;
-    const ipa = await this._grFetchIpaForWord(word.trim());
+    const { ipa } = await this._grFetchIpaAndGender(word.trim());
     if (ipa && ipaEl && !ipaEl.value) ipaEl.value = ipa;
   },
 
-  async _grFetchIpaForWord(word) {
+  // Returns { ipa, gender } — uses FR Wiktionary wikitext as primary source (most reliable for French)
+  async _grFetchIpaAndGender(word) {
+    let ipa = '', gender = '';
     try {
-      const resp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
-      if (!resp.ok) return '';
-      const data = await resp.json();
-      // Try fr first, then any language key
-      const langs = ['fr', ...Object.keys(data).filter(k => k !== 'fr')];
-      for (const lang of langs) {
-        const entries = data[lang] || [];
-        for (const e of entries) {
-          // pronunciations array on entry
-          const p = e.pronunciations?.find(p => p.ipa);
-          if (p?.ipa) return p.ipa;
+      // ── Primary: FR Wiktionary wikitext (best source for French IPA + gender) ──
+      const frUrl = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
+      const frResp = await fetch(frUrl);
+      if (frResp.ok) {
+        const frData = await frResp.json();
+        const frRev = Object.values(frData?.query?.pages || {})[0]?.revisions?.[0] || {};
+        const content = frRev['*'] || frRev?.slots?.main?.['*'] || '';
+        if (content) {
+          // IPA
+          const ipaPatterns = [
+            /\{\{pron\|([^|}\]]+)\|fr/i,
+            /\{\{pron\|([^|}\]]+)\}/i,
+            /\{\{API\|\/([^/}]+)\//i,
+            /\{\{phon\|([^|}\]]+)\|fr/i,
+            /\{\{phon\|([^|}\]]+)\}/i,
+            /\{\{écouter\|[^|]*\|([^|}]+)/i,
+            /\{\{AFI\|\/([^/}]+)\//i,
+            /\|pron=([^|\n}]+)/i,
+            /prononciation[^:]*:\s*\/([^/\n]+)\//i,
+          ];
+          for (const pat of ipaPatterns) {
+            const m = content.match(pat);
+            if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
+          }
+          gender = this._parseGenderFromWikitext(content);
         }
       }
-      return '';
-    } catch(e) { return ''; }
+    } catch(e) { /* silent */ }
+
+    // ── Fallback: EN Wiktionary REST API (for IPA only if FR failed) ──
+    if (!ipa) {
+      try {
+        const enResp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
+        if (enResp.ok) {
+          const enData = await enResp.json();
+          const frEntries = enData?.fr || [];
+          for (const entry of frEntries) {
+            const p = entry.pronunciations?.find(p => p.ipa);
+            if (p?.ipa) { ipa = p.ipa; break; }
+            if (Array.isArray(entry.pronunciations)) {
+              for (const pr of entry.pronunciations) {
+                if (typeof pr === 'string') {
+                  const m = pr.match(/\/([^/]+)\//);
+                  if (m) { ipa = `/${m[1]}/`; break; }
+                }
+              }
+              if (ipa) break;
+            }
+          }
+        }
+      } catch(e) { /* silent */ }
+    }
+
+    return { ipa, gender };
+  },
+
+  // Legacy wrapper — keeps old callers working
+  async _grFetchIpaForWord(word) {
+    const { ipa } = await this._grFetchIpaAndGender(word);
+    return ipa;
+  },
+
+  // Shared gender parser for FR wikitext — looks at the first noun entry only
+  _parseGenderFromWikitext(content) {
+    // Isolate the French section (everything before the first non-FR language heading)
+    const frSectionMatch = content.match(/==\s*\{\{langue\|fr\}\}\s*==([\s\S]*?)(?:==\s*\{\{langue\|(?!fr)[a-z-]+\}\}\s*==|$)/i);
+    const frSection = frSectionMatch ? frSectionMatch[1] : content;
+
+    // Find the first noun/substantive sub-section  
+    // FR wikitext uses: === {{S|nom|fr}} === or === {{S|nom propre|fr}} ===
+    const nounMatch = frSection.match(/===\s*\{\{S\|nom(?:[^}]*)?\|fr[^}]*\}\}\s*===([\s\S]*?)(?:===|$)/i);
+    const target = nounMatch ? nounMatch[1] : frSection;
+
+    // In FR wikitext, gender appears in the first few lines of the entry as:
+    // {{m}}, {{f}}, {{mf}}, {{fm}}, {{n}}
+    // or inline like: '''chat''' {{m}} or '''chatte''' {{f}}
+    // or in inflection templates: {{fr-rég|...}} which may contain |genre=m
+    // Strategy: look at first 500 chars of the noun entry for the clearest signals
+    const head = target.slice(0, 600);
+
+    // Explicit combined gender templates first
+    if (/\{\{mf\}\}|\{\{fm\}\}|\{\{m ou f\}\}/i.test(head)) return 'mf';
+
+    const hasM = /\{\{m\}\}|\bgenre\s*=\s*m\b/i.test(head);
+    const hasF = /\{\{f\}\}|\bgenre\s*=\s*f\b/i.test(head);
+
+    if (hasM && !hasF) return 'm';
+    if (hasF && !hasM) return 'f';
+
+    // If both appear in the short head, the word itself is likely the feminine form
+    // (e.g. "chatte" page shows {{f}} for chatte and refers to {{m}} "chat" nearby)
+    // Tie-break: whichever appears FIRST wins
+    if (hasM && hasF) {
+      const mPos = head.search(/\{\{m\}\}|\bgenre\s*=\s*m\b/i);
+      const fPos = head.search(/\{\{f\}\}|\bgenre\s*=\s*f\b/i);
+      return mPos <= fPos ? 'm' : 'f';
+    }
+
+    return '';
   },
 
   _grSaveCard(editId) {
@@ -10233,24 +10682,36 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const showListen = document.getElementById('grOpt_showListen')?.classList.contains('on') ?? true;
     const showRecord = document.getElementById('grOpt_showRecord')?.classList.contains('on') ?? true;
     const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on') ?? true;
+    const showIpa    = document.getElementById('grOpt_showIpa')?.classList.contains('on') ?? true;
+    const showGender = document.getElementById('grOpt_showGender')?.classList.contains('on') ?? true;
 
     if (editId) {
       const card = this._grenier.cards.find(c=>c.id===editId);
       if (card) {
         const oldDeckId = card.deckId;
-        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes });
+        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender });
         // If deck changed, update the study session reference too
         if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
           this._grenierStudySession.deckId = deckId;
         }
       }
     } else {
+      const pendingGender = this._grPendingGender || '';
+      this._grPendingGender = '';
       const newCard = {
         id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
-        nextDue:Date.now(), showListen, showRecord, showRhymes,
-        color, definition:'', createdAt:Date.now()
+        nextDue:Date.now(), showListen, showRecord, showRhymes, showIpa, showGender,
+        color, definition:'', gender: pendingGender, createdAt:Date.now()
       };
       this._grenier.cards.push(newCard);
+      // Auto-fetch gender in background for new cards
+      if (!pendingGender && showGender) {
+        const cid = newCard.id;
+        this._grFetchIpaAndGender(word).then(({gender}) => {
+          const c = this._grenier.cards.find(x=>x.id===cid);
+          if (c && gender) { c.gender = gender; this.saveGrenier(); }
+        });
+      }
       // Sync to matching Répertoire folder
       const deck = this._grenier.decks.find(d => d.id === deckId);
       if (deck) {
@@ -10282,6 +10743,36 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       }, 150);
     } else {
       this.goBack();
+    }
+  },
+
+
+  // Re-fetch IPA from card create/edit screen
+  async _grRefetchIpa() {
+    const word = document.getElementById('grCardWordInput')?.value.trim();
+    if (!word) { this.showToast('Entrez un mot d\'abord'); return; }
+    const ipaEl = document.getElementById('grCardIpaInput');
+    if (ipaEl) { ipaEl.value = ''; ipaEl.placeholder = 'Récupération…'; }
+    const { ipa } = await this._grFetchIpaAndGender(word);
+    if (ipaEl) { ipaEl.value = ipa || ''; ipaEl.placeholder = 'Se remplit automatiquement…'; }
+    if (!ipa) this.showToast('IPA non trouvé');
+  },
+
+  // Re-fetch gender from card create/edit screen
+  async _grRefetchGender() {
+    const word = document.getElementById('grCardWordInput')?.value.trim();
+    if (!word) { this.showToast('Entrez un mot d\'abord'); return; }
+    this.showToast('Récupération du genre…');
+    const { gender } = await this._grFetchIpaAndGender(word);
+    // Store on the pending edit card if we can find it
+    const editCardId = document.querySelector('[id^="grOpt_showGender"]')?.closest('[data-edit-id]')?.dataset?.editId;
+    if (gender) {
+      this.showToast(`Genre trouvé : ${gender === 'm' ? 'masculin (m)' : 'féminin (f)'}`);
+      // Store temporarily so save picks it up
+      this._grPendingGender = gender;
+    } else {
+      this.showToast('Genre non trouvé pour ce mot');
+      this._grPendingGender = '';
     }
   },
 
@@ -10383,8 +10874,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         </div>
         <div class="grenier-card-area" id="grCardArea">
           <div class="grenier-card" style="--card-accent:${cardAccent};--card-bg:${cardBg};--card-border:${cardBorder}">
-            <div class="grenier-card-word" style="color:${cardAccent}">${card.word}</div>
-            ${ipa ? `<div class="grenier-card-ipa">${ipa}</div>` : '<div class="grenier-card-ipa" id="grIpaLoading" style="opacity:0.4">Chargement IPA…</div>'}
+            <div class="grenier-card-word" style="color:${cardAccent}">${card.word}${card.showGender!==false && card.gender ? `<em style="font-size:0.45em;font-weight:400;color:${cardAccent};opacity:0.7;margin-left:6px;vertical-align:middle">(${card.gender})</em>` : ''}</div>
+            ${card.showIpa!==false ? (ipa ? `<div class="grenier-card-ipa">${ipa}</div>` : '<div class="grenier-card-ipa" id="grIpaLoading" style="opacity:0.4">Chargement IPA…</div>') : ''}
             <div class="grenier-card-listen-row">
               ${card.showListen!==false ? `
               <button class="grenier-card-btn" id="grListenBtn" onclick="App._grSpeak('${card.word.replace(/'/g,"\\'")}')">
@@ -10460,16 +10951,17 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   async _grFetchCardIpa(card) {
-    const ipa = await this._grFetchIpaForWord(card.word);
+    const { ipa, gender } = await this._grFetchIpaAndGender(card.word);
     if (ipa) {
       card.ipa = ipa;
-      this.saveGrenier();
       const el = document.getElementById('grIpaLoading');
       if (el) { el.textContent = ipa; el.style.opacity = '0.85'; el.removeAttribute('id'); }
     } else {
       const el = document.getElementById('grIpaLoading');
       if (el) { el.textContent = ''; }
     }
+    if (gender && !card.gender) card.gender = gender;
+    if (ipa || gender) this.saveGrenier();
   },
 
   _grSpeak(word) {
@@ -10870,28 +11362,30 @@ Réponds UNIQUEMENT avec ce JSON :
     if (!cardEl) return;
     const def = card.definition || '';
     const accent = cardEl.style.getPropertyValue('--card-accent') || 'var(--gr-orange)';
-    // Store original card inner so we can restore
-    if (!cardEl.dataset.frontHtml) {
-      cardEl.dataset.frontHtml = cardEl.innerHTML;
-    }
+    if (!cardEl.dataset.frontHtml) cardEl.dataset.frontHtml = cardEl.innerHTML;
     const safeWord = card.word.replace(/'/g, "\\'");
     const safeId = card.id;
+    const hasKey = !!this.settings.openrouterKey;
     cardEl.innerHTML = `
       <div class="grenier-card-back">
         <div class="grenier-card-back-label">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
           Verso — Définition de « ${card.word} »
         </div>
-        <div class="grenier-card-def" id="grDefDisplay">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}</div>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <div class="grenier-card-def" id="grDefDisplay">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
           <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Modifier
           </button>
-          ${this.settings.openrouterKey ? `
-          <button class="grenier-def-edit-btn" id="grDefGenBtn" onclick="App._grGenerateDef('${safeId}','${safeWord}')">
+          ${hasKey ? `
+          <button class="grenier-def-edit-btn" id="grDefGenSimpleBtn" onclick="App._grGenerateDef('${safeId}','${safeWord}','simple')" title="Définition courte">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Générer (IA)
+            Simple ✦
+          </button>
+          <button class="grenier-def-edit-btn" id="grDefGenComplexBtn" onclick="App._grGenerateDef('${safeId}','${safeWord}','complex')" title="Définition détaillée">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Complexe ✦
           </button>` : ''}
         </div>
         <div id="grDefEditArea" style="display:none">
@@ -10959,17 +11453,26 @@ Réponds UNIQUEMENT avec ce JSON :
     this.showToast('Définition sauvegardée ✓');
   },
 
-  async _grGenerateDef(cardId, word) {
+  async _grGenerateDef(cardId, word, type = 'simple') {
     const key = this.settings?.openrouterKey;
     if (!key) { this.showToast('Clé OpenRouter requise'); return; }
-    const btn = document.getElementById('grDefGenBtn');
+    const btnId = type === 'complex' ? 'grDefGenComplexBtn' : 'grDefGenSimpleBtn';
+    const btn = document.getElementById(btnId);
+    const origHtml = btn?.innerHTML;
     if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Génération…'; }
     try {
-      const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
-      const customPrompt = this.settings?.definitionPrompt?.trim();
-      const prompt = customPrompt
-        ? customPrompt.replace(/\{word\}/g, word)
-        : `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      const isComplex = type === 'complex';
+      const model = (isComplex ? this.settings?.defComplexModel : this.settings?.defSimpleModel)
+        || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
+      const customPrompt = isComplex ? this.settings?.defComplexPrompt : this.settings?.defSimplePrompt;
+      let prompt;
+      if (customPrompt?.trim()) {
+        prompt = customPrompt.replace(/\{word\}/g, word);
+      } else if (isComplex) {
+        prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage (formel, familier, littéraire…)\n4. Synonymes (2-3)\n5. Exemple en contexte\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
+      } else {
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+      }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
         headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
@@ -10981,13 +11484,13 @@ Réponds UNIQUEMENT avec ce JSON :
         const card = this._grenier.cards.find(c => c.id === cardId);
         if (card) { card.definition = def; this.saveGrenier(); }
         const display = document.getElementById('grDefDisplay');
-        if (display) display.textContent = def;
+        if (display) display.innerHTML = def.replace(/</g,'&lt;').replace(/>/g,'&gt;');
         const ta = document.getElementById('grDefTextarea');
         if (ta) ta.value = def;
-        this.showToast('Définition générée ✓');
+        this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Générer (IA)`; }
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; if (origHtml) btn.innerHTML = origHtml; }
   },
 
   // ── Smart Add to Grenier (from Mot en Focus) ─────────────────
@@ -11047,8 +11550,9 @@ Réponds UNIQUEMENT avec ce JSON :
 
     const ipa = this._wfCurrentIpa || '';
     const context = this._wfGetContext();
-    // If user has typed context, default genDef toggle to on regardless
-    const defToggleOn = hasKey && (context ? true : true);
+    const existingDef = this._wfCurrentDef || '';
+    // If MOF already has a definition, default genDef to off (it will be carried over automatically)
+    const defToggleOn = hasKey && !existingDef;
     const overlay = document.createElement('div');
     overlay.className = 'rep-overlay';
     overlay.id = 'wfGrenierModal';
@@ -11058,35 +11562,48 @@ Réponds UNIQUEMENT avec ce JSON :
         <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
         ${ipa ? `<div style="font-family:var(--font-display);font-size:12px;color:#A78BFA;margin-bottom:10px">${ipa}</div>` : '<div style="margin-bottom:10px"></div>'}
         ${context ? `<div style="font-size:12px;padding:8px 10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:rgba(251,191,36,0.9);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span style="line-height:1.4">${context}</span></div>` : ''}
+        ${existingDef ? `<div style="font-size:12px;padding:8px 10px;background:rgba(20,184,166,0.07);border:1px solid rgba(20,184,166,0.25);border-radius:8px;color:rgba(20,184,166,0.9);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="line-height:1.4">Définition MOF sera utilisée pour le verso ✓</span></div>` : ''}
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Choisir un paquet :</div>
         ${decks.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:8px 0 4px;font-style:italic">Aucun paquet pour l'instant.</div>` : ''}
         ${deckOptions}
         <button class="rep-overlay-folder-btn" onclick="App._wfGrenierNewDeckInline()" style="border-style:dashed;color:var(--text3);margin-top:4px">
           <span>📦</span> Nouveau paquet…
         </button>
-        <div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm)">
+        <div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm);${existingDef ? 'opacity:0.45;pointer-events:none' : ''}">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
-            <div class="grenier-toggle ${defToggleOn ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on')" ${hasKey ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
+            <div class="grenier-toggle ${defToggleOn ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on');App._wfGrenierToggleDef(this)" ${hasKey && !existingDef ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text)">Générer une définition (verso)</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">${hasKey ? (context ? 'Le contexte sera intégré dans la définition IA ✦' : 'Le verso de la carte aura une définition IA') : 'Requiert une clé OpenRouter'}</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${existingDef ? 'Définition déjà générée dans MOF' : 'Générer une définition (verso)'}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${existingDef ? 'La définition MOF sera copiée sur le verso' : hasKey ? (context ? 'Le contexte sera intégré dans la définition IA ✦' : 'Le verso de la carte aura une définition IA') : 'Requiert une clé OpenRouter'}</div>
             </div>
           </label>
+          ${!existingDef ? `<div id="wfGrenierDefTypeRow" style="margin-top:10px;display:${defToggleOn && hasKey ? 'flex' : 'none'};gap:8px">
+            <button id="wfDefTypeSimple" onclick="App._wfSetDefType('simple')"
+              style="flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);background:rgba(167,139,250,0.2);border:1.5px solid #A78BFA;color:#A78BFA;transition:all 0.15s">
+              Simple
+            </button>
+            <button id="wfDefTypeComplex" onclick="App._wfSetDefType('complex')"
+              style="flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);background:var(--surface);border:1px solid var(--border);color:var(--text3);transition:all 0.15s">
+              Complexe
+            </button>
+          </div>` : ''}
         </div>
         <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Annuler</button>
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
-    // Store word/ipa/context for use in deck selection
+    // Store word/ipa/context/existingDef for use in deck selection
     this._wfGrenierPendingWord = word;
     this._wfGrenierPendingIpa = ipa;
     this._wfGrenierPendingContext = context;
+    this._wfGrenierPendingDef = existingDef;
   },
 
   _wfGrenierSelectDeck(deckId) {
     const word = this._wfGrenierPendingWord;
     const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa;
     const context = this._wfGrenierPendingContext || '';
+    const existingDef = this._wfGrenierPendingDef || '';
     if (!word) return;
     const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
     if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
@@ -11096,22 +11613,24 @@ Réponds UNIQUEMENT avec ce JSON :
       id: cardId, deckId, word, ipa: ipa || '',
       interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
       showListen: true, showRecord: true, showRhymes: true,
-      color: null, definition: '', createdAt: Date.now()
+      color: null, definition: existingDef, createdAt: Date.now()
     });
     // Also add to corresponding repertoire folder if one is linked
     const deck = this._grenier.decks.find(d => d.id === deckId);
     if (deck) {
       const matchFolder = this._repertoire.folders.find(f => f.name === deck.name);
       if (matchFolder && !this.repIsWordSaved(word)) {
-        this.repAddWord(word, ipa, matchFolder.id);
+        this.repAddWord(word, ipa, matchFolder.id, 'grenier');
       }
     }
     this.saveGrenier();
     document.getElementById('wfGrenierModal')?.remove();
     this.showToast(`"${word}" ajouté au Grenier ✓`);
-    // Generate definition if requested — pass context if present
-    if (genDef && this.settings.openrouterKey) {
-      this._grGenerateDefForNewCard(cardId, word, context);
+    // If MOF definition exists, use it directly — no need to generate
+    if (!existingDef && genDef && this.settings.openrouterKey) {
+      const defType = this._wfDefType || 'simple';
+      this._wfDefType = 'simple';
+      this._grGenerateDefForNewCard(cardId, word, context, defType);
     }
     this._wfUpdateSaveBtn();
     this._wfUpdateRepBtn();
@@ -11172,44 +11691,67 @@ Réponds UNIQUEMENT avec ce JSON :
     const deckId = this._gid();
     this._grenier.decks.push({ id: deckId, name, color, createdAt: Date.now() });
     // Mirror in Répertoire
-    if (!this._repertoire.folders.find(f => f.name === name)) {
-      this._repertoire.folders.push({ id: 'folder_' + Date.now(), name, emoji, createdAt: Date.now() });
-      this.saveRepertoire();
+    let folderId = null;
+    const existingFolder = this._repertoire.folders.find(f => f.name === name);
+    if (existingFolder) {
+      folderId = existingFolder.id;
+    } else {
+      folderId = 'folder_' + Date.now();
+      this._repertoire.folders.push({ id: folderId, name, emoji, createdAt: Date.now() });
     }
+    this.saveRepertoire();
     this.saveGrenier();
     document.getElementById('wfGrenierModal')?.remove();
-    // Now add the word to this new deck
-    this._wfGrenierPendingWord = this._wfCurrentWord;
-    this._wfGrenierPendingIpa = this._wfCurrentIpa;
-    // Re-open modal briefly to pick up genDef state — just do it directly
-    const genDef = false; // no toggle available in inline flow; user can do it from card settings
+
+    const word = this._wfGrenierPendingWord || this._wfCurrentWord;
+    const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa || '';
+    const context = this._wfGrenierPendingContext || '';
+    const existingDef = this._wfGrenierPendingDef || '';
+
+    // Add to Répertoire
+    if (folderId && !this.repIsWordSaved(word)) {
+      this.repAddWord(word, ipa, folderId, 'grenier');
+    }
+
     const cardId = this._gid();
     this._grenier.cards.push({
-      id: cardId, deckId, word: this._wfCurrentWord, ipa: this._wfCurrentIpa || '',
+      id: cardId, deckId, word, ipa,
       interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
       showListen: true, showRecord: true, showRhymes: true,
-      color: null, definition: '', createdAt: Date.now()
+      color: null, definition: existingDef, createdAt: Date.now()
     });
     this.saveGrenier();
-    this.showToast(`Paquet "${name}" créé et "${this._wfCurrentWord}" ajouté ✓`);
+    this.showToast(`Paquet "${name}" créé et "${word}" ajouté ✓`);
+
+    // Generate definition if no existing def and key available
+    if (!existingDef && this.settings.openrouterKey) {
+      const defType = this._wfDefType || 'simple';
+      this._wfDefType = 'simple';
+      this._grGenerateDefForNewCard(cardId, word, context, defType);
+    }
+
     this._wfUpdateSaveBtn();
     this._wfUpdateRepBtn();
   },
 
-  async _grGenerateDefForNewCard(cardId, word, context = '') {
+  async _grGenerateDefForNewCard(cardId, word, context = '', type = 'simple') {
     const key = this.settings?.openrouterKey;
     if (!key) return;
     try {
-      const model = this.settings?.definitionModel || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
-      const customPrompt = this.settings?.definitionPrompt?.trim();
+      const isComplex = type === 'complex';
+      const model = (isComplex ? this.settings?.defComplexModel : this.settings?.defSimpleModel)
+        || this.settings?.openrouterModel || 'openai/gpt-4o-mini';
+      const customPrompt = isComplex ? this.settings?.defComplexPrompt : this.settings?.defSimplePrompt;
       let prompt;
-      if (customPrompt) {
+      if (customPrompt?.trim()) {
         prompt = customPrompt.replace(/\{word\}/g, word);
-        if (context) prompt += `\n\nContexte ou exemple d'usage fourni par l'utilisateur : « ${context} »\nAssurez-vous que cet exemple figure dans la définition et que cette utilisation du mot est reflétée dans votre analyse.`;
+        if (context) prompt += `\n\nContexte fourni : « ${context} »\nIntègre cet exemple dans la définition.`;
+      } else if (isComplex) {
+        prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage\n4. Synonymes (2-3)\n5. Exemple en contexte${context ? ` (intègre cet exemple : « ${context} »)` : ''}\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
       } else if (context) {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}".\n\nL'utilisateur a fourni ce contexte ou exemple d'usage : « ${context} »\nInclus cet exemple dans ta réponse et assure-toi de refléter ce sens du mot. Inclus aussi d'autres usages courants du mot si pertinent.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ».\nContexte : « ${context} » — intègre cet exemple dans la définition. Inclus aussi d'autres usages courants.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       } else {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : "${word}". Inclus un exemple d'usage si possible. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
