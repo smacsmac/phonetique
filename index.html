@@ -5777,6 +5777,9 @@ const BILAN_PASSAGES = [
       this._wfCurrentDef = '';
       this._wfCurrentGender = '';
       this._wfDefPanelOpen = false;
+      // Pre-populate definition from grenier card if one exists for this word
+      const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === incomingWord);
+      if (grCard?.definition) this._wfCurrentDef = grCard.definition;
     }
     // Always close the panel visually on re-render (it will be re-opened after if needed)
     const wasDefOpen = this._wfDefPanelOpen;
@@ -5968,44 +5971,91 @@ const BILAN_PASSAGES = [
     await this._wfFetchIpa(word);
   },
 
+  // ── Shared IPA helper: fetch wikitext for a single word and extract IPA + gender ──
+  async _fetchWiktionaryContent(searchWord) {
+    const url = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(searchWord)}&prop=revisions&rvprop=content&format=json&origin=*`;
+    const resp = await fetch(url);
+    if (!resp.ok) return '';
+    const data = await resp.json();
+    const rev = Object.values(data?.query?.pages || {})[0]?.revisions?.[0] || {};
+    return rev['*'] || rev?.slots?.main?.['*'] || '';
+  },
+
+  // Validate that a string looks like IPA (not a region label like 'Suisse (canton du Valais)')
+  _isValidIpa(s) {
+    if (!s || !s.trim()) return false;
+    const t = s.trim();
+    if (t.includes('(') || t.includes(')')) return false; // region labels
+    const regionWords = ['suisse','france','belgique','québec','canada','paris','normandie','bretagne','wallon','acadie'];
+    const lower = t.toLowerCase();
+    if (regionWords.some(r => lower === r || lower.startsWith(r + ' '))) return false;
+    return true;
+  },
+
+  // Extract IPA from wikitext content
+  _extractIpaFromContent(content) {
+    const ipaPatterns = [
+      /\{\{pron\|([^|}\]]+)\|fr/i,
+      /\{\{pron\|([^|}\]]+)\}/i,
+      /\{\{API\|\/([^/}]+)\//i,
+      /\{\{phon\|([^|}\]]+)\|fr/i,
+      /\{\{phon\|([^|}\]]+)\}/i,
+      /\{\{AFI\|\/([^/}]+)\//i,
+      /\|pron=([^|\n}]+)/i,
+      /prononciation[^:]*:\s*\/([^/\n]+)\//i,
+    ];
+    // Try all matches (not just first), skip invalid ones
+    for (const pat of ipaPatterns) {
+      const matches = [...content.matchAll(new RegExp(pat.source, pat.flags + 'g'))];
+      for (const m of matches) {
+        const candidate = m[1]?.trim();
+        if (this._isValidIpa(candidate)) return candidate;
+      }
+    }
+    return '';
+  },
+
+  // Fetch IPA for a word, handling apostrophes (s'effriter → effriter) and multi-word
+  async _fetchIpaForWord(word) {
+    // Try exact word first
+    let content = await this._fetchWiktionaryContent(word);
+    let ipa = content ? this._extractIpaFromContent(content) : '';
+    let gender = content ? this._parseGenderFromWikitext(content) : '';
+
+    // If no IPA and word has apostrophe, try the part after the apostrophe
+    if (!ipa && word.includes("'")) {
+      const afterApos = word.split("'").slice(1).join("'");
+      if (afterApos) {
+        content = await this._fetchWiktionaryContent(afterApos);
+        ipa = content ? this._extractIpaFromContent(content) : '';
+        if (!gender && content) gender = this._parseGenderFromWikitext(content);
+      }
+    }
+
+    // If still no IPA and word has a hyphen, try without hyphen parts
+    if (!ipa && word.includes('-')) {
+      const mainPart = word.split('-')[0];
+      if (mainPart.length > 2) {
+        content = await this._fetchWiktionaryContent(mainPart);
+        ipa = content ? this._extractIpaFromContent(content) : '';
+      }
+    }
+
+    return { ipa: ipa ? `/${ipa}/` : '', gender };
+  },
+
   async _wfFetchIpa(word) {
     const ipaEl = document.getElementById('wfIpa');
     try {
-      // ── Primary: FR Wiktionary wikitext (authoritative for French) ──
-      const frUrl = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
-      const frResp = await fetch(frUrl);
-      if (frResp.ok) {
-        const frData = await frResp.json();
-        const rev = Object.values(frData?.query?.pages || {})[0]?.revisions?.[0] || {};
-        const content = rev['*'] || rev?.slots?.main?.['*'] || '';
-        if (content) {
-          let ipa = '';
-          const ipaPatterns = [
-            /\{\{pron\|([^|}\]]+)\|fr/i,
-            /\{\{pron\|([^|}\]]+)\}/i,
-            /\{\{API\|\/([^/}]+)\//i,
-            /\{\{phon\|([^|}\]]+)\|fr/i,
-            /\{\{phon\|([^|}\]]+)\}/i,
-            /prononciation[^:]*:\s*\/([^/\n]+)\//i,
-            /\{\{AFI\|\/([^/}]+)\//i,
-            /\|pron=([^|\n}]+)/i,
-          ];
-          for (const pat of ipaPatterns) {
-            const m = content.match(pat);
-            if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
-          }
-          // Gender — use shared parser
-          const gender = this._parseGenderFromWikitext(content);
-          if (ipa) {
-            this._wfCurrentIpa = ipa;
-            this._wfCurrentGender = gender;
-            this._wfUpdateWordDisplay();
-            if (ipaEl) { ipaEl.textContent = ipa; ipaEl.className = 'wf-ipa'; }
-            const lh = this._lookupHistory.find(h => h.word === word);
-            if (lh) { lh.ipa = ipa; this.saveLookupHistory(); }
-            return;
-          }
-        }
+      const { ipa, gender } = await this._fetchIpaForWord(word);
+      if (ipa) {
+        this._wfCurrentIpa = ipa;
+        this._wfCurrentGender = gender;
+        this._wfUpdateWordDisplay();
+        if (ipaEl) { ipaEl.textContent = ipa; ipaEl.className = 'wf-ipa'; }
+        const lh = this._lookupHistory.find(h => h.word === word);
+        if (lh) { lh.ipa = ipa; this.saveLookupHistory(); }
+        return;
       }
       // ── Fallback: EN Wiktionary REST API ──
       const enUrl = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.toLowerCase())}`;
@@ -6167,57 +6217,8 @@ const BILAN_PASSAGES = [
     if (input) input.value = word;
     const result = document.getElementById('wfCompareResult');
     if (result) result.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">Chargement IPA…</div>`;
-    // Fetch IPA for compare word using same Wiktionary approach
-    let ipa = '';
-    let gender = '';
-    try {
-      const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`;
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const data = await resp.json();
-        const fr = data.fr || [];
-        for (const entry of fr) {
-          if (entry.pronunciations) {
-            for (const p of entry.pronunciations) {
-              const m = p.match(/\/([^/]+)\//);
-              if (m) { ipa = `/${m[1]}/`; break; }
-            }
-            if (ipa) break;
-          }
-        }
-      }
-    } catch(e) {}
-    // FR Wiktionary — primary for French IPA + gender
-    try {
-      const url2 = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
-      const resp2 = await fetch(url2);
-      if (resp2.ok) {
-        const data2 = await resp2.json();
-        const pages = data2?.query?.pages;
-        if (pages) {
-          const rev2 = Object.values(pages)[0]?.revisions?.[0] || {};
-          const content = rev2['*'] || rev2?.slots?.main?.['*'] || '';
-          if (content) {
-            // IPA (FR Wiktionary is authoritative — override EN if found)
-            const ipaPatterns = [
-              /\{\{pron\|([^|}\]]+)\|fr/i,
-              /\{\{pron\|([^|}\]]+)\}/i,
-              /\{\{API\|\/([^/}]+)\//i,
-              /\{\{phon\|([^|}\]]+)\|fr/i,
-              /\{\{phon\|([^|}\]]+)\}/i,
-              /\{\{AFI\|\/([^/}]+)\//i,
-              /\|pron=([^|\n}]+)/i,
-              /prononciation[^:]*:\s*\/([^/\n]+)\//i,
-            ];
-            for (const pat of ipaPatterns) {
-              const m = content.match(pat);
-              if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
-            }
-            gender = this._parseGenderFromWikitext(content);
-          }
-        }
-      }
-    } catch(e) {}
+    let ipa = '', gender = '';
+    try { ({ ipa, gender } = await this._fetchIpaForWord(word)); } catch(e) {}
     this._wfRenderCompareSlot(word, ipa, gender);
   },
 
@@ -6432,6 +6433,12 @@ const BILAN_PASSAGES = [
     const area = document.getElementById('wfDefEditArea');
     if (area) area.style.display = 'none';
     this.showToast('Définition sauvegardée ✓');
+    // Sync to grenier card if one exists
+    const word = this._wfCurrentWord;
+    if (word) {
+      const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
+      if (grCard) { grCard.definition = this._wfCurrentDef; this.saveGrenier(); }
+    }
   },
 
   async _wfGenerateDef(type = 'simple') {
@@ -6473,6 +6480,9 @@ const BILAN_PASSAGES = [
         const ta = document.getElementById('wfDefTextarea');
         if (ta) ta.value = def;
         this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
+        // Sync to grenier card if one exists for this word
+        const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
+        if (grCard) { grCard.definition = def; this.saveGrenier(); }
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
     if (btn) { btn.disabled = false; btn.style.opacity = ''; if (origHtml) btn.innerHTML = origHtml; }
@@ -7237,8 +7247,30 @@ const BILAN_PASSAGES = [
   _wfClearInput() {
     const input = document.getElementById('wfInput');
     if (input) { input.value = ''; input.focus(); }
+    // Hide clear button
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = 'none';
+    // Hide the word card
+    const card = document.getElementById('wfWordCard');
+    if (card) card.style.display = 'none';
+    // Clear context box
+    const contextRow = document.getElementById('wfContextRow');
+    if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
+    // If def panel was open, restore front first (to avoid stale innerHTML on next load)
+    this._wfDefPanelOpen = false;
+    this._wfContextOpen = false;
+    // Reset action row
+    const actionRow = document.getElementById('wfActionRow');
+    if (actionRow) actionRow.style.display = 'none';
+    // Reset state
+    this._wfCurrentWord = '';
+    this._wfCurrentIpa = '';
+    this._wfCurrentGender = '';
+    this._wfCurrentDef = '';
+    // Update dependent buttons
+    this._wfUpdateSaveBtn?.();
+    this._wfUpdateRepBtn?.();
+    this._wfUpdateGrenierBtn?.();
   },
 
   _wfOnInputChange() {
@@ -10456,6 +10488,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
   renderGrenierCardCreate(params) {
     const editCard = params.editCardId ? this._grenier.cards.find(c=>c.id===params.editCardId) : null;
+    this._grEditCardId = editCard?.id || null;
     const decks = this._grenier.decks;
     const deckOptions = decks.map(d =>
       `<option value="${d.id}" ${(editCard?.deckId||params.deckId)===d.id?'selected':''}>${d.name}</option>`
@@ -10564,64 +10597,12 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (ipa && ipaEl && !ipaEl.value) ipaEl.value = ipa;
   },
 
-  // Returns { ipa, gender } — uses FR Wiktionary wikitext as primary source (most reliable for French)
+  // Returns { ipa, gender } — uses shared _fetchIpaForWord helper
   async _grFetchIpaAndGender(word) {
-    let ipa = '', gender = '';
     try {
-      // ── Primary: FR Wiktionary wikitext (best source for French IPA + gender) ──
-      const frUrl = `https://fr.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=revisions&rvprop=content&format=json&origin=*`;
-      const frResp = await fetch(frUrl);
-      if (frResp.ok) {
-        const frData = await frResp.json();
-        const frRev = Object.values(frData?.query?.pages || {})[0]?.revisions?.[0] || {};
-        const content = frRev['*'] || frRev?.slots?.main?.['*'] || '';
-        if (content) {
-          // IPA
-          const ipaPatterns = [
-            /\{\{pron\|([^|}\]]+)\|fr/i,
-            /\{\{pron\|([^|}\]]+)\}/i,
-            /\{\{API\|\/([^/}]+)\//i,
-            /\{\{phon\|([^|}\]]+)\|fr/i,
-            /\{\{phon\|([^|}\]]+)\}/i,
-            /\{\{écouter\|[^|]*\|([^|}]+)/i,
-            /\{\{AFI\|\/([^/}]+)\//i,
-            /\|pron=([^|\n}]+)/i,
-            /prononciation[^:]*:\s*\/([^/\n]+)\//i,
-          ];
-          for (const pat of ipaPatterns) {
-            const m = content.match(pat);
-            if (m && m[1].trim()) { ipa = `/${m[1].trim()}/`; break; }
-          }
-          gender = this._parseGenderFromWikitext(content);
-        }
-      }
+      return await this._fetchIpaForWord(word);
     } catch(e) { /* silent */ }
-
-    // ── Fallback: EN Wiktionary REST API (for IPA only if FR failed) ──
-    if (!ipa) {
-      try {
-        const enResp = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
-        if (enResp.ok) {
-          const enData = await enResp.json();
-          const frEntries = enData?.fr || [];
-          for (const entry of frEntries) {
-            const p = entry.pronunciations?.find(p => p.ipa);
-            if (p?.ipa) { ipa = p.ipa; break; }
-            if (Array.isArray(entry.pronunciations)) {
-              for (const pr of entry.pronunciations) {
-                if (typeof pr === 'string') {
-                  const m = pr.match(/\/([^/]+)\//);
-                  if (m) { ipa = `/${m[1]}/`; break; }
-                }
-              }
-              if (ipa) break;
-            }
-          }
-        }
-      } catch(e) { /* silent */ }
-    }
-
-    return { ipa, gender };
+    return { ipa: '', gender: '' };
   },
 
   // Legacy wrapper — keeps old callers working
@@ -10764,12 +10745,25 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!word) { this.showToast('Entrez un mot d\'abord'); return; }
     this.showToast('Récupération du genre…');
     const { gender } = await this._grFetchIpaAndGender(word);
-    // Store on the pending edit card if we can find it
-    const editCardId = document.querySelector('[id^="grOpt_showGender"]')?.closest('[data-edit-id]')?.dataset?.editId;
     if (gender) {
       this.showToast(`Genre trouvé : ${gender === 'm' ? 'masculin (m)' : 'féminin (f)'}`);
-      // Store temporarily so save picks it up
       this._grPendingGender = gender;
+      // Also directly update card.gender if we can find the card being edited
+      const editCardId = this._grEditCardId;
+      if (editCardId) {
+        const card = this._grenier.cards.find(c => c.id === editCardId);
+        if (card) {
+          card.gender = gender;
+          card.showGender = true;
+          this.saveGrenier();
+          // Live-update the word display in the edit form
+          const wordEl = document.querySelector('.grenier-card-word');
+          if (wordEl) {
+            const accent = wordEl.style.color || 'var(--gr-orange)';
+            wordEl.innerHTML = `${card.word}<em style="font-size:0.45em;font-weight:400;color:${accent};opacity:0.7;margin-left:6px;vertical-align:middle">(${gender})</em>`;
+          }
+        }
+      }
     } else {
       this.showToast('Genre non trouvé pour ce mot');
       this._grPendingGender = '';
