@@ -2027,6 +2027,85 @@ body::before {
 .wf-def-action-btn:hover { background: rgba(20,184,166,0.2); border-color: #14B8A6; }
 .wf-def-ai-btn { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.35); color: #A78BFA; }
 .wf-def-ai-btn:hover { background: rgba(167,139,250,0.2); border-color: #A78BFA; }
+
+/* ── Font-size stepper (shared between settings + card back) ── */
+.fs-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 34px;
+}
+.fs-stepper-btn {
+  width: 32px;
+  height: 34px;
+  background: var(--surface);
+  border: none;
+  color: var(--text2);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+}
+.fs-stepper-btn:hover { background: var(--surface2); color: var(--text); }
+.fs-stepper-btn:active { background: var(--border-bright); }
+.fs-stepper-val {
+  min-width: 36px;
+  height: 34px;
+  background: var(--surface2);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  font-family: var(--font-display);
+  padding: 0 4px;
+}
+/* Card-back Aa stepper — compact version */
+.gr-fs-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.gr-fs-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 70%, transparent);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.gr-fs-btn {
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--card-accent, var(--gr-orange)) 35%, transparent);
+  background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 10%, transparent);
+  color: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 85%, var(--text));
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.gr-fs-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 22%, transparent); }
+.gr-fs-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 80%, transparent);
+  font-family: var(--font-display);
+  min-width: 20px;
+  text-align: center;
+}
 .wf-def-textarea {
   width: 100%;
   background: var(--surface2);
@@ -5309,6 +5388,7 @@ const BILAN_PASSAGES = [
     defSimplePrompt: '',
     defComplexModel: '',
     defComplexPrompt: '',
+    defFontSize: 14,
   },
   scores: {},
   recording: false,
@@ -6382,7 +6462,7 @@ const BILAN_PASSAGES = [
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
             Définition de « ${word} »
           </div>
-          <div class="wf-def-content" id="wfDefContent">${def ? def.replace(/\n/g, '<br>') : '<span style="opacity:0.4;font-style:italic;font-size:13px">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+          <div class="wf-def-content" id="wfDefContent" style="font-size:${this.settings.defFontSize||14}px">${def ? def.replace(/\n/g, '<br>') : '<span style="opacity:0.4;font-style:italic;font-size:13px">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -8631,6 +8711,19 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                 <option value="grenier" ${this.settings.launchScreen === 'grenier' ? 'selected' : ''}>Le Grenier</option>
               </select>
             </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                Taille du texte (définitions)
+              </div>
+              <div class="fs-stepper">
+                <button class="fs-stepper-btn" onclick="App._setDefFontSize((App.settings.defFontSize||14)-1)">−</button>
+                <input class="fs-stepper-val" type="number" min="9" max="28" id="defFontSizeInput"
+                  value="${this.settings.defFontSize || 14}"
+                  oninput="App._setDefFontSize(parseInt(this.value)||14)">
+                <button class="fs-stepper-btn" onclick="App._setDefFontSize((App.settings.defFontSize||14)+1)">+</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -8869,6 +8962,18 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   setLaunchScreen(val) {
     this.settings.launchScreen = val;
     this.saveSettings();
+  },
+  _setDefFontSize(val) {
+    const clamped = Math.min(28, Math.max(9, val || 14));
+    this.settings.defFontSize = clamped;
+    this.saveSettings();
+    // Live-update any currently visible definition text
+    document.querySelectorAll('.wf-def-content, .grenier-card-def').forEach(el => {
+      if (!el.dataset.cardFontSize) el.style.fontSize = clamped + 'px';
+    });
+    // Keep the input in sync
+    const inp = document.getElementById('defFontSizeInput');
+    if (inp) inp.value = clamped;
   },
   setFrVariant(val) {
     this.settings.frVariant = val;
@@ -10086,28 +10191,90 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   _grSchedule(card, rating) {
     const now = Date.now();
     let { interval = 1, ease = 2.5, reps = 0 } = card;
+
+    // ratings: 0=Again  1=Hard  2=Good  3=Easy
     if (rating === 0) {
-      // Again — reset
-      interval = 1;
+      // Forgot — reset to learning phase but keep ~30% of interval as floor (min 1d)
+      interval = Math.max(1, Math.round(interval * 0.3));
       reps = 0;
       ease = Math.max(1.3, ease - 0.2);
     } else {
       reps += 1;
-      if (reps === 1)      interval = (rating === 3) ? 4 : 1;
-      else if (reps === 2) interval = (rating === 3) ? 6 : 3;
-      else {
-        const mult = rating === 3 ? ease + 0.15 : rating === 2 ? ease : Math.max(1.3, ease - 0.15);
+
+      if (reps === 1) {
+        // First ever correct answer
+        interval = rating === 3 ? 4 : rating === 2 ? 1 : 1;
+      } else if (reps === 2) {
+        // Second correct answer — small fixed step
+        interval = rating === 3 ? 7 : rating === 2 ? 3 : 2;
+      } else {
+        // Established card — multiply current interval
+        // Hard  ×1.2  |  Good  ×ease  |  Easy  ×(ease + 0.3)
+        const mult = rating === 1
+          ? 1.2
+          : rating === 2
+            ? ease
+            : ease + 0.3;
         interval = Math.round(interval * mult);
+        // Ensure interval always grows: Hard must be at least +1d over current
+        if (rating === 1) interval = Math.max(interval, card.interval + 1);
+        // Good and Easy must exceed Hard result
+        if (rating >= 2) interval = Math.max(interval, Math.round(card.interval * 1.2) + 1);
       }
+
+      // Adjust ease factor
       if (rating === 1) ease = Math.max(1.3, ease - 0.15);
       if (rating === 3) ease = Math.min(3.0, ease + 0.1);
+
+      // Clamp interval: minimum 1 day, no upper cap
+      interval = Math.max(1, interval);
     }
-    card.interval = interval;
+
+    // Add ±10% jitter so cards don't all cluster on the same date
+    const jitter = 1 + (Math.random() * 0.2 - 0.1);
+    const finalInterval = Math.max(1, Math.round(interval * jitter));
+
+    card.interval = interval;   // store un-jittered for next calculation
     card.ease = ease;
     card.reps = reps;
     card.lastReviewed = now;
-    card.nextDue = now + interval * 86400000;
+    card.nextDue = now + finalInterval * 86400000;
     return card;
+  },
+
+  // Preview what interval each rating would produce (used by button labels)
+  _grPreviewIntervals(card) {
+    const { interval = 1, ease = 2.5, reps = 0 } = card;
+    const preview = (rating) => {
+      let iv;
+      if (rating === 0) {
+        iv = Math.max(1, Math.round(interval * 0.3));
+      } else {
+        const nextReps = reps + 1;
+        if (nextReps === 1) {
+          iv = rating === 3 ? 4 : 1;
+        } else if (nextReps === 2) {
+          iv = rating === 3 ? 7 : rating === 2 ? 3 : 2;
+        } else {
+          const mult = rating === 1 ? 1.2 : rating === 2 ? ease : ease + 0.3;
+          iv = Math.round(interval * mult);
+          if (rating === 1) iv = Math.max(iv, interval + 1);
+          if (rating >= 2)  iv = Math.max(iv, Math.round(interval * 1.2) + 1);
+        }
+        iv = Math.max(1, iv);
+      }
+      return iv;
+    };
+    // Compute raw values then enforce strictly ascending order: again < hard < good < easy
+    let again = preview(0);
+    let hard  = preview(1);
+    let good  = preview(2);
+    let easy  = preview(3);
+    // Each level must be at least 1 day more than the previous
+    hard = Math.max(hard, again + 1);
+    good = Math.max(good, hard  + 1);
+    easy = Math.max(easy, good  + 1);
+    return { again, hard, good, easy };
   },
 
   _grDueCards(deckId) {
@@ -10905,10 +11072,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         <div class="grenier-rating-area">
           <div class="grenier-rating-label">Comment était-ce ?</div>
           <div class="grenier-rating-btns">
-            <button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>maintenant</span></button>
-            <button class="grenier-rate-btn gr-rate-hard"  onclick="App._grRate(1)">Difficile<span>+1j</span></button>
-            <button class="grenier-rate-btn gr-rate-good"  onclick="App._grRate(2)">Bien<span>+${Math.max(1,Math.round((card.interval||1)*2.5))}j</span></button>
-            <button class="grenier-rate-btn gr-rate-easy"  onclick="App._grRate(3)">Facile<span>+${Math.max(4,Math.round((card.interval||1)*3.5))}j</span></button>
+            ${(() => { const pv = App._grPreviewIntervals(card); return `<button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>${pv.again}j</span></button><button class="grenier-rate-btn gr-rate-hard" onclick="App._grRate(1)">Difficile<span>+${pv.hard}j</span></button><button class="grenier-rate-btn gr-rate-good" onclick="App._grRate(2)">Bien<span>+${pv.good}j</span></button><button class="grenier-rate-btn gr-rate-easy" onclick="App._grRate(3)">Facile<span>+${pv.easy}j</span></button>`; })()}
           </div>
         </div>
       </div>
@@ -11360,13 +11524,23 @@ Réponds UNIQUEMENT avec ce JSON :
     const safeWord = card.word.replace(/'/g, "\\'");
     const safeId = card.id;
     const hasKey = !!this.settings.openrouterKey;
+    // Resolve font size: per-card overrides global
+    const globalFs = this.settings.defFontSize || 14;
+    const cardFs = card.fontSize || globalFs;
     cardEl.innerHTML = `
-      <div class="grenier-card-back">
+      <div class="grenier-card-back" style="position:relative">
         <div class="grenier-card-back-label">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
           Verso — Définition de « ${card.word} »
         </div>
-        <div class="grenier-card-def" id="grDefDisplay">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+        <!-- Aa font-size stepper -->
+        <div class="gr-fs-bar">
+          <span class="gr-fs-label">Aa</span>
+          <button class="gr-fs-btn" onclick="App._grSetCardFontSize('${safeId}', ${cardFs}-1)" title="Réduire">−</button>
+          <span class="gr-fs-num" id="grFsNum">${cardFs}</span>
+          <button class="gr-fs-btn" onclick="App._grSetCardFontSize('${safeId}', ${cardFs}+1)" title="Agrandir">+</button>
+        </div>
+        <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
           <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -11394,6 +11568,25 @@ Réponds UNIQUEMENT avec ce JSON :
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
       </button>
     `;
+  },
+
+  _grSetCardFontSize(cardId, val) {
+    const clamped = Math.min(28, Math.max(9, val));
+    const card = this._grenier.cards.find(c => c.id === cardId);
+    if (!card) return;
+    // null means "use global" — only store if different from global
+    const global = this.settings.defFontSize || 14;
+    card.fontSize = (clamped === global) ? null : clamped;
+    this.saveGrenier();
+    // Live-update the display
+    const def = document.getElementById('grDefDisplay');
+    if (def) def.style.fontSize = clamped + 'px';
+    const num = document.getElementById('grFsNum');
+    if (num) num.textContent = clamped;
+    // Re-wire the buttons with new value so repeated taps work
+    const btns = document.querySelectorAll('.gr-fs-btn');
+    if (btns[0]) btns[0].setAttribute('onclick', `App._grSetCardFontSize('${cardId}', ${clamped}-1)`);
+    if (btns[1]) btns[1].setAttribute('onclick', `App._grSetCardFontSize('${cardId}', ${clamped}+1)`);
   },
 
   _grShowCardFront() {
