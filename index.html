@@ -6021,26 +6021,17 @@ const BILAN_PASSAGES = [
     this._wfCurrentWord = word;
     this._wfCurrentIpa = '';
     this._wfCurrentGender = '';
-    // Always fully reset def state for the new word, regardless of what was open
-    this._wfCurrentDef = '';
-    this._wfDefPanelOpen = false;
-    // If definition panel (back) is open, restore to front first and wipe the cached HTML
-    const card = document.getElementById('wfWordCard');
-    if (card) {
-      if (card.dataset.frontHtml) {
+    // If definition panel (back) is open, restore to front first
+    if (this._wfDefPanelOpen) {
+      const card = document.getElementById('wfWordCard');
+      if (card && card.dataset.frontHtml) {
         card.innerHTML = card.dataset.frontHtml;
         delete card.dataset.frontHtml;
       }
-      // Also clear any grenier-card-back that may be sitting there
-      const back = card.querySelector('.wf-card-back, .grenier-card-back');
-      if (back) back.remove();
+      this._wfDefPanelOpen = false;
     }
-    // Hide/reset the def toggle button so it reflects a clean slate
-    const defToggleBtn = document.getElementById('wfDefToggleBtn');
-    if (defToggleBtn) { defToggleBtn.style.display = 'none'; }
-    const defContent = document.getElementById('wfDefContent');
-    if (defContent) defContent.textContent = '';
     // Reset UI (context field is intentionally preserved)
+    const card = document.getElementById('wfWordCard');
     const wordDisplay = document.getElementById('wfWordDisplay');
     const ipaEl = document.getElementById('wfIpa');
     const listenBtn = document.getElementById('wfListenBtn');
@@ -6068,6 +6059,9 @@ const BILAN_PASSAGES = [
     // Show action row (Rimes / Comparer / Flip)
     const actionRow = document.getElementById('wfActionRow');
     if (actionRow) actionRow.style.display = '';
+    // Reset definition state for new word (panel lives inside card via flip)
+    this._wfCurrentDef = '';
+    this._wfDefPanelOpen = false;
     // Record this word in lookup history (IPA added after fetch)
     this._wfRecordLookup(word, '');
     // Reset score/playback
