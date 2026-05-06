@@ -6013,15 +6013,19 @@ const BILAN_PASSAGES = [
     this._wfCurrentWord = word;
     this._wfCurrentIpa = '';
     this._wfCurrentGender = '';
-    // If definition panel (back) is open, restore to front first
+    // Always force-close the definition panel (back face) before loading a new word.
+    // If the card is currently showing the back face, restore the front face so that
+    // all the front-face elements (#wfWordDisplay, #wfIpa, etc.) exist in the DOM.
     if (this._wfDefPanelOpen) {
-      const card = document.getElementById('wfWordCard');
-      if (card && card.dataset.frontHtml) {
-        card.innerHTML = card.dataset.frontHtml;
-        delete card.dataset.frontHtml;
+      const cardEl = document.getElementById('wfWordCard');
+      if (cardEl && cardEl.dataset.frontHtml) {
+        cardEl.innerHTML = cardEl.dataset.frontHtml;
       }
       this._wfDefPanelOpen = false;
     }
+    // Delete any stale frontHtml so a subsequent flip for this new word starts fresh.
+    const _wfc = document.getElementById('wfWordCard');
+    if (_wfc) delete _wfc.dataset.frontHtml;
     // Clear context box
     const contextRow = document.getElementById('wfContextRow');
     if (contextRow) contextRow.innerHTML = '';
@@ -7370,13 +7374,16 @@ const BILAN_PASSAGES = [
     // Hide clear button
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = 'none';
-    // Hide the word card
+    // If the def panel (back face) is open, restore front face HTML before hiding the card
+    // so the card is clean for the next word.
     const card = document.getElementById('wfWordCard');
-    if (card) card.style.display = 'none';
+    if (this._wfDefPanelOpen && card && card.dataset.frontHtml) {
+      card.innerHTML = card.dataset.frontHtml;
+    }
+    if (card) { delete card.dataset.frontHtml; card.style.display = 'none'; }
     // Clear context box
     const contextRow = document.getElementById('wfContextRow');
     if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
-    // If def panel was open, restore front first (to avoid stale innerHTML on next load)
     this._wfDefPanelOpen = false;
     this._wfContextOpen = false;
     // Reset action row
