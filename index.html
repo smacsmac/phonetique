@@ -6026,10 +6026,7 @@ const BILAN_PASSAGES = [
     // Delete any stale frontHtml so a subsequent flip for this new word starts fresh.
     const _wfc = document.getElementById('wfWordCard');
     if (_wfc) delete _wfc.dataset.frontHtml;
-    // Clear context box
-    const contextRow = document.getElementById('wfContextRow');
-    if (contextRow) contextRow.innerHTML = '';
-    this._wfContextOpen = false;
+    // Context is never cleared by Analyser — only by Effacer or typing a new word.
     // Reset UI
     const card = document.getElementById('wfWordCard');
     const wordDisplay = document.getElementById('wfWordDisplay');
@@ -7404,6 +7401,15 @@ const BILAN_PASSAGES = [
     const input = document.getElementById('wfInput');
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = input?.value ? 'flex' : 'none';
+    // Clear context if the user is typing a different word than the one currently analysed
+    const typedWord = (input?.value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    if (typedWord !== (this._wfCurrentWord || '')) {
+      const contextRow = document.getElementById('wfContextRow');
+      if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
+      this._wfContextOpen = false;
+      const ctxBtn = document.getElementById('wfContextBtn');
+      if (ctxBtn) { ctxBtn.style.background = ''; ctxBtn.style.borderColor = ''; }
+    }
     this._wfShowGrenierSuggestions();
   },
 
