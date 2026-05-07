@@ -6010,6 +6010,7 @@ const BILAN_PASSAGES = [
     if (!word) return;
     // Reflect normalised value back into the input
     if (input) input.value = word;
+    const _prevWord = this._wfCurrentWord;
     this._wfCurrentWord = word;
     this._wfCurrentIpa = '';
     this._wfCurrentGender = '';
@@ -6026,10 +6027,14 @@ const BILAN_PASSAGES = [
     // Delete any stale frontHtml so a subsequent flip for this new word starts fresh.
     const _wfc = document.getElementById('wfWordCard');
     if (_wfc) delete _wfc.dataset.frontHtml;
-    // Clear context box
+    // Clear context only when switching to a different word; keep it when re-analysing the same word
     const contextRow = document.getElementById('wfContextRow');
-    if (contextRow) contextRow.innerHTML = '';
-    this._wfContextOpen = false;
+    if (word !== _prevWord) {
+      if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
+      this._wfContextOpen = false;
+      const ctxBtn = document.getElementById('wfContextBtn');
+      if (ctxBtn) { ctxBtn.style.background = ''; ctxBtn.style.borderColor = ''; }
+    }
     // Reset UI
     const card = document.getElementById('wfWordCard');
     const wordDisplay = document.getElementById('wfWordDisplay');
