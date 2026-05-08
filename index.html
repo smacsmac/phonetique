@@ -2130,9 +2130,13 @@ body::before {
   font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.5;
-  resize: vertical;
+  min-height: 80px;
   outline: none;
   transition: border-color 0.2s;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  box-sizing: border-box;
 }
 .wf-def-textarea:focus { border-color: rgba(20,184,166,0.5); }
 
@@ -3847,12 +3851,50 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
-  resize: vertical;
   min-height: 80px;
   outline: none;
   margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  box-sizing: border-box;
 }
 .grenier-def-textarea:focus { border-color: var(--card-accent, var(--gr-orange)); }
+.grenier-def-textarea:empty:before, .wf-def-textarea:empty:before {
+  content: attr(data-placeholder);
+  color: var(--text3);
+  opacity: 0.5;
+  pointer-events: none;
+  font-style: italic;
+}
+.grenier-def-textarea img, .wf-def-textarea img {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 6px;
+  margin: 4px 0;
+  display: block;
+  object-fit: contain;
+}
+.grenier-card-def img {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 6px;
+  margin: 4px 0;
+  display: block;
+  object-fit: contain;
+}
+.def-img-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px dashed rgba(255,255,255,0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text3);
+  font-style: italic;
+}
 
 /* Rating buttons */
 .grenier-rating-area {
@@ -5423,6 +5465,107 @@ const BILAN_PASSAGES = [
   phraseLibreText: '',
   recordingTimeout: null,
 
+    // ── IndexedDB image store ─────────────────────────────────────────────────
+    _idb: null,
+    _idbReady: null,
+
+    _idbOpen() {
+      if (this._idbReady) return this._idbReady;
+      this._idbReady = new Promise((resolve, reject) => {
+        const req = indexedDB.open('pho_images', 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore('images');
+        req.onsuccess = e => { this._idb = e.target.result; resolve(this._idb); };
+        req.onerror = () => reject(req.error);
+      });
+      return this._idbReady;
+    },
+
+    async _idbPut(key, blob) {
+      const db = await this._idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('images', 'readwrite');
+        tx.objectStore('images').put(blob, key);
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      });
+    },
+
+    async _idbGet(key) {
+      const db = await this._idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('images', 'readonly');
+        const req = tx.objectStore('images').get(key);
+        req.onsuccess = () => res(req.result || null);
+        req.onerror = () => rej(req.error);
+      });
+    },
+
+    async _idbDelete(key) {
+      const db = await this._idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('images', 'readwrite');
+        tx.objectStore('images').delete(key);
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      });
+    },
+
+    // Hydrate all <img data-idb-key="..."> in a container element with blob URLs
+    async _idbHydrateImages(container) {
+      if (!container) return;
+      const imgs = container.querySelectorAll('img[data-idb-key]');
+      for (const img of imgs) {
+        if (img.src && img.src.startsWith('blob:')) continue; // already hydrated
+        const key = img.dataset.idbKey;
+        try {
+          const blob = await this._idbGet(key);
+          if (blob) img.src = URL.createObjectURL(blob);
+          else img.replaceWith(Object.assign(document.createElement('span'), { className: 'def-img-placeholder', textContent: '⚠ image introuvable' }));
+        } catch(e) { console.warn('idb hydrate error', e); }
+      }
+    },
+
+    // Shared paste handler for contenteditable definition editors
+    async _defEditorPaste(e, editorEl) {
+      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          if (!blob) continue;
+          const key = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+          await this._idbPut(key, blob);
+          const url = URL.createObjectURL(blob);
+          const img = document.createElement('img');
+          img.src = url;
+          img.dataset.idbKey = key;
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '220px';
+          img.style.borderRadius = '6px';
+          img.style.margin = '4px 0';
+          img.style.display = 'block';
+          // Insert at cursor
+          const sel = window.getSelection();
+          if (sel?.rangeCount) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.setStartAfter(img);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          } else {
+            editorEl.appendChild(img);
+          }
+          return; // only handle first image
+        }
+      }
+      // Not an image — let default text paste happen
+    },
+
+    // ── End IndexedDB helpers ─────────────────────────────────────────────────
+
     init() {
     this.loadSettings();
     this.loadScores();
@@ -6500,7 +6643,7 @@ const BILAN_PASSAGES = [
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
             Définition de « ${word} »
           </div>
-          <div class="wf-def-content" id="wfDefContent" style="font-size:${this.settings.defFontSize||14}px">${def ? def.replace(/\n/g, '<br>') : '<span style="opacity:0.4;font-style:italic;font-size:13px">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+          <div class="wf-def-content" id="wfDefContent" style="font-size:${this.settings.defFontSize||14}px">${def || '<span style=\"opacity:0.4;font-style:italic;font-size:13px\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -6517,7 +6660,7 @@ const BILAN_PASSAGES = [
             </button>` : ''}
           </div>
           <div id="wfDefEditArea" style="display:none;margin-top:8px">
-            <textarea class="wf-def-textarea" id="wfDefTextarea" placeholder="Entrez une définition, traduction, note…" rows="4">${def}</textarea>
+            <div class="wf-def-textarea" id="wfDefTextarea" contenteditable="true" data-placeholder="Entrez une définition, traduction, note…" onpaste="App._defEditorPaste(event,this)"></div>
             <button class="wf-def-action-btn" style="margin-top:6px" onclick="App._wfSaveDef()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
               Sauvegarder
@@ -6528,6 +6671,11 @@ const BILAN_PASSAGES = [
         <button class="wf-flip-btn" onclick="App._wfToggleDefinition()" title="Retourner" style="position:absolute;bottom:12px;right:12px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
         </button>`;
+      // Populate the editor with the stored HTML definition and hydrate images
+      const _wfDefEd = document.getElementById('wfDefTextarea');
+      if (_wfDefEd) _wfDefEd.innerHTML = def || '';
+      App._idbHydrateImages(document.getElementById('wfDefContent'));
+      App._idbHydrateImages(_wfDefEd);
     }
   },
 
@@ -6538,16 +6686,20 @@ const BILAN_PASSAGES = [
     area.style.display = isHidden ? '' : 'none';
     if (isHidden) {
       const ta = document.getElementById('wfDefTextarea');
-      if (ta) { ta.value = this._wfCurrentDef; setTimeout(() => ta.focus(), 60); }
+      if (ta) {
+        ta.innerHTML = this._wfCurrentDef || '';
+        App._idbHydrateImages(ta);
+        setTimeout(() => { ta.focus(); const r = document.createRange(); r.selectNodeContents(ta); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }, 60);
+      }
     }
   },
 
   _wfSaveDef() {
     const ta = document.getElementById('wfDefTextarea');
     if (!ta) return;
-    this._wfCurrentDef = ta.value.trim();
-    const content = document.getElementById('wfDefContent');
-    if (content) content.innerHTML = this._wfCurrentDef.replace(/\n/g, '<br>') || '<span style="opacity:0.4;font-style:italic;font-size:13px">Vide.</span>';
+    this._wfCurrentDef = ta.innerHTML.trim();
+    const defContent = document.getElementById('wfDefContent');
+    if (defContent) { defContent.innerHTML = this._wfCurrentDef || '<span style="opacity:0.4;font-style:italic;font-size:13px">Vide.</span>'; App._idbHydrateImages(defContent); }
     const area = document.getElementById('wfDefEditArea');
     if (area) area.style.display = 'none';
     this._wfUpdateFlipDot();
@@ -6595,9 +6747,10 @@ const BILAN_PASSAGES = [
       if (def) {
         this._wfCurrentDef = def;
         const content = document.getElementById('wfDefContent');
-        if (content) content.textContent = def;
+        if (content) { content.innerHTML = def; App._idbHydrateImages(content); }
+        this._wfCurrentDef = def;
         const ta = document.getElementById('wfDefTextarea');
-        if (ta) ta.value = def;
+        if (ta) ta.innerHTML = def;
         this._wfUpdateFlipDot();
         this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
         // Sync to grenier card if one exists for this word
@@ -11649,7 +11802,7 @@ Réponds UNIQUEMENT avec ce JSON :
           <button class="gr-fs-toggle" id="grFsToggle" onclick="App._grToggleFsBar('${safeId}')" title="Taille du texte">Aa</button>
           <button class="gr-fs-btn gr-fs-plus gr-fs-hidden" onclick="App._grSetCardFontSize('${safeId}', App._grCurrentFs+1)" title="Agrandir">+</button>
         </div>
-        <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def ? def.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+        <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def || '<span style=\"opacity:0.35;font-style:italic\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
           <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -11666,7 +11819,7 @@ Réponds UNIQUEMENT avec ce JSON :
           </button>` : ''}
         </div>
         <div id="grDefEditArea" style="display:none">
-          <textarea class="grenier-def-textarea" id="grDefTextarea" placeholder="Entrez une définition, exemple, traduction…">${def}</textarea>
+          <div class="grenier-def-textarea" id="grDefTextarea" contenteditable="true" data-placeholder="Entrez une définition, exemple, traduction…" onpaste="App._defEditorPaste(event,this)"></div>
           <button class="grenier-def-edit-btn" style="margin-top:4px" onclick="App._grSaveDef('${safeId}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
             Sauvegarder
@@ -11695,6 +11848,11 @@ Réponds UNIQUEMENT avec ce JSON :
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
       </button>
     `;
+    // Populate the editor with the stored HTML definition (not escaped) and hydrate images
+    const _grDefEd = document.getElementById('grDefTextarea');
+    if (_grDefEd) _grDefEd.innerHTML = def;
+    App._idbHydrateImages(document.getElementById('grDefDisplay'));
+    App._idbHydrateImages(_grDefEd);
   },
 
   _grCurrentFs: 14,
@@ -11778,18 +11936,25 @@ Réponds UNIQUEMENT avec ce JSON :
     if (btn) btn.innerHTML = isHidden
       ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fermer`
       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
-    if (isHidden) setTimeout(() => document.getElementById('grDefTextarea')?.focus(), 80);
+    if (isHidden) {
+      const ta = document.getElementById('grDefTextarea');
+      if (ta) {
+        // Already set via template innerHTML — just hydrate images and focus
+        App._idbHydrateImages(ta);
+        setTimeout(() => { ta.focus(); const r = document.createRange(); r.selectNodeContents(ta); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }, 80);
+      }
+    }
   },
 
   _grSaveDef(cardId) {
     const ta = document.getElementById('grDefTextarea');
     if (!ta) return;
-    const def = ta.value.trim();
+    const def = ta.innerHTML.trim();
     const card = this._grenier.cards.find(c => c.id === cardId);
     if (card) { card.definition = def; this.saveGrenier(); }
-    // Also update the display
+    // Update the display and hydrate any images
     const display = document.getElementById('grDefDisplay');
-    if (display) display.textContent = def;
+    if (display) { display.innerHTML = def || '<span style="opacity:0.35;font-style:italic">Aucune définition.</span>'; App._idbHydrateImages(display); }
     document.getElementById('grDefEditArea').style.display = 'none';
     const editBtn = document.getElementById('grDefEditBtn');
     if (editBtn) editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
@@ -11835,18 +12000,18 @@ Réponds UNIQUEMENT avec ce JSON :
         const def = (appendMode && card?.definition) ? card.definition + '\n\n' + newText : newText;
         if (card) { card.definition = def; this.saveGrenier(); }
         const display = document.getElementById('grDefDisplay');
-        if (display) display.innerHTML = def.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        if (display) { display.innerHTML = def; App._idbHydrateImages(display); }
         const ta = document.getElementById('grDefTextarea');
-        if (ta) ta.value = def;
+        if (ta) ta.innerHTML = def;
         this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
         // ── Mirror to MOF if same word ────────────────────────────
         if (this._wfCurrentWord && card && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
           this._wfCurrentDef = def;
           this._wfUpdateFlipDot();
           const wfContent = document.getElementById('wfDefContent');
-          if (wfContent) wfContent.innerHTML = def.replace(/\n/g, '<br>');
+          if (wfContent) { wfContent.innerHTML = def; App._idbHydrateImages(wfContent); }
           const wfTa = document.getElementById('wfDefTextarea');
-          if (wfTa) wfTa.value = def;
+          if (wfTa) wfTa.innerHTML = def;
         }
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
@@ -12129,9 +12294,9 @@ Réponds UNIQUEMENT avec ce JSON :
           this._wfUpdateFlipDot();
           // If MOF def panel is currently open, update it live
           const wfContent = document.getElementById('wfDefContent');
-          if (wfContent) wfContent.innerHTML = def.replace(/\n/g, '<br>');
+          if (wfContent) { wfContent.innerHTML = def; App._idbHydrateImages(wfContent); }
           const wfTa = document.getElementById('wfDefTextarea');
-          if (wfTa) wfTa.value = def;
+          if (wfTa) wfTa.innerHTML = def;
           // If panel is not open, show a toast so user knows it's ready
           if (!this._wfDefPanelOpen) this.showToast('Définition prête — voir le verso ✓');
         }
@@ -12282,9 +12447,9 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveGrenier();
     // Update display
     const display = document.getElementById('grDefDisplay');
-    if (display) display.innerHTML = newDef.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    if (display) { display.innerHTML = newDef; App._idbHydrateImages(display); }
     const ta = document.getElementById('grDefTextarea');
-    if (ta) ta.value = newDef;
+    if (ta) ta.innerHTML = newDef;
     // Mirror to MOF
     if (this._wfCurrentWord && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
       this._wfCurrentDef = newDef;
