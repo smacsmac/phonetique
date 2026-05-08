@@ -6107,7 +6107,7 @@ const BILAN_PASSAGES = [
             </button>
           </div>
           <!-- Flip button — absolute bottom-right inside card, like Grenier -->
-          <button class="wf-flip-btn" id="wfFlipBtn" onclick="App._wfToggleDefinition()" title="Voir la définition" ${!this.settings.openrouterKey ? 'style="opacity:0.35;cursor:not-allowed;position:absolute;bottom:12px;right:12px"' : 'style="position:absolute;bottom:12px;right:12px"'}>
+          <button class="wf-flip-btn" id="wfFlipBtn" onclick="App._wfToggleDefinition()" title="Voir la définition" style="position:absolute;bottom:12px;right:12px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
           </button>
         </div>
@@ -6620,7 +6620,6 @@ const BILAN_PASSAGES = [
   },
 
   _wfToggleDefinition() {
-    if (!this.settings.openrouterKey) return;
     const card = document.getElementById('wfWordCard');
     if (!card) return;
     if (this._wfDefPanelOpen) {
@@ -6733,9 +6732,9 @@ const BILAN_PASSAGES = [
       } else if (isComplex) {
         prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage\n4. Synonymes (2-3)\n5. Exemple en contexte${context ? ` (intègre : « ${context} »)` : ''}\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
       } else if (context) {
-        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ».\nContexte : « ${context} » — intègre cet exemple. Inclus d'autres usages courants.\nRéponds UNIQUEMENT avec la définition.`;
+        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ».\nContexte : « ${context} » — intègre cet exemple. Inclus d'autres usages courants. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas.\nRéponds UNIQUEMENT avec la définition.`;
       } else {
-        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ». Inclus un exemple. Réponds UNIQUEMENT avec la définition.`;
+        prompt = `Donne une courte définition en français (1-2 phrases) du mot « ${word} ». Inclus un exemple d'usage. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas. Réponds UNIQUEMENT avec la définition.`;
       }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -11984,9 +11983,9 @@ Réponds UNIQUEMENT avec ce JSON :
       } else if (isComplex) {
         prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage (formel, familier, littéraire…)\n4. Synonymes (2-3)\n5. Exemple en contexte${context ? ` (intègre : « ${context} »)` : ''}\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
       } else if (context) {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ».\nContexte : « ${context} » — intègre cet exemple. Inclus d'autres usages courants.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ».\nContexte : « ${context} » — intègre cet exemple. Inclus d'autres usages courants. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       } else {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
@@ -12274,9 +12273,9 @@ Réponds UNIQUEMENT avec ce JSON :
       } else if (isComplex) {
         prompt = `Fais une analyse complète en français du mot « ${word} » :\n1. Définition principale\n2. Étymologie (brève)\n3. Registre d'usage\n4. Synonymes (2-3)\n5. Exemple en contexte${context ? ` (intègre cet exemple : « ${context} »)` : ''}\n6. Note phonétique ou particularité\nRéponds UNIQUEMENT avec la liste numérotée, sans titre ni introduction.`;
       } else if (context) {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ».\nContexte : « ${context} » — intègre cet exemple dans la définition. Inclus aussi d'autres usages courants.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ».\nContexte : « ${context} » — intègre cet exemple dans la définition. Inclus aussi d'autres usages courants. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas.\nRéponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       } else {
-        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
+        prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       }
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method:'POST',
