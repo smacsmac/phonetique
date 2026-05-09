@@ -2149,11 +2149,7 @@ body::before {
   gap: 4px;
   padding-bottom: 52px; /* space for flip btn */
   min-height: 160px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
-.wf-card-back::-webkit-scrollbar { width: 3px; }
-.wf-card-back::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.3); border-radius: 2px; }
 .wf-card-back-label {
   display: flex;
   align-items: center;
@@ -2870,6 +2866,14 @@ body::before {
   position: relative;
   min-height: 260px;
   box-sizing: border-box;
+}
+/* When showing the definition back-panel, the card becomes a scroll container */
+.wf-word-card.wf-card-scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  min-height: 0;
+  align-items: stretch;
 }
 .wf-word-display {
   font-family: var(--font-display);
@@ -3871,15 +3875,15 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   max-width: 100%;
   max-height: 220px;
   border-radius: 6px;
-  margin: 4px 0;
+  margin: 4px auto;
   display: block;
   object-fit: contain;
 }
-.grenier-card-def img {
+.grenier-card-def img, .wf-def-content img {
   max-width: 100%;
   max-height: 220px;
   border-radius: 6px;
-  margin: 4px 0;
+  margin: 4px auto;
   display: block;
   object-fit: contain;
 }
@@ -5543,7 +5547,7 @@ const BILAN_PASSAGES = [
           img.style.maxWidth = '100%';
           img.style.maxHeight = '220px';
           img.style.borderRadius = '6px';
-          img.style.margin = '4px 0';
+          img.style.margin = '4px auto';
           img.style.display = 'block';
           // Insert at cursor
           const sel = window.getSelection();
@@ -6596,7 +6600,9 @@ const BILAN_PASSAGES = [
   },
 
   _wfGetContext() {
-    return (document.getElementById('wfContextInput')?.value || '').trim();
+    const val = (document.getElementById('wfContextInput')?.value || '').trim();
+    if (val) this._wfLastContext = val; // persist for cross-screen use
+    return val;
   },
 
   // ── MOF Definition panel — full card-back flip like Grenier ────
@@ -6628,11 +6634,21 @@ const BILAN_PASSAGES = [
         card.innerHTML = card.dataset.frontHtml;
         delete card.dataset.frontHtml;
       }
+      // Remove scroll mode
+      card.classList.remove('wf-card-scrollable');
+      card.style.maxHeight = '';
+      card.style.height = '';
       this._wfDefPanelOpen = false;
     } else {
       // Store front, show back
       card.dataset.frontHtml = card.innerHTML;
       this._wfDefPanelOpen = true;
+      // Constrain the card height so it becomes a scroll container
+      // Match the card's current rendered height as the fixed max
+      const currentH = card.getBoundingClientRect().height;
+      card.style.height = currentH + 'px';
+      card.style.maxHeight = currentH + 'px';
+      card.classList.add('wf-card-scrollable');
       const word = this._wfCurrentWord;
       const def = this._wfCurrentDef;
       const hasKey = !!this.settings.openrouterKey;
@@ -10498,7 +10514,12 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     card.ease = ease;
     card.reps = reps;
     card.lastReviewed = now;
-    card.nextDue = now + finalInterval * 86400000;
+    // Snap nextDue to the START of the target day (00:00 local time),
+    // so all cards scheduled for the same calendar day appear together.
+    const rawDue = now + finalInterval * 86400000;
+    const dueDate = new Date(rawDue);
+    dueDate.setHours(0, 0, 0, 0);
+    card.nextDue = dueDate.getTime();
     return card;
   },
 
@@ -12019,6 +12040,8 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // ── Smart Add to Grenier (from Mot en Focus) ─────────────────
   async _wfSmartAddToGrenier() {
+    // Save context value to a persistent property before any screen navigation
+    this._wfLastContext = this._wfGetContext();
     // Use whatever is currently typed in the input, falling back to _wfCurrentWord
     const input = document.getElementById('wfInput');
     const typedWord = (input?.value || '').trim().toLowerCase().replace(/\s+/g,' ');
@@ -12371,7 +12394,17 @@ Réponds UNIQUEMENT avec ce JSON :
       if (isHidden) {
         btn.style.background = 'linear-gradient(135deg,rgba(251,191,36,0.28) 0%,rgba(245,158,11,0.2) 100%)';
         btn.style.borderColor = '#FBBF24';
-        setTimeout(() => document.getElementById('grCtxInput')?.focus(), 60);
+        // Pre-fill with MOF context if the input is empty and MOF has a context
+        setTimeout(() => {
+          const inp = document.getElementById('grCtxInput');
+          if (inp) {
+            if (!inp.value) {
+              const mofCtx = this._wfLastContext || '';
+              if (mofCtx) inp.value = mofCtx;
+            }
+            inp.focus();
+          }
+        }, 60);
       } else {
         btn.style.background = '';
         btn.style.borderColor = '';
