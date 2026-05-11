@@ -114,6 +114,12 @@ body::before {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
+#main.main-flex {
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 #main::-webkit-scrollbar { width: 4px; }
 #main::-webkit-scrollbar-track { background: transparent; }
@@ -2799,7 +2805,7 @@ body::before {
 .ann-tappable:active { filter: brightness(0.8) scale(0.96); transform: scale(0.96); }
 
 /* ── WORD FOCUS ─────────────────────────────────────────────── */
-.wf-container { padding: 0 20px 32px; display: flex; flex-direction: column; gap: 16px; }
+.wf-container { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; overflow: hidden; }
 
 .wf-input-card {
   background: var(--surface);
@@ -2864,7 +2870,11 @@ body::before {
   align-items: center;
   gap: 6px;
   position: relative;
-  min-height: 260px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   box-sizing: border-box;
 }
 /* When showing the definition back-panel, the card becomes a scroll container */
@@ -5836,6 +5846,7 @@ const BILAN_PASSAGES = [
     if (this.navHistory.length > 20) this.navHistory.shift();
     this.currentScreen = screen;
     const main = document.getElementById('main');
+    main.classList.remove('main-flex');
     main.classList.add('screen-exit');
     setTimeout(() => {
       main.classList.remove('screen-exit');
@@ -6013,6 +6024,7 @@ const BILAN_PASSAGES = [
   _wfCurrentGender: '',
 
   renderWordFocus(preloadWord = '', compareWord = '') {
+    document.getElementById('main')?.classList.add('main-flex');
     this.currentScreen = 'word-focus';
     this._wfCompareWord = compareWord || '';
     this._wfContextOpen = false;
@@ -11333,6 +11345,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   _grRenderStudyCard() {
+    document.getElementById('main')?.classList.add('main-flex');
     const sess = this._grenierStudySession;
     if (!sess) return;
     const { queue, idx, deckId } = sess;
