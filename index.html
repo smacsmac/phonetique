@@ -3855,6 +3855,18 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-family: var(--font-body);
 }
 .grenier-def-edit-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 12%, transparent); }
+
+/* ── Processing glow: border traces around button ── */
+@keyframes btn-border-trace {
+  0%   { box-shadow: 0 0 0 1.5px currentColor, 0 0 6px 1px currentColor; opacity: 1; }
+  50%  { box-shadow: 0 0 0 2px currentColor, 0 0 12px 3px currentColor; opacity: 0.7; }
+  100% { box-shadow: 0 0 0 1.5px currentColor, 0 0 6px 1px currentColor; opacity: 1; }
+}
+.btn-processing {
+  animation: btn-border-trace 1.2s ease-in-out infinite !important;
+  cursor: wait !important;
+  pointer-events: none;
+}
 .grenier-def-textarea {
   width: 100%;
   background: var(--gr-bg2);
@@ -6678,9 +6690,8 @@ const BILAN_PASSAGES = [
           </div>
           <div class="wf-def-content" id="wfDefContent" style="font-size:${this.settings.defFontSize||14}px">${def || '<span style=\"opacity:0.4;font-style:italic;font-size:13px\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-            <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()">
+            <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()" title="Modifier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Modifier
             </button>
             ${hasKey ? `
             <button class="wf-def-action-btn wf-def-ai-btn" id="wfDefGenSimple" onclick="App._wfGenerateDef('simple')">
@@ -6773,7 +6784,7 @@ const BILAN_PASSAGES = [
     const btnId = type === 'complex' ? 'wfDefGenComplex' : 'wfDefGenSimple';
     const btn = document.getElementById(btnId);
     const origHtml = btn?.innerHTML;
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '…'; }
+    if (btn) { btn.disabled = true; btn.classList.add('btn-processing'); }
     try {
       const isComplex = type === 'complex';
       const model = (isComplex ? this.settings.defComplexModel : this.settings.defSimpleModel)
@@ -6812,7 +6823,7 @@ const BILAN_PASSAGES = [
         if (grCard) { grCard.definition = def; this.saveGrenier(); }
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; if (origHtml) btn.innerHTML = origHtml; }
+    if (btn) { btn.disabled = false; btn.classList.remove('btn-processing'); if (origHtml) btn.innerHTML = origHtml; }
   },
 
   _wfGrenierToggleDef(toggleEl) {
@@ -11888,9 +11899,8 @@ Réponds UNIQUEMENT avec ce JSON :
         </div>
         <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def || '<span style=\"opacity:0.35;font-style:italic\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:nowrap;align-items:center">
-          <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')" style="margin-top:0;flex-shrink:0">
+          <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')" style="margin-top:0;flex-shrink:0" title="Modifier">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Modifier
           </button>
           ${hasKey ? `
           <button class="grenier-def-edit-btn" id="grDefGenSimpleBtn" onclick="App._grGenerateDef('${safeId}','${safeWord}','simple')" title="Définition courte" style="margin-top:0;flex-shrink:0;color:#FBBF24;border-color:rgba(251,191,36,0.45);background:rgba(251,191,36,0.08)">
@@ -12042,7 +12052,7 @@ Réponds UNIQUEMENT avec ce JSON :
     area.style.display = isHidden ? '' : 'none';
     if (btn) btn.innerHTML = isHidden
       ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fermer`
-      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     if (isHidden) {
       const ta = document.getElementById('grDefTextarea');
       if (ta) {
@@ -12064,7 +12074,7 @@ Réponds UNIQUEMENT avec ce JSON :
     if (display) { display.innerHTML = def || '<span style="opacity:0.35;font-style:italic">Aucune définition.</span>'; App._idbHydrateImages(display); }
     document.getElementById('grDefEditArea').style.display = 'none';
     const editBtn = document.getElementById('grDefEditBtn');
-    if (editBtn) editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier`;
+    if (editBtn) editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     this.showToast('Définition sauvegardée ✓');
   },
 
@@ -12074,7 +12084,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const btnId = type === 'complex' ? 'grDefGenComplexBtn' : 'grDefGenSimpleBtn';
     const btn = document.getElementById(btnId);
     const origHtml = btn?.innerHTML;
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Génération…'; }
+    if (btn) { btn.disabled = true; btn.classList.add('btn-processing'); }
     // Read context from the card-back context input if present
     const context = document.getElementById('grCtxInput')?.value?.trim() || '';
     // Append mode: if checkbox is NOT checked, append to existing def (checked = overwrite)
@@ -12122,7 +12132,7 @@ Réponds UNIQUEMENT avec ce JSON :
         }
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; if (origHtml) btn.innerHTML = origHtml; }
+    if (btn) { btn.disabled = false; btn.classList.remove('btn-processing'); if (origHtml) btn.innerHTML = origHtml; }
   },
 
   // ── Smart Add to Grenier (from Mot en Focus) ─────────────────
@@ -12660,7 +12670,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const origHtml  = activeBtn?.innerHTML;
     if (simpleBtn) { simpleBtn.disabled = true; simpleBtn.style.opacity = '0.5'; }
     if (smartBtn)  { smartBtn.disabled  = true; smartBtn.style.opacity  = '0.5'; }
-    if (activeBtn) activeBtn.textContent = '…';
+    if (activeBtn) { activeBtn.classList.add('btn-processing'); activeBtn.style.opacity = '1'; }
     try {
       const context = this._wfGetContext();
       const { idbKey, blob } = await this._generateImageViaOpenRouter(word, quality, context);
@@ -12692,7 +12702,7 @@ Réponds UNIQUEMENT avec ce JSON :
     }
     if (simpleBtn) { simpleBtn.disabled = false; simpleBtn.style.opacity = ''; }
     if (smartBtn)  { smartBtn.disabled  = false; smartBtn.style.opacity  = ''; }
-    if (activeBtn && origHtml) activeBtn.innerHTML = origHtml;
+    if (activeBtn && origHtml) { activeBtn.classList.remove('btn-processing'); activeBtn.innerHTML = origHtml; }
   },
 
   // ── Grenier: toggle image panel visibility ────────────────────
@@ -12716,7 +12726,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const origHtml  = activeBtn?.innerHTML;
     if (simpleBtn) { simpleBtn.disabled = true; simpleBtn.style.opacity = '0.5'; }
     if (smartBtn)  { smartBtn.disabled  = true; smartBtn.style.opacity  = '0.5'; }
-    if (activeBtn) activeBtn.textContent = '…';
+    if (activeBtn) { activeBtn.classList.add('btn-processing'); activeBtn.style.opacity = '1'; }
     try {
       const context = document.getElementById('grCtxInput')?.value?.trim() || '';
       const { idbKey, blob } = await this._generateImageViaOpenRouter(word, quality, context);
@@ -12754,7 +12764,7 @@ Réponds UNIQUEMENT avec ce JSON :
     }
     if (simpleBtn) { simpleBtn.disabled = false; simpleBtn.style.opacity = ''; }
     if (smartBtn)  { smartBtn.disabled  = false; smartBtn.style.opacity  = ''; }
-    if (activeBtn && origHtml) activeBtn.innerHTML = origHtml;
+    if (activeBtn && origHtml) { activeBtn.classList.remove('btn-processing'); activeBtn.innerHTML = origHtml; }
   },
 
   _grAppendSentenceToDef(cardId) {
