@@ -7767,13 +7767,17 @@ const BILAN_PASSAGES = [
     }
 
     // 3. For every active Grenier card, ensure the word is in the matching Répertoire folder
+    // Check by (word + folder) pair so a word can legitimately live in multiple folders
     for (const card of this._grenier.cards) {
       if (card.deleted) continue;
       const deck = this._grenier.decks.find(d => d.id === card.deckId);
       if (!deck) continue;
       const folder = this._repertoire.folders.find(f => f.name === deck.name);
       if (!folder) continue;
-      const alreadyIn = this._repertoire.words.some(w => w.word.toLowerCase() === card.word?.toLowerCase());
+      // Only add if this exact (word, folder) pair is missing
+      const alreadyIn = this._repertoire.words.some(
+        w => w.word.toLowerCase() === card.word?.toLowerCase() && w.folderId === folder.id
+      );
       if (!alreadyIn) {
         this._repertoire.words.unshift({
           id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -7786,22 +7790,41 @@ const BILAN_PASSAGES = [
       }
     }
 
-    // 4. For every Répertoire word, ensure the word is in the matching Grenier deck
+    // 4. For every Répertoire word, ensure a Grenier card exists in the matching deck.
+    // IMPORTANT: if the word exists in a *different* deck (i.e. was moved), don't duplicate it —
+    // just move the Répertoire word to match the card's current deck instead.
     for (const rw of this._repertoire.words) {
       const folder = this._repertoire.folders.find(f => f.id === rw.folderId);
       if (!folder) continue;
       const deck = this._grenier.decks.find(d => d.name === folder.name);
       if (!deck) continue;
-      const alreadyIn = this._grenier.cards.some(c => c.deckId === deck.id && c.word?.toLowerCase() === rw.word.toLowerCase() && !c.deleted);
-      if (!alreadyIn) {
-        this._grenier.cards.push({
-          id: this._gid(), deckId: deck.id, word: rw.word, ipa: rw.ipa || '',
-          interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
-          showListen: true, showRecord: true, showRhymes: true,
-          color: null, definition: '', createdAt: rw.addedAt || Date.now()
-        });
-        changed = true;
+
+      // Check if this word exists in this specific deck
+      const inThisDeck = this._grenier.cards.some(
+        c => c.deckId === deck.id && c.word?.toLowerCase() === rw.word.toLowerCase() && !c.deleted
+      );
+      if (inThisDeck) continue;
+
+      // Check if the word exists in a different deck (was moved) — if so, follow the card
+      const inOtherDeck = this._grenier.cards.find(
+        c => c.word?.toLowerCase() === rw.word.toLowerCase() && !c.deleted && c.deckId !== deck.id
+      );
+      if (inOtherDeck) {
+        // Update Répertoire to match where the card actually lives now
+        const actualDeck = this._grenier.decks.find(d => d.id === inOtherDeck.deckId);
+        const actualFolder = actualDeck ? this._repertoire.folders.find(f => f.name === actualDeck.name) : null;
+        if (actualFolder) { rw.folderId = actualFolder.id; changed = true; }
+        continue; // don't create a duplicate card
       }
+
+      // Word is genuinely missing from Grenier — create it
+      this._grenier.cards.push({
+        id: this._gid(), deckId: deck.id, word: rw.word, ipa: rw.ipa || '',
+        interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+        showListen: true, showRecord: true, showRhymes: true,
+        color: null, definition: '', createdAt: rw.addedAt || Date.now()
+      });
+      changed = true;
     }
 
     if (changed) { this.saveRepertoire(); this.saveGrenier(); }
@@ -10893,9 +10916,10 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       interval = Math.max(1, interval);
     }
 
-    // Add ±10% jitter so cards don't all cluster on the same date
-    const jitter = 1 + (Math.random() * 0.2 - 0.1);
-    const finalInterval = Math.max(1, Math.round(interval * jitter));
+    // Add ±1 day jitter (whole days only) so cards don't all cluster identically,
+    // but snapping to midnight still groups same-day cards correctly.
+    const jitterDays = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
+    const finalInterval = Math.max(1, interval + (interval > 2 ? jitterDays : 0));
 
     card.interval = interval;   // store un-jittered for next calculation
     card.ease = ease;
@@ -11528,6 +11552,22 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
           this._grenierStudySession.deckId = deckId;
         }
+        // If deck changed, move the matching Répertoire word to the new folder
+        // to prevent _syncReconcile from re-adding it to the old deck as a duplicate
+        if (oldDeckId !== deckId) {
+          const oldDeck = this._grenier.decks.find(d => d.id === oldDeckId);
+          const newDeck = this._grenier.decks.find(d => d.id === deckId);
+          if (oldDeck && newDeck) {
+            const oldFolder = this._repertoire.folders.find(f => f.name === oldDeck.name);
+            const newFolder = this._repertoire.folders.find(f => f.name === newDeck.name);
+            if (oldFolder && newFolder) {
+              const repWord = this._repertoire.words.find(w =>
+                w.word.toLowerCase() === word.toLowerCase() && w.folderId === oldFolder.id
+              );
+              if (repWord) { repWord.folderId = newFolder.id; this.saveRepertoire(); }
+            }
+          }
+        }
       }
     } else {
       const pendingGender = this._grPendingGender || '';
@@ -12122,8 +12162,7 @@ Réponds UNIQUEMENT avec ce JSON :
     if (days <= 0) return 'auj';
     if (days < 30) return `${prefix}${days}j`;
     const months = days / 30;
-    const rounded = Math.round(months * 2) / 2; // nearest 0.5
-    const display = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1);
+    const display = months.toFixed(1);
     return `${prefix}${display}mois`;
   },
 
