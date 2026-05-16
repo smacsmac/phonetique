@@ -5606,6 +5606,7 @@ const BILAN_PASSAGES = [
     this.loadRepertoire();
     this.loadLookupHistory();
     this.loadGrenier();
+    this._syncReconcile();
     this.applyTheme();
     if (this.settings.launchScreen === 'labo') this.renderLabo();
     else if (this.settings.launchScreen === 'word-focus') { this._wfFromBilan = false; this.currentScreen = 'word-focus'; this.renderWordFocus(); }
@@ -5653,6 +5654,14 @@ const BILAN_PASSAGES = [
         cancel();
         const word = rcard.dataset.recentWord;
         App._recentToggleSelect(rcard, word);
+        return;
+      }
+      // Folder header long-press (contextmenu / right-click)
+      const fh = e.target.closest('.rep-folder-header[data-folder-id]');
+      if (fh && !e.target.closest('button')) {
+        e.preventDefault();
+        cancel();
+        App._repShowRenameFolderOverlay(fh.dataset.folderId);
         return;
       }
     });
@@ -5717,6 +5726,20 @@ const BILAN_PASSAGES = [
           lpTimer = null; lpTarget = null;
           const word = rcard.dataset.recentWord;
           App._recentToggleSelect(rcard, word);
+        }, DURATION);
+        return;
+      }
+
+      // Folder header — long-press to rename
+      const fh = e.target.closest('.rep-folder-header[data-folder-id]');
+      if (fh && !e.target.closest('button')) {
+        lpTarget = fh;
+        fh.classList.add('lp-active-row');
+        lpTimer = setTimeout(() => {
+          fh.classList.remove('lp-active-row');
+          lpTimer = null; lpTarget = null;
+          fh.addEventListener('click', ev => ev.stopImmediatePropagation(), { once: true, capture: true });
+          App._repShowRenameFolderOverlay(fh.dataset.folderId);
         }, DURATION);
         return;
       }
@@ -6072,6 +6095,18 @@ const BILAN_PASSAGES = [
       <div class="wf-container">
 
         <div class="wf-input-card">
+          <div class="wf-btn-row">
+            <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
+            <button class="wf-context-btn" id="wfContextBtn" onclick="App._wfToggleContext()" title="Ajouter un contexte (IA)" ${!this.settings.openrouterKey ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" title="Ajouter au Grenier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Au Grenier
+            </button>
+          </div>
           <div class="wf-input-row">
             <div style="position:relative;flex:1;display:flex;align-items:center">
               <input class="wf-input" id="wfInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
@@ -6084,18 +6119,6 @@ const BILAN_PASSAGES = [
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-          </div>
-          <div class="wf-btn-row">
-            <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
-            <button class="wf-context-btn" id="wfContextBtn" onclick="App._wfToggleContext()" title="Ajouter un contexte (IA)" ${!this.settings.openrouterKey ? 'disabled' : ''}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </button>
-            <button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" title="Ajouter au Grenier">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              Au Grenier
-            </button>
           </div>
           <div id="wfContextRow" style="display:none"></div>
         </div>
@@ -7070,8 +7093,20 @@ const BILAN_PASSAGES = [
   },
 
   repRemoveWord(wordId, skipNavigate = false) {
+    const repWord = this._repertoire.words.find(w => w.id === wordId);
     this._repertoire.words = this._repertoire.words.filter(w => w.id !== wordId);
     this.saveRepertoire();
+    // Mirror deletion to Grenier: soft-delete the matching card
+    if (repWord && this._grenier) {
+      const folder = this._repertoire.folders.find(f => f.id === repWord.folderId);
+      const deck = folder ? this._grenier.decks.find(d => d.name === folder.name) : null;
+      const grCard = this._grenier.cards.find(c =>
+        c.word?.toLowerCase() === repWord.word.toLowerCase() &&
+        (!deck || c.deckId === deck.id) &&
+        !c.deleted
+      );
+      if (grCard) { grCard.deleted = true; this.saveGrenier(); }
+    }
     if (!skipNavigate) this.renderRepertoire();
   },
 
@@ -7083,10 +7118,23 @@ const BILAN_PASSAGES = [
       : `Supprimer ces ${n} mots du Répertoire ?`;
     if (!confirm(msg)) return;
     this._repSelectedIds.forEach(id => {
+      const repWord = this._repertoire.words.find(w => w.id === id);
       this._repertoire.words = this._repertoire.words.filter(w => w.id !== id);
+      // Mirror deletion to Grenier
+      if (repWord && this._grenier) {
+        const folder = this._repertoire.folders.find(f => f.id === repWord.folderId);
+        const deck = folder ? this._grenier.decks.find(d => d.name === folder.name) : null;
+        const grCard = this._grenier.cards.find(c =>
+          c.word?.toLowerCase() === repWord.word.toLowerCase() &&
+          (!deck || c.deckId === deck.id) &&
+          !c.deleted
+        );
+        if (grCard) { grCard.deleted = true; }
+      }
     });
     this._repSelectedIds = [];
     this.saveRepertoire();
+    if (this._grenier) this.saveGrenier();
     this.renderRepertoire();
   },
 
@@ -7106,6 +7154,9 @@ const BILAN_PASSAGES = [
   },
 
   repDeleteFolder(folderId) {
+    // Capture folder name BEFORE removing it
+    const folder = this._repertoire.folders.find(f => f.id === folderId);
+    const folderName = folder?.name;
     // Move words to first other folder, or leave them unassigned temporarily
     const others = this._repertoire.folders.filter(f => f.id !== folderId);
     const fallback = others[0];
@@ -7114,24 +7165,47 @@ const BILAN_PASSAGES = [
     });
     this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folderId);
     this.saveRepertoire();
-    // Also delete matching Grenier deck
-    const folder = this._repertoire.folders.find(f => f.id === folderId); // already removed above; use name from before
+    // Mirror: delete matching Grenier deck and its cards
+    if (folderName && this._grenier) {
+      const deck = this._grenier.decks.find(d => d.name === folderName);
+      if (deck) {
+        this._grenier.decks = this._grenier.decks.filter(d => d.id !== deck.id);
+        this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deck.id);
+        this.saveGrenier();
+      }
+    }
     this.renderRepertoire();
   },
 
-  repExport() {
-    const data = JSON.stringify(this._repertoire, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
+  exportAllData() {
+    const bundle = {
+      _version: 2,
+      _exportedAt: new Date().toISOString(),
+      repertoire:      this._repertoire,
+      grenier:         this._grenier,
+      settings:        this.settings,
+      scores:          this.scores,
+      lookupHistory:   this._lookupHistory,
+      bilan: {
+        latest:        this.bilanScores,
+        best:          this.bilanBestScores,
+        passageIndex:  this.bilanPassageIndex,
+        aiPassage:     this.bilanAiPassage,
+      },
+      passageScores:   this.passageScores,
+      aiPassages:      this.aiPassages,
+    };
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'repertoire_phonetique_' + new Date().toISOString().slice(0,10) + '.json';
+    a.download = 'phonetique_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    this.showToast('Répertoire exporté ✓');
+    this.showToast('Sauvegarde complète exportée ✓');
   },
 
-  repImport() {
+  importAllData() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -7142,37 +7216,145 @@ const BILAN_PASSAGES = [
       reader.onload = ev => {
         try {
           const data = JSON.parse(ev.target.result);
-          if (data.folders && data.words) {
-            // Merge folders (skip legacy 'default' folder)
-            const existingFolderIds = new Set(this._repertoire.folders.map(f => f.id));
-            const newFolders = data.folders.filter(f => f.id !== 'default' && !existingFolderIds.has(f.id));
-            this._repertoire.folders.push(...newFolders);
-            // Merge words — remap 'default' folderId to first real folder
-            const firstFolderId = this._repertoire.folders[0]?.id;
-            const existingWordSet = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
-            const newWords = data.words
-              .filter(w => !existingWordSet.has(w.word?.toLowerCase()))
-              .map(w => ({
-                ...w,
-                folderId: (w.folderId === 'default' || !w.folderId)
-                  ? (firstFolderId || w.folderId)
-                  : w.folderId
-              }));
-            this._repertoire.words.unshift(...newWords);
+
+          // ── Full bundle (v2) ──────────────────────────────────
+          if (data._version === 2 || data.grenier || data.settings) {
+            if (!confirm('Importer cette sauvegarde ? Les données existantes seront fusionnées (rien ne sera supprimé).')) return;
+
+            // Répertoire — merge folders + words
+            if (data.repertoire?.folders) {
+              const existingIds = new Set(this._repertoire.folders.map(f => f.id));
+              data.repertoire.folders
+                .filter(f => f.id !== 'default' && !existingIds.has(f.id))
+                .forEach(f => this._repertoire.folders.push(f));
+            }
+            if (data.repertoire?.words) {
+              const existingWords = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
+              data.repertoire.words
+                .filter(w => w.word && !existingWords.has(w.word.toLowerCase()))
+                .forEach(w => { this._repertoire.words.push(w); existingWords.add(w.word.toLowerCase()); });
+            }
             this.saveRepertoire();
-            // Auto-sync imported folders/words into Grenier
-            const { decksCreated, cardsAdded } = this.syncRepertoireToGrenier(false);
-            this.renderRepertoire();
-            this.showToast(`${newWords.length} mot(s) importé(s)${decksCreated > 0 ? `, ${decksCreated} paquet(s) Grenier créé(s)` : ''} ✓`);
-          } else {
-            this.showToast('Format de fichier invalide.');
+
+            // Grenier — merge decks + cards
+            if (data.grenier?.decks) {
+              const existingDeckIds = new Set(this._grenier.decks.map(d => d.id));
+              data.grenier.decks
+                .filter(d => !existingDeckIds.has(d.id))
+                .forEach(d => this._grenier.decks.push(d));
+            }
+            if (data.grenier?.cards) {
+              const existingCardIds = new Set(this._grenier.cards.map(c => c.id));
+              data.grenier.cards
+                .filter(c => !existingCardIds.has(c.id))
+                .forEach(c => this._grenier.cards.push(c));
+              // For cards that already exist, merge definition + rhymes if missing
+              data.grenier.cards
+                .filter(c => existingCardIds.has(c.id))
+                .forEach(imported => {
+                  const existing = this._grenier.cards.find(c => c.id === imported.id);
+                  if (!existing) return;
+                  if (!existing.definition && imported.definition) existing.definition = imported.definition;
+                  if (!existing._rhymes && imported._rhymes) existing._rhymes = imported._rhymes;
+                });
+            }
+            this.saveGrenier();
+
+            // Settings — merge, keeping existing API keys if not in import
+            if (data.settings) {
+              this.settings = { ...data.settings, ...Object.fromEntries(
+                Object.entries(this.settings).filter(([k, v]) =>
+                  // Keep existing API keys / sensitive fields if the imported ones are empty
+                  ['openrouterKey','azureKey','azureRegion'].includes(k) && v && !data.settings[k]
+                )
+              )};
+              this.saveSettings();
+              this.applyTheme();
+            }
+
+            // Scores — keep the higher score for each phoneme key
+            if (data.scores) {
+              for (const [k, v] of Object.entries(data.scores)) {
+                if (this.scores[k] === undefined || v > this.scores[k]) this.scores[k] = v;
+              }
+              this.saveScores();
+            }
+
+            // Lookup history — merge, deduplicate, keep newest
+            if (data.lookupHistory) {
+              const existing = new Map(this._lookupHistory.map(h => [h.word.toLowerCase(), h]));
+              data.lookupHistory.forEach(h => {
+                const key = h.word?.toLowerCase();
+                if (!key) return;
+                if (!existing.has(key) || h.lookedUpAt > existing.get(key).lookedUpAt) existing.set(key, h);
+              });
+              this._lookupHistory = [...existing.values()].sort((a, b) => b.lookedUpAt - a.lookedUpAt).slice(0, 30);
+              this.saveLookupHistory();
+            }
+
+            // Bilan scores
+            if (data.bilan) {
+              if (data.bilan.latest) Object.assign(this.bilanScores, data.bilan.latest);
+              if (data.bilan.best) {
+                for (const [k, v] of Object.entries(data.bilan.best)) {
+                  if (this.bilanBestScores[k] === undefined || v > this.bilanBestScores[k]) this.bilanBestScores[k] = v;
+                }
+              }
+              if (data.bilan.aiPassage && !this.bilanAiPassage) this.bilanAiPassage = data.bilan.aiPassage;
+              this.saveDiagScores();
+            }
+
+            // Passage scores — keep higher
+            if (data.passageScores) {
+              for (const [k, v] of Object.entries(data.passageScores)) {
+                if (this.passageScores[k] === undefined || v > this.passageScores[k]) this.passageScores[k] = v;
+              }
+              this.savePassageScores();
+            }
+
+            // AI passages — merge new ones
+            if (data.aiPassages) {
+              for (const [k, v] of Object.entries(data.aiPassages)) {
+                if (!this.aiPassages[k]) this.aiPassages[k] = v;
+              }
+              this.saveAiPassages();
+            }
+
+            this._syncReconcile();
+            this.showToast('Sauvegarde importée ✓');
+            setTimeout(() => this.renderSettings(), 300);
+            return;
           }
-        } catch(e) { this.showToast('Erreur lors de l\'importation.'); }
+
+          // ── Legacy v1: Répertoire-only export ────────────────
+          if (data.folders && data.words) {
+            const existingFolderIds = new Set(this._repertoire.folders.map(f => f.id));
+            data.folders.filter(f => f.id !== 'default' && !existingFolderIds.has(f.id))
+              .forEach(f => this._repertoire.folders.push(f));
+            const existingWordSet = new Set(this._repertoire.words.map(w => w.word.toLowerCase()));
+            const firstFolderId = this._repertoire.folders[0]?.id;
+            data.words
+              .filter(w => !existingWordSet.has(w.word?.toLowerCase()))
+              .map(w => ({ ...w, folderId: (w.folderId === 'default' || !w.folderId) ? (firstFolderId || w.folderId) : w.folderId }))
+              .forEach(w => this._repertoire.words.unshift(w));
+            this.saveRepertoire();
+            this.syncRepertoireToGrenier(false);
+            this.showToast('Répertoire importé ✓ (ancien format)');
+            setTimeout(() => this.renderSettings(), 300);
+            return;
+          }
+
+          this.showToast('Format de fichier non reconnu.');
+        } catch(e) { console.error(e); this.showToast('Erreur lors de l\'importation.'); }
       };
       reader.readAsText(file);
     };
     input.click();
   },
+
+  // kept for backward compat (called from import flow)
+  repExport() { this.exportAllData(); },
+  repImport() { this.importAllData(); },
 
   // ── RÉPERTOIRE — UI ──────────────────────────────────────────
   _repOpenFolders: new Set(['default']),
@@ -7186,7 +7368,16 @@ const BILAN_PASSAGES = [
     this._repSelectedIds = [];
     this._recentSelectedWords = [];
     const words = this._repertoire.words;
-    const folders = this._repertoire.folders;
+    // Sort folders to match Grenier deck order
+    const deckOrder = (this._grenier?.decks || []).map(d => d.name);
+    const folders = [...this._repertoire.folders].sort((a, b) => {
+      const ia = deckOrder.indexOf(a.name);
+      const ib = deckOrder.indexOf(b.name);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
     const totalWords = words.length;
 
     // ── Récents: from lookup history (words visited in Mot en Focus) ──
@@ -7216,7 +7407,7 @@ const BILAN_PASSAGES = [
       const isOpen = this._repOpenFolders.has(folder.id);
       return `
         <div class="rep-folder" id="repFolder_${folder.id}">
-          <div class="rep-folder-header" onclick="App._repToggleFolder('${folder.id}')">
+          <div class="rep-folder-header" data-folder-id="${folder.id}" onclick="App._repToggleFolder('${folder.id}')">
             <span class="rep-folder-icon">${folder.emoji}</span>
             <span class="rep-folder-name">${folder.name}</span>
             <span class="rep-folder-count">${folderWords.length}</span>
@@ -7486,6 +7677,137 @@ const BILAN_PASSAGES = [
     const folderName = this._repertoire.folders.find(f => f.id === folderId)?.name || '';
     this.showToast(`"${word}" ajouté${folderName ? ' dans ' + folderName : ''} ✓`);
   },
+
+  _repShowRenameFolderOverlay(folderId) {
+    const folder = this._repertoire.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const EMOJIS = ['📁','📂','🗂️','⭐','🔤','💬','🎯','🧠','💡','🎵','🏷️','📌'];
+    let selectedEmoji = folder.emoji || '📁';
+    const overlay = document.createElement('div');
+    overlay.className = 'rep-overlay';
+    overlay.id = 'repRenameOverlay';
+    overlay.innerHTML = `
+      <div class="rep-overlay-panel">
+        <div class="rep-overlay-title">Renommer le dossier</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+          ${EMOJIS.map(e => `<button onclick="App._repSelectEmoji(this,'${e}')" style="background:${e===selectedEmoji?'rgba(20,184,166,0.2)':'var(--surface)'};border:1px solid ${e===selectedEmoji?'#14B8A6':'var(--border)'};border-radius:8px;padding:6px 10px;cursor:pointer;font-size:18px;transition:all 0.15s">${e}</button>`).join('')}
+        </div>
+        <input class="rep-overlay-input" id="repRenameFolderInput" type="text" placeholder="Nom du dossier…" maxlength="30" autocomplete="off" value="${folder.name.replace(/"/g,'&quot;')}">
+        <button class="rep-overlay-confirm" onclick="App._repConfirmRenameFolder('${folderId}')">Enregistrer</button>
+        <button class="rep-overlay-cancel" onclick="document.getElementById('repRenameOverlay')?.remove()">Annuler</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    setTimeout(() => {
+      const inp = document.getElementById('repRenameFolderInput');
+      if (inp) { inp.focus(); inp.select(); }
+    }, 100);
+    this._repSelectedEmoji = selectedEmoji;
+  },
+
+  _repConfirmRenameFolder(folderId) {
+    const input = document.getElementById('repRenameFolderInput');
+    const name = (input?.value || '').trim();
+    if (!name) { input?.focus(); return; }
+    const folder = this._repertoire.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const oldName = folder.name;
+    const emoji = this._repSelectedEmoji || folder.emoji || '📁';
+    folder.name = name;
+    folder.emoji = emoji;
+    this.saveRepertoire();
+    // Mirror rename to Grenier deck
+    if (this._grenier) {
+      const deck = this._grenier.decks.find(d => d.name === oldName);
+      if (deck) { deck.name = name; deck._emoji = emoji; this.saveGrenier(); }
+    }
+    document.getElementById('repRenameOverlay')?.remove();
+    this.renderRepertoire();
+    this.showToast(`Dossier renommé en "${name}" ✓`);
+  },
+
+  // Remove a word from Répertoire by word text (used when deleting a Grenier card)
+  _syncRemoveWordFromRepertoire(wordText) {
+    if (!wordText) return;
+    const lower = wordText.toLowerCase();
+    const existed = this._repertoire.words.some(w => w.word.toLowerCase() === lower);
+    if (!existed) return;
+    this._repertoire.words = this._repertoire.words.filter(w => w.word.toLowerCase() !== lower);
+    this.saveRepertoire();
+  },
+
+  // One-time reconciliation on startup: merge Grenier ↔ Répertoire without deleting anything
+  _syncReconcile() {
+    if (!this._grenier) return;
+    let changed = false;
+
+    // 1. For every Grenier deck, ensure a matching Répertoire folder exists
+    for (const deck of this._grenier.decks) {
+      if (!this._repertoire.folders.find(f => f.name === deck.name)) {
+        this._repertoire.folders.push({
+          id: 'folder_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+          name: deck.name,
+          emoji: deck._emoji || '📁',
+          createdAt: deck.createdAt || Date.now()
+        });
+        changed = true;
+      }
+    }
+
+    // 2. For every Répertoire folder, ensure a matching Grenier deck exists
+    for (const folder of this._repertoire.folders) {
+      if (!this._grenier.decks.find(d => d.name === folder.name)) {
+        this._grenier.decks.push({
+          id: this._gid(), name: folder.name,
+          color: this.GRENIER_COLORS[Math.floor(Math.random() * this.GRENIER_COLORS.length)],
+          _emoji: folder.emoji || '📁', createdAt: folder.createdAt || Date.now()
+        });
+        changed = true;
+      }
+    }
+
+    // 3. For every active Grenier card, ensure the word is in the matching Répertoire folder
+    for (const card of this._grenier.cards) {
+      if (card.deleted) continue;
+      const deck = this._grenier.decks.find(d => d.id === card.deckId);
+      if (!deck) continue;
+      const folder = this._repertoire.folders.find(f => f.name === deck.name);
+      if (!folder) continue;
+      const alreadyIn = this._repertoire.words.some(w => w.word.toLowerCase() === card.word?.toLowerCase());
+      if (!alreadyIn) {
+        this._repertoire.words.unshift({
+          id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+          word: card.word, ipa: card.ipa || '',
+          folderId: folder.id,
+          addedAt: card.createdAt || Date.now(),
+          source: 'grenier'
+        });
+        changed = true;
+      }
+    }
+
+    // 4. For every Répertoire word, ensure the word is in the matching Grenier deck
+    for (const rw of this._repertoire.words) {
+      const folder = this._repertoire.folders.find(f => f.id === rw.folderId);
+      if (!folder) continue;
+      const deck = this._grenier.decks.find(d => d.name === folder.name);
+      if (!deck) continue;
+      const alreadyIn = this._grenier.cards.some(c => c.deckId === deck.id && c.word?.toLowerCase() === rw.word.toLowerCase() && !c.deleted);
+      if (!alreadyIn) {
+        this._grenier.cards.push({
+          id: this._gid(), deckId: deck.id, word: rw.word, ipa: rw.ipa || '',
+          interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+          showListen: true, showRecord: true, showRhymes: true,
+          color: null, definition: '', createdAt: rw.addedAt || Date.now()
+        });
+        changed = true;
+      }
+    }
+
+    if (changed) { this.saveRepertoire(); this.saveGrenier(); }
+  },
+
+
 
   _repCloseOverlay() {
     const ol = document.getElementById('repOverlay');
@@ -9196,27 +9518,17 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           </div>
           <div class="settings-group-body">
             <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-              <div style="font-size:12px;color:var(--text3)">Répertoire — mots et dossiers sauvegardés</div>
+              <div style="font-size:12px;color:var(--text3)">Toutes les données — Répertoire, Grenier, scores, paramètres</div>
               <div style="display:flex;gap:8px;width:100%">
-                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.repExport()">
+                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.exportAllData()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Exporter
                 </button>
-                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.repImport()">
+                <button style="flex:1;background:rgba(20,184,166,0.1);color:#14B8A6;border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body)" onclick="App.importAllData()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   Importer
                 </button>
               </div>
-            </div>
-            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text)">🔗 Synchroniser Répertoire → Grenier</div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4">Crée les paquets Grenier manquants et y ajoute les mots de chaque dossier Répertoire.</div>
-              </div>
-              <button onclick="App.syncRepertoireToGrenier()" style="width:100%;background:rgba(139,92,246,0.12);color:#A78BFA;border:1px solid rgba(139,92,246,0.35);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-                Synchroniser maintenant
-              </button>
             </div>
             <div class="settings-row">
               <div style="font-size:13px;color:var(--text2)">Vider le cache des rimes</div>
@@ -10544,8 +10856,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
     // ratings: 0=Again  1=Hard  2=Good  3=Easy
     if (rating === 0) {
-      // Forgot — reset to learning phase but keep ~30% of interval as floor (min 1d)
-      interval = Math.max(1, Math.round(interval * 0.3));
+      // Forgot — set next due to tomorrow (interval=1) but keep ease penalty
+      // This way if the user sees it again this session and rates it, they get real intervals
+      interval = 1;
       reps = 0;
       ease = Math.max(1.3, ease - 0.2);
     } else {
@@ -10603,7 +10916,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const preview = (rating) => {
       let iv;
       if (rating === 0) {
-        iv = Math.max(1, Math.round(interval * 0.3));
+        iv = 1;
       } else {
         const nextReps = reps + 1;
         if (nextReps === 1) {
@@ -10888,9 +11201,24 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   _grDeleteDeck(deckId) {
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    const deckName = deck?.name;
     this._grenier.decks = this._grenier.decks.filter(d => d.id !== deckId);
     this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deckId);
     this.saveGrenier();
+    // Mirror: delete matching Répertoire folder and move its words to first remaining folder
+    if (deckName && this._repertoire) {
+      const folder = this._repertoire.folders.find(f => f.name === deckName);
+      if (folder) {
+        const others = this._repertoire.folders.filter(f => f.id !== folder.id);
+        const fallback = others[0];
+        this._repertoire.words.forEach(w => {
+          if (w.folderId === folder.id) w.folderId = fallback ? fallback.id : null;
+        });
+        this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folder.id);
+        this.saveRepertoire();
+      }
+    }
     this.renderGrenier();
     this.showToast('Paquet supprimé');
   },
@@ -10974,10 +11302,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
 
     if (existingId) {
       const deck = this._grenier.decks.find(d => d.id === existingId);
-      if (deck) { deck.name = name; deck.color = color; deck._emoji = emoji; }
-      // Update matching Répertoire folder name too
-      const folder = this._repertoire.folders.find(f => f.name === (deck?._prevName || deck?.name));
-      if (folder) { folder.name = name; folder.emoji = emoji; this.saveRepertoire(); }
+      if (deck) {
+        const oldName = deck.name;
+        deck.name = name; deck.color = color; deck._emoji = emoji;
+        // Mirror rename to the matching Répertoire folder
+        const folder = this._repertoire.folders.find(f => f.name === oldName);
+        if (folder) { folder.name = name; folder.emoji = emoji; this.saveRepertoire(); }
+      }
       this.saveGrenier();
       this._grCloseDeckModal();
       this.renderGrenier();
@@ -11314,7 +11645,12 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   _grDeleteCardFromEdit(cardId) {
     if (!confirm('Supprimer cette carte ? Cette action est irréversible.')) return;
     const card = this._grenier.cards.find(c => c.id === cardId);
-    if (card) { card.deleted = true; this.saveGrenier(); }
+    if (card) {
+      card.deleted = true;
+      this.saveGrenier();
+      // Mirror: remove from Répertoire
+      this._syncRemoveWordFromRepertoire(card.word);
+    }
     this.showToast('Carte supprimée');
     // Return to study session, advancing past deleted card
     if (this._grenierStudySession) {
@@ -11384,6 +11720,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           <div class="grenier-study-progress">
             <div class="grenier-study-progress-fill" style="width:${Math.round(prog*100)}%"></div>
           </div>
+          <button class="grenier-icon-btn" onclick="App._grUndo()" title="Annuler" ${!sess.undoStack || !sess.undoStack.length ? 'disabled style="opacity:0.25"' : ''}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+          </button>
           <div class="grenier-study-count">${idx+1} / ${queue.length}</div>
           <button class="grenier-icon-btn" onclick="App._grOpenCardSettings('${card.id}')" title="Options">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
@@ -11428,7 +11767,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         <div class="grenier-rating-area">
           <div class="grenier-rating-label">Comment était-ce ?</div>
           <div class="grenier-rating-btns">
-            ${(() => { const pv = App._grPreviewIntervals(card); return `<button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>${pv.again}j</span></button><button class="grenier-rate-btn gr-rate-hard" onclick="App._grRate(1)">Difficile<span>+${pv.hard}j</span></button><button class="grenier-rate-btn gr-rate-good" onclick="App._grRate(2)">Bien<span>+${pv.good}j</span></button><button class="grenier-rate-btn gr-rate-easy" onclick="App._grRate(3)">Facile<span>+${pv.easy}j</span></button>`; })()}
+            ${(() => { const pv = App._grPreviewIntervals(card); return `<button class="grenier-rate-btn gr-rate-again" onclick="App._grRate(0)">À revoir<span>auj</span></button><button class="grenier-rate-btn gr-rate-hard" onclick="App._grRate(1)">Difficile<span>${App._grFmtInterval(pv.hard,'+')}</span></button><button class="grenier-rate-btn gr-rate-good" onclick="App._grRate(2)">Bien<span>${App._grFmtInterval(pv.good,'+')}</span></button><button class="grenier-rate-btn gr-rate-easy" onclick="App._grRate(3)">Facile<span>${App._grFmtInterval(pv.easy,'+')}</span></button>`; })()}
           </div>
         </div>
       </div>
@@ -11778,27 +12117,83 @@ Réponds UNIQUEMENT avec ce JSON :
     }, 150);
   },
 
+  // Format an interval in days → "auj", "Xj", or "X.Xmois"
+  _grFmtInterval(days, prefix = '') {
+    if (days <= 0) return 'auj';
+    if (days < 30) return `${prefix}${days}j`;
+    const months = days / 30;
+    const rounded = Math.round(months * 2) / 2; // nearest 0.5
+    const display = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1);
+    return `${prefix}${display}mois`;
+  },
+
   _grRate(rating) {
     const sess = this._grenierStudySession;
     if (!sess) return;
     const card = sess.queue[sess.idx];
 
+    // Save state for undo BEFORE mutating anything
+    sess.undoStack = sess.undoStack || [];
+    sess.undoStack.push({
+      idx: sess.idx,
+      queueLength: sess.queue.length,
+      cardSnapshot: {
+        id: card.id, interval: card.interval, ease: card.ease,
+        reps: card.reps, nextDue: card.nextDue, lastReviewed: card.lastReviewed
+      },
+      stats: { ...sess.stats },
+      rating,
+    });
+
     // Update stats
     const rNames = ['again','hard','good','easy'];
     sess.stats[rNames[rating]]++;
 
-    // Schedule card (rating 0 = re-queue at end)
+    // Schedule card
     this._grSchedule(card, rating);
     if (rating === 0) {
-      // Push to end of queue for re-practice
-      sess.queue.push(card);
+      // Push to end of queue for re-practice (mark so undo can remove it)
+      const requeued = { ...card, _requeuedFrom: sess.idx };
+      sess.queue.push(requeued);
     }
     const updCard = this._grenier.cards.find(c=>c.id===card.id);
     if (updCard) Object.assign(updCard, { interval:card.interval, ease:card.ease, reps:card.reps, nextDue:card.nextDue, lastReviewed:card.lastReviewed });
     this.saveGrenier();
 
-    // Next card
     sess.idx++;
+    this._grenierCardRecording = false;
+    this._grenierCardAudioBlob = null;
+    this._grRenderStudyCard();
+  },
+
+  _grUndo() {
+    const sess = this._grenierStudySession;
+    if (!sess || !sess.undoStack || !sess.undoStack.length) return;
+    const prev = sess.undoStack.pop();
+
+    // Remove any re-queued copies added by "À revoir" for this undo step
+    sess.queue = sess.queue.filter(c => c._requeuedFrom !== prev.idx);
+
+    // Restore card state in grenier data
+    const updCard = this._grenier.cards.find(c => c.id === prev.cardSnapshot.id);
+    if (updCard) {
+      Object.assign(updCard, {
+        interval: prev.cardSnapshot.interval,
+        ease: prev.cardSnapshot.ease,
+        reps: prev.cardSnapshot.reps,
+        nextDue: prev.cardSnapshot.nextDue,
+        lastReviewed: prev.cardSnapshot.lastReviewed,
+      });
+      // Also restore on the queue card object
+      const qCard = sess.queue[prev.idx];
+      if (qCard) Object.assign(qCard, updCard);
+    }
+    this.saveGrenier();
+
+    // Restore stats and index
+    sess.stats = prev.stats;
+    sess.idx = prev.idx;
+
     this._grenierCardRecording = false;
     this._grenierCardAudioBlob = null;
     this._grRenderStudyCard();
@@ -12209,10 +12604,12 @@ Réponds UNIQUEMENT avec ce JSON :
         ${existingDef ? `<div style="font-size:12px;padding:8px 10px;background:rgba(20,184,166,0.07);border:1px solid rgba(20,184,166,0.25);border-radius:8px;color:rgba(20,184,166,0.9);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="line-height:1.4">Définition MOF sera utilisée pour le verso ✓</span></div>` : ''}
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Choisir un paquet :</div>
         ${decks.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:8px 0 4px;font-style:italic">Aucun paquet pour l'instant.</div>` : ''}
+        <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0">
         ${deckOptions}
         <button class="rep-overlay-folder-btn" onclick="App._wfGrenierNewDeckInline()" style="border-style:dashed;color:var(--text3);margin-top:4px">
           <span>📦</span> Nouveau paquet…
         </button>
+        </div>
         <div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm);${existingDef ? 'opacity:0.45;pointer-events:none' : ''}">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
             <div class="grenier-toggle ${defToggleOn ? 'on' : ''}" id="wfGrenierDefToggle" onclick="this.classList.toggle('on');App._wfGrenierToggleDef(this)" ${hasKey && !existingDef ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
@@ -12455,7 +12852,12 @@ Réponds UNIQUEMENT avec ce JSON :
 
   _grDeleteCardFromSession(cardId) {
     const card = this._grenier.cards.find(c=>c.id===cardId);
-    if (card) { card.deleted = true; this.saveGrenier(); }
+    if (card) {
+      card.deleted = true;
+      this.saveGrenier();
+      // Mirror: remove from Répertoire
+      this._syncRemoveWordFromRepertoire(card.word);
+    }
     this._grCloseCardSettings();
     const sess = this._grenierStudySession;
     if (sess) { sess.idx++; this._grRenderStudyCard(); }
