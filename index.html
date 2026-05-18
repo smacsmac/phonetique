@@ -5606,6 +5606,7 @@ const BILAN_PASSAGES = [
     this.loadRepertoire();
     this.loadLookupHistory();
     this.loadGrenier();
+    this._grDeduplicateCards();
     this._syncReconcile();
     this.applyTheme();
     if (this.settings.launchScreen === 'labo') this.renderLabo();
@@ -7736,6 +7737,47 @@ const BILAN_PASSAGES = [
     this.saveRepertoire();
   },
 
+  // One-time dedup: within each deck, keep only the card with the best SRS data
+  // (most reps, or if equal, longest interval). Cards in different decks are untouched.
+  _grDeduplicateCards() {
+    if (!this._grenier) return;
+    const seen = new Map(); // key: deckId|word.toLowerCase() → card to keep
+    const toDelete = new Set();
+    for (const card of this._grenier.cards) {
+      if (card.deleted) continue;
+      const key = card.deckId + '|' + (card.word || '').toLowerCase();
+      if (!seen.has(key)) { seen.set(key, card); continue; }
+      // Duplicate within same deck — keep the one with more reps (or longer interval)
+      const existing = seen.get(key);
+      const keepExisting = (existing.reps > card.reps) ||
+        (existing.reps === card.reps && existing.interval >= card.interval);
+      if (keepExisting) {
+        toDelete.add(card.id);
+      } else {
+        toDelete.add(existing.id);
+        seen.set(key, card);
+      }
+    }
+    if (!toDelete.size) return;
+    toDelete.forEach(id => {
+      const c = this._grenier.cards.find(c => c.id === id);
+      if (c) c.deleted = true;
+    });
+    this.saveGrenier();
+    // Also deduplicate Répertoire words within the same folder
+    const repSeen = new Set();
+    const repToRemove = new Set();
+    for (const w of this._repertoire.words) {
+      const key = (w.folderId || '') + '|' + (w.word || '').toLowerCase();
+      if (repSeen.has(key)) { repToRemove.add(w.id); continue; }
+      repSeen.add(key);
+    }
+    if (repToRemove.size) {
+      this._repertoire.words = this._repertoire.words.filter(w => !repToRemove.has(w.id));
+      this.saveRepertoire();
+    }
+  },
+
   // One-time reconciliation on startup: merge Grenier ↔ Répertoire without deleting anything
   _syncReconcile() {
     if (!this._grenier) return;
@@ -7983,16 +8025,27 @@ const BILAN_PASSAGES = [
     document.getElementById('wfGrenierSuggest')?.remove();
     if (!query || query.length < 1) return;
     if (!this._grenier) this.loadGrenier();
-    const cards = (this._grenier?.cards || []).filter(c => !c.deleted);
-    // Build word→decks map
+    // Only active (non-deleted) cards — contains match anywhere in word
+    const cards = (this._grenier?.cards || []).filter(c => !c.deleted && c.word?.toLowerCase().includes(query));
+    // Build word→decks map; deduplicate by (word, deckId) pair
+    const seen = new Set();
     const matchMap = {}; // word → [{deckId, deckName, cardId, definition}]
     for (const c of cards) {
-      if (!c.word?.toLowerCase().startsWith(query)) continue;
+      const key = c.word.toLowerCase() + '|' + c.deckId;
+      if (seen.has(key)) continue;
+      seen.add(key);
       if (!matchMap[c.word]) matchMap[c.word] = [];
       const deck = (this._grenier?.decks || []).find(d => d.id === c.deckId);
       matchMap[c.word].push({ deckId: c.deckId, deckName: deck?.name || '?', deckColor: deck?.color || '#A78BFA', cardId: c.id, definition: c.definition || '' });
     }
-    const words = Object.keys(matchMap).slice(0, 8);
+    // Sort: starts-with first, then contains; cap at 8 words
+    const words = Object.keys(matchMap)
+      .sort((a, b) => {
+        const aStarts = a.toLowerCase().startsWith(query) ? 0 : 1;
+        const bStarts = b.toLowerCase().startsWith(query) ? 0 : 1;
+        return aStarts - bStarts || a.localeCompare(b);
+      })
+      .slice(0, 8);
     if (!words.length) return;
     const dropdown = document.createElement('div');
     dropdown.id = 'wfGrenierSuggest';
