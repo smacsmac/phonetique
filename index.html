@@ -11600,10 +11600,25 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       const card = this._grenier.cards.find(c=>c.id===editId);
       if (card) {
         const oldDeckId = card.deckId;
+        const oldWord = card.word;
         Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender });
         // If deck changed, update the study session reference too
         if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
           this._grenierStudySession.deckId = deckId;
+        }
+        // If the word spelling changed, update the matching Répertoire entry so the
+        // edited spelling is the canonical one and the old spelling doesn't back-sync.
+        if (oldWord && oldWord.toLowerCase() !== word.toLowerCase()) {
+          const currentDeck = this._grenier.decks.find(d => d.id === deckId);
+          const currentFolder = currentDeck
+            ? this._repertoire.folders.find(f => f.name === currentDeck.name)
+            : null;
+          if (currentFolder) {
+            const repWord = this._repertoire.words.find(w =>
+              w.word.toLowerCase() === oldWord.toLowerCase() && w.folderId === currentFolder.id
+            );
+            if (repWord) { repWord.word = word; repWord.ipa = ipa; this.saveRepertoire(); }
+          }
         }
         // If deck changed, move the matching Répertoire word to the new folder
         // to prevent _syncReconcile from re-adding it to the old deck as a duplicate
@@ -11614,6 +11629,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             const oldFolder = this._repertoire.folders.find(f => f.name === oldDeck.name);
             const newFolder = this._repertoire.folders.find(f => f.name === newDeck.name);
             if (oldFolder && newFolder) {
+              // Use the new word spelling (already updated above if it changed)
               const repWord = this._repertoire.words.find(w =>
                 w.word.toLowerCase() === word.toLowerCase() && w.folderId === oldFolder.id
               );
