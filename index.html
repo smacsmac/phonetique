@@ -3718,7 +3718,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-size: 18px;
   color: color-mix(in srgb, var(--card-accent, var(--gr-amber)) 70%, var(--gr-amber));
   opacity: 0.85;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   letter-spacing: 0.03em;
 }
 .grenier-card-listen-row {
@@ -6720,11 +6720,11 @@ const BILAN_PASSAGES = [
             ${hasKey ? `
             <button class="wf-def-action-btn wf-def-ai-btn" id="wfDefGenSimple" onclick="App._wfGenerateDef('simple')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Simple ✦
+              Simple
             </button>
             <button class="wf-def-action-btn wf-def-ai-btn" id="wfDefGenComplex" onclick="App._wfGenerateDef('complex')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Complexe ✦
+              Complexe
             </button>
             <button class="wf-def-action-btn" id="wfDefImgBtn" onclick="App._wfToggleImgPanel()" title="Générer une image" style="color:#34D399;border-color:rgba(52,211,153,0.35);background:rgba(52,211,153,0.08)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -8006,8 +8006,13 @@ const BILAN_PASSAGES = [
     const input = document.getElementById('wfInput');
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = input?.value ? 'flex' : 'none';
-    // Clear context if the user is typing a different word than the one currently analysed
     const typedWord = (input?.value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    // If the user has fully cleared the input while a word was loaded, wipe all MOF output
+    if (this._wfCurrentWord && typedWord === '') {
+      this._wfClearInput();
+      return;
+    }
+    // Clear context if the user is typing a different word than the one currently analysed
     if (typedWord !== (this._wfCurrentWord || '')) {
       const contextRow = document.getElementById('wfContextRow');
       if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
@@ -11432,6 +11437,27 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       style="background:var(--gr-surface2);border:2px solid var(--gr-border-bright);width:26px;height:26px;font-size:11px;display:flex;align-items:center;justify-content:center" data-color=""
       onclick="App._grSelectCardColor(this,'')" title="Par défaut">✕</span>`;
 
+    // Emoji tags definition
+    const CARD_TAGS = [
+      { id:'fr',    emoji:'🇫🇷', label:'Usage France' },
+      { id:'ca',    emoji:'🇨🇦', label:'Usage Québec / Canada' },
+      { id:'book',  emoji:'📚', label:'Littéraire / soutenu' },
+      { id:'mouth', emoji:'👄', label:'Oral / familier' },
+      { id:'news',  emoji:'🗞️', label:'Registre journalistique' },
+      { id:'warn',  emoji:'⚠️', label:'Faux ami / attention' },
+      { id:'fun',   emoji:'😄', label:'Argot / décontracté' },
+      { id:'arch',  emoji:'🏛️', label:'Vieux / désuet' },
+    ];
+    const activeTags = new Set(editCard?.tags || []);
+    this._grSelectedTags = new Set(activeTags);
+    const tagSwatches = CARD_TAGS.map(t => {
+      const on = activeTags.has(t.id);
+      return `<button type="button" id="grTag_${t.id}" title="${t.label}" onclick="App._grToggleTag('${t.id}',this)"
+        style="font-size:22px;padding:5px 7px;border-radius:10px;border:2px solid ${on ? 'var(--gr-orange)' : 'transparent'};
+        background:${on ? 'rgba(255,107,26,0.12)' : 'transparent'};cursor:pointer;transition:all 0.15s;
+        filter:${on ? 'none' : 'grayscale(1) opacity(0.35)'}">${t.emoji}</button>`;
+    }).join('');
+
     this._grSelectedCardColor = editCard?.color || '';
     const isEdit = !!editCard;
     document.getElementById('main').innerHTML = `
@@ -11452,7 +11478,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Mot ou expression</div>
             <input class="grenier-modal-input" id="grCardWordInput" placeholder="Ex: bonjour, un chat…"
-              value="${editCard?.word||''}" oninput="App._grCardAutoIpa(this.value)">
+              value="${editCard?.word||''}" oninput="App._grCardAutoIpaDebounced(this.value)">
           </div>
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">IPA (optionnel)</div>
@@ -11460,8 +11486,18 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               value="${editCard?.ipa||''}">
           </div>
           <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">Genre (optionnel)</div>
+            <input class="grenier-modal-input" id="grCardGenderInput" placeholder="Se remplit automatiquement… (m / f / mf)"
+              value="${editCard?.gender||''}">
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Couleur de la carte (optionnel)</div>
             <div class="grenier-color-row" style="gap:6px">${noColorSwatch}${colorSwatches}</div>
+          </div>
+          <div class="grenier-form-section" style="padding:0 16px">
+            <div class="grenier-modal-label">Étiquettes (optionnel)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px" id="grTagRow">${tagSwatches}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:6px">Appuyez pour activer — visibles sur la carte</div>
           </div>
           <div class="grenier-form-section" style="padding:0 16px">
             <div class="grenier-modal-label">Options</div>
@@ -11519,12 +11555,41 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     }
   },
 
+  _grAutoIpaTimer: null,
+
+  _grCardAutoIpaDebounced(word) {
+    clearTimeout(this._grAutoIpaTimer);
+    if (!word || word.length < 2) return;
+    this._grAutoIpaTimer = setTimeout(() => this._grCardAutoIpa(word), 650);
+  },
+
   async _grCardAutoIpa(word) {
     if (!word || word.length < 2) return;
-    const ipaEl = document.getElementById('grCardIpaInput');
-    if (!ipaEl || ipaEl.value) return;
-    const { ipa } = await this._grFetchIpaAndGender(word.trim());
-    if (ipa && ipaEl && !ipaEl.value) ipaEl.value = ipa;
+    const ipaEl    = document.getElementById('grCardIpaInput');
+    const genderEl = document.getElementById('grCardGenderInput');
+    // Only autofill fields the user hasn't touched yet
+    const ipaEmpty    = !ipaEl?.value;
+    const genderEmpty = !genderEl?.value;
+    if (!ipaEmpty && !genderEmpty) return;
+    const { ipa, gender } = await this._grFetchIpaAndGender(word.trim());
+    if (ipa    && ipaEmpty    && ipaEl    && !ipaEl.value)    ipaEl.value    = ipa;
+    if (gender && genderEmpty && genderEl && !genderEl.value) genderEl.value = gender;
+  },
+
+  _grToggleTag(id, btn) {
+    if (!this._grSelectedTags) this._grSelectedTags = new Set();
+    const on = this._grSelectedTags.has(id);
+    if (on) {
+      this._grSelectedTags.delete(id);
+      btn.style.filter = 'grayscale(1) opacity(0.35)';
+      btn.style.borderColor = 'transparent';
+      btn.style.background = 'transparent';
+    } else {
+      this._grSelectedTags.add(id);
+      btn.style.filter = 'none';
+      btn.style.borderColor = 'var(--gr-orange)';
+      btn.style.background = 'rgba(255,107,26,0.12)';
+    }
   },
 
   // Returns { ipa, gender } — uses shared _fetchIpaForWord helper
@@ -11590,6 +11655,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       deckId = this._grenier.decks[0].id;
     }
     const color = this._grSelectedCardColor || null;
+    const genderInput = document.getElementById('grCardGenderInput')?.value.trim() || '';
+    const tags = [...(this._grSelectedTags || new Set())];
     const showListen = document.getElementById('grOpt_showListen')?.classList.contains('on') ?? true;
     const showRecord = document.getElementById('grOpt_showRecord')?.classList.contains('on') ?? true;
     const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on') ?? true;
@@ -11601,7 +11668,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       if (card) {
         const oldDeckId = card.deckId;
         const oldWord = card.word;
-        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender });
+        // Use manually entered gender if provided, otherwise keep existing
+        const resolvedGender = genderInput || card.gender || '';
+        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender, tags, gender: resolvedGender });
         // If deck changed, update the study session reference too
         if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
           this._grenierStudySession.deckId = deckId;
@@ -11639,12 +11708,12 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         }
       }
     } else {
-      const pendingGender = this._grPendingGender || '';
+      const pendingGender = genderInput || this._grPendingGender || '';
       this._grPendingGender = '';
       const newCard = {
         id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
         nextDue:Date.now(), showListen, showRecord, showRhymes, showIpa, showGender,
-        color, definition:'', gender: pendingGender, createdAt:Date.now()
+        color, definition:'', gender: pendingGender, tags, createdAt:Date.now()
       };
       this._grenier.cards.push(newCard);
       // Auto-fetch gender in background for new cards
@@ -11705,10 +11774,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   async _grRefetchGender() {
     const word = document.getElementById('grCardWordInput')?.value.trim();
     if (!word) { this.showToast('Entrez un mot d\'abord'); return; }
+    const genderEl = document.getElementById('grCardGenderInput');
+    if (genderEl) { genderEl.value = ''; genderEl.placeholder = 'Récupération…'; }
     this.showToast('Récupération du genre…');
     const { gender } = await this._grFetchIpaAndGender(word);
+    if (genderEl) { genderEl.value = gender || ''; genderEl.placeholder = 'Se remplit automatiquement… (m / f / mf)'; }
     if (gender) {
-      this.showToast(`Genre trouvé : ${gender === 'm' ? 'masculin (m)' : 'féminin (f)'}`);
+      this.showToast(`Genre trouvé : ${gender === 'm' ? 'masculin (m)' : gender === 'f' ? 'féminin (f)' : gender}`);
       this._grPendingGender = gender;
       // Also directly update card.gender if we can find the card being edited
       const editCardId = this._grEditCardId;
@@ -11841,6 +11913,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
           <div class="grenier-card" style="--card-accent:${cardAccent};--card-bg:${cardBg};--card-border:${cardBorder}">
             <div class="grenier-card-word" style="color:${cardAccent}">${card.word}${card.showGender!==false && card.gender ? `<em style="font-size:0.45em;font-weight:400;color:${cardAccent};opacity:0.7;margin-left:6px;vertical-align:middle">(${card.gender})</em>` : ''}</div>
             ${card.showIpa!==false ? (ipa ? `<div class="grenier-card-ipa">${ipa}</div>` : '<div class="grenier-card-ipa" id="grIpaLoading" style="opacity:0.4">Chargement IPA…</div>') : ''}
+            <div class="grenier-card-tags" style="min-height:32px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:10px;align-items:center">${
+              (card.tags && card.tags.length)
+                ? card.tags.map(id => {
+                    const T = {fr:'🇫🇷',ca:'🇨🇦',book:'📚',mouth:'👄',news:'🗞️',warn:'⚠️',fun:'😄',arch:'🏛️'};
+                    const L = {fr:'France',ca:'Québec',book:'Littéraire',mouth:'Oral',news:'Journalistique',warn:'Faux ami',fun:'Argot',arch:'Vieux'};
+                    return T[id] ? `<span title="${L[id]||id}" style="font-size:18px;line-height:1">${T[id]}</span>` : '';
+                  }).join('')
+                : ''
+            }</div>
             <div class="grenier-card-listen-row">
               ${card.showListen!==false ? `
               <button class="grenier-card-btn" id="grListenBtn" onclick="App._grSpeak('${card.word.replace(/'/g,"\\'")}')">
@@ -13082,7 +13163,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const isGemini = model.toLowerCase().includes('gemini');
     const modalities = isGemini ? ['image', 'text'] : ['image'];
 
-    const prompt = `Simple, clear illustration of the French vocabulary word "${word}". Clean style, plain background, suitable as a flashcard.${context ? ` Context showing how the word is used: "${context}"` : ''}`;
+    const prompt = `Illustration of the concept "${word}" for a French vocabulary flashcard. Clean, simple drawing on a plain white background. No text, no labels, no captions, no words of any kind in the image — purely visual.${context ? ` The word is used in this context: "${context}".` : ''}`;
 
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
