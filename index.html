@@ -11444,7 +11444,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       { id:'book',  emoji:'📚', label:'Littéraire / soutenu' },
       { id:'mouth', emoji:'👄', label:'Oral / familier' },
       { id:'news',  emoji:'🗞️', label:'Registre journalistique' },
-      { id:'warn',  emoji:'⚠️', label:'Faux ami / attention' },
+      { id:'sci',   emoji:'🌱', label:'Mot scientifique' },
       { id:'fun',   emoji:'😄', label:'Argot / décontracté' },
       { id:'arch',  emoji:'🏛️', label:'Vieux / désuet' },
     ];
@@ -11453,7 +11453,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const tagSwatches = CARD_TAGS.map(t => {
       const on = activeTags.has(t.id);
       return `<button type="button" id="grTag_${t.id}" title="${t.label}" onclick="App._grToggleTag('${t.id}',this)"
-        style="font-size:22px;padding:5px 7px;border-radius:10px;border:2px solid ${on ? 'var(--gr-orange)' : 'transparent'};
+        style="font-size:18px;padding:4px 5px;border-radius:10px;border:2px solid ${on ? 'var(--gr-orange)' : 'transparent'};
         background:${on ? 'rgba(255,107,26,0.12)' : 'transparent'};cursor:pointer;transition:all 0.15s;
         filter:${on ? 'none' : 'grayscale(1) opacity(0.35)'}">${t.emoji}</button>`;
     }).join('');
@@ -11916,8 +11916,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             <div class="grenier-card-tags" style="min-height:32px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:10px;align-items:center">${
               (card.tags && card.tags.length)
                 ? card.tags.map(id => {
-                    const T = {fr:'🇫🇷',ca:'🇨🇦',book:'📚',mouth:'👄',news:'🗞️',warn:'⚠️',fun:'😄',arch:'🏛️'};
-                    const L = {fr:'France',ca:'Québec',book:'Littéraire',mouth:'Oral',news:'Journalistique',warn:'Faux ami',fun:'Argot',arch:'Vieux'};
+                    const T = {fr:'🇫🇷',ca:'🇨🇦',book:'📚',mouth:'👄',news:'🗞️',sci:'🌱',fun:'😄',arch:'🏛️'};
+                    const L = {fr:'France',ca:'Québec',book:'Littéraire',mouth:'Oral',news:'Journalistique',sci:'Scientifique',fun:'Argot',arch:'Vieux'};
                     return T[id] ? `<span title="${L[id]||id}" style="font-size:18px;line-height:1">${T[id]}</span>` : '';
                   }).join('')
                 : ''
@@ -12818,6 +12818,23 @@ Réponds UNIQUEMENT avec ce JSON :
             </button>
           </div>` : ''}
         </div>
+        <div style="margin-top:12px;padding:10px 12px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:var(--radius-sm)">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Étiquettes (optionnel)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px" id="wfGrenierTagRow">${
+            [
+              { id:'fr',    emoji:'🇫🇷', label:'Usage France' },
+              { id:'ca',    emoji:'🇨🇦', label:'Usage Québec / Canada' },
+              { id:'book',  emoji:'📚', label:'Littéraire / soutenu' },
+              { id:'mouth', emoji:'👄', label:'Oral / familier' },
+              { id:'news',  emoji:'🗞️', label:'Journalistique' },
+              { id:'sci',   emoji:'🌱', label:'Mot scientifique' },
+              { id:'fun',   emoji:'😄', label:'Argot / décontracté' },
+              { id:'arch',  emoji:'🏛️', label:'Vieux / désuet' },
+            ].map(t => `<button type="button" id="wfGrTag_${t.id}" title="${t.label}" onclick="App._wfGrToggleTag('${t.id}',this)"
+              style="font-size:18px;padding:3px 5px;border-radius:8px;border:2px solid transparent;
+              background:transparent;cursor:pointer;transition:all 0.15s;filter:grayscale(1) opacity(0.35)">${t.emoji}</button>`).join('')
+          }</div>
+        </div>
         <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Annuler</button>
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -12827,6 +12844,23 @@ Réponds UNIQUEMENT avec ce JSON :
     this._wfGrenierPendingIpa = ipa;
     this._wfGrenierPendingContext = context;
     this._wfGrenierPendingDef = existingDef;
+    this._wfGrenierPendingTags = new Set();
+  },
+
+  _wfGrToggleTag(id, btn) {
+    if (!this._wfGrenierPendingTags) this._wfGrenierPendingTags = new Set();
+    const on = this._wfGrenierPendingTags.has(id);
+    if (on) {
+      this._wfGrenierPendingTags.delete(id);
+      btn.style.filter = 'grayscale(1) opacity(0.35)';
+      btn.style.borderColor = 'transparent';
+      btn.style.background = 'transparent';
+    } else {
+      this._wfGrenierPendingTags.add(id);
+      btn.style.filter = 'none';
+      btn.style.borderColor = '#A78BFA';
+      btn.style.background = 'rgba(167,139,250,0.12)';
+    }
   },
 
   _wfGrenierSelectDeck(deckId) {
@@ -12838,12 +12872,13 @@ Réponds UNIQUEMENT avec ce JSON :
     const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
     if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
     const genDef = document.getElementById('wfGrenierDefToggle')?.classList.contains('on');
+    const tags = [...(this._wfGrenierPendingTags || new Set())];
     const cardId = this._gid();
     this._grenier.cards.push({
       id: cardId, deckId, word, ipa: ipa || '',
       interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
       showListen: true, showRecord: true, showRhymes: true,
-      color: null, definition: existingDef, createdAt: Date.now()
+      color: null, definition: existingDef, tags, createdAt: Date.now()
     });
     // Also add to corresponding repertoire folder if one is linked
     const deck = this._grenier.decks.find(d => d.id === deckId);
