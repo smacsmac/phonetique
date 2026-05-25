@@ -2854,6 +2854,90 @@ body::before {
 }
 .wf-go-btn:hover { opacity: 0.88; }
 .wf-go-btn:active { transform: scale(0.96); }
+/* Deep search mode — Chercher button */
+.wf-go-btn.wf-chercher-mode {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  box-shadow: 0 0 16px rgba(139,92,246,0.35);
+}
+.wf-go-btn.wf-chercher-mode:hover { opacity: 0.9; box-shadow: 0 0 22px rgba(139,92,246,0.5); }
+/* Deep search exit button */
+.wf-deep-exit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(139,92,246,0.12);
+  border: 1.5px solid rgba(139,92,246,0.45);
+  border-radius: 10px;
+  color: #A78BFA;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.wf-deep-exit-btn:hover { background: rgba(139,92,246,0.25); border-color: #8B5CF6; color: #C4B5FD; }
+/* Deep search results */
+.wf-deep-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.wf-deep-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.18s;
+  overflow: hidden;
+}
+.wf-deep-result-card:hover, .wf-deep-result-card:active {
+  border-color: rgba(139,92,246,0.5);
+  background: var(--surface2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.wf-deep-result-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.wf-deep-result-deck {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wf-deep-result-snippets {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wf-deep-result-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wf-deep-hit { color: #A78BFA; font-weight: 700; }
+.wf-deep-no-results {
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+  padding: 32px 0;
+}
 /* Second-row buttons area */
 .wf-btn-row {
   display: flex;
@@ -6096,8 +6180,15 @@ const BILAN_PASSAGES = [
       <div class="wf-container">
 
         <div class="wf-input-card">
-          <div class="wf-btn-row">
-            <button class="wf-go-btn" style="flex:1" onclick="App.wfLoadWord()">Analyser</button>
+          <div class="wf-btn-row" id="wfBtnRow">
+            <button class="wf-go-btn" id="wfGoBtn" style="flex:1"
+              onclick="App._wfDeepMode ? App._wfDeepSearch() : App.wfLoadWord()"
+              ontouchstart="App._wfAnalyserLongPressStart(event)"
+              ontouchend="App._wfAnalyserLongPressEnd(event)"
+              ontouchcancel="App._wfAnalyserLongPressEnd(event)"
+              onmousedown="App._wfAnalyserLongPressStart(event)"
+              onmouseup="App._wfAnalyserLongPressEnd(event)"
+              onmouseleave="App._wfAnalyserLongPressEnd(event)">Analyser</button>
             <button class="wf-context-btn" id="wfContextBtn" onclick="App._wfToggleContext()" title="Ajouter un contexte (IA)" ${!this.settings.openrouterKey ? 'disabled' : ''}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -6111,7 +6202,7 @@ const BILAN_PASSAGES = [
           <div class="wf-input-row">
             <div style="position:relative;flex:1;display:flex;align-items:center">
               <input class="wf-input" id="wfInput" type="text" placeholder="Entrez un mot…" autocomplete="off" autocorrect="off" spellcheck="false"
-                onkeydown="if(event.key==='Enter')App.wfLoadWord()"
+                onkeydown="if(event.key==='Enter'){ App._wfDeepMode ? App._wfDeepSearch() : App.wfLoadWord(); }"
                 oninput="App._wfOnInputChange()"
                 value="${preloadWord.replace(/"/g,'&quot;')}"
                 style="width:100%;padding-right:36px">
@@ -6123,6 +6214,8 @@ const BILAN_PASSAGES = [
           </div>
           <div id="wfContextRow" style="display:none"></div>
         </div>
+
+        <div id="wfDeepResults" class="wf-deep-results" style="display:none"></div>
 
         <div id="wfWordCard" class="wf-word-card" style="${preloadWord ? '' : 'display:none'}">
           <button class="wf-save-btn" id="wfSaveBtn" onclick="App.wfToggleSaveToRepertoire()" aria-hidden="true"></button>
@@ -7970,6 +8063,17 @@ const BILAN_PASSAGES = [
   },
 
   _wfClearInput() {
+    // In deep mode: just clear the input and results, stay in deep mode
+    if (this._wfDeepMode) {
+      document.getElementById('wfGrenierSuggest')?.remove();
+      const input = document.getElementById('wfInput');
+      if (input) { input.value = ''; input.focus(); }
+      const clearBtn = document.getElementById('wfClearBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      const results = document.getElementById('wfDeepResults');
+      if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+      return;
+    }
     document.getElementById('wfGrenierSuggest')?.remove();
     const input = document.getElementById('wfInput');
     if (input) { input.value = ''; input.focus(); }
@@ -8006,6 +8110,14 @@ const BILAN_PASSAGES = [
     const input = document.getElementById('wfInput');
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = input?.value ? 'flex' : 'none';
+    // In deep mode, don't show grenier suggestions; just clear results when input cleared
+    if (this._wfDeepMode) {
+      if (!input?.value?.trim()) {
+        const results = document.getElementById('wfDeepResults');
+        if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+      }
+      return;
+    }
     const typedWord = (input?.value || '').trim().replace(/\s+/g, ' ').toLowerCase();
     // If the user has fully cleared the input while a word was loaded, wipe all MOF output
     if (this._wfCurrentWord && typedWord === '') {
@@ -8088,7 +8200,170 @@ const BILAN_PASSAGES = [
     this.wfLoadWord();
   },
 
-  // ── WF SAVE BUTTON ───────────────────────────────────────────
+  // ── DEEP SEARCH (Chercher) ────────────────────────────────────
+  _wfDeepMode: false,
+  _wfLongPressTimer: null,
+
+  _wfAnalyserLongPressStart(e) {
+    if (this._wfDeepMode) return; // already in deep mode
+    this._wfLongPressTimer = setTimeout(() => {
+      this._wfLongPressTimer = null;
+      this._wfEnterDeepMode();
+    }, 500);
+  },
+
+  _wfAnalyserLongPressEnd(e) {
+    if (this._wfLongPressTimer) {
+      clearTimeout(this._wfLongPressTimer);
+      this._wfLongPressTimer = null;
+    }
+  },
+
+  _wfEnterDeepMode() {
+    this._wfDeepMode = true;
+    // Swap button to Chercher (purple)
+    const goBtn = document.getElementById('wfGoBtn');
+    if (goBtn) {
+      goBtn.textContent = 'Chercher';
+      goBtn.classList.add('wf-chercher-mode');
+    }
+    // Replace context + Au Grenier buttons with single X exit button
+    const ctxBtn = document.getElementById('wfContextBtn');
+    const grenierBtn = document.getElementById('wfGrenierAddBtn');
+    if (ctxBtn) ctxBtn.style.display = 'none';
+    if (grenierBtn) {
+      grenierBtn.outerHTML = `<button class="wf-deep-exit-btn" id="wfDeepExitBtn" onclick="App._wfExitDeepMode()" title="Quitter la recherche approfondie">✕</button>`;
+    }
+    // Clear current word display
+    const wordCard = document.getElementById('wfWordCard');
+    if (wordCard) wordCard.style.display = 'none';
+    // Clear input and focus
+    const input = document.getElementById('wfInput');
+    if (input) { input.value = ''; input.placeholder = 'Chercher dans les définitions…'; input.focus(); }
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    // Clear results
+    const results = document.getElementById('wfDeepResults');
+    if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+    // Suppress grenier suggestions in deep mode
+    document.getElementById('wfGrenierSuggest')?.remove();
+    // Hide history
+    const hist = document.getElementById('wfHistory');
+    if (hist) hist.style.display = 'none';
+    // Light vibration feedback if available
+    try { navigator.vibrate?.(30); } catch(e) {}
+  },
+
+  _wfExitDeepMode() {
+    this._wfDeepMode = false;
+    // Restore Analyser button
+    const goBtn = document.getElementById('wfGoBtn');
+    if (goBtn) {
+      goBtn.textContent = 'Analyser';
+      goBtn.classList.remove('wf-chercher-mode');
+    }
+    // Restore context + Au Grenier buttons
+    const ctxBtn = document.getElementById('wfContextBtn');
+    if (ctxBtn) ctxBtn.style.display = '';
+    const exitBtn = document.getElementById('wfDeepExitBtn');
+    if (exitBtn) {
+      exitBtn.outerHTML = `<button class="wf-grenier-add-btn" id="wfGrenierAddBtn" onclick="App._wfSmartAddToGrenier()" title="Ajouter au Grenier">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Au Grenier
+      </button>`;
+    }
+    // Clear results panel
+    const results = document.getElementById('wfDeepResults');
+    if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+    // Reset input
+    const input = document.getElementById('wfInput');
+    if (input) { input.value = ''; input.placeholder = 'Entrez un mot\u2026'; }
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    // Re-show history if applicable
+    const hist = document.getElementById('wfHistory');
+    if (hist && this._wfHistory?.length) hist.style.display = '';
+    this._wfClearInput();
+  },
+
+  _wfDeepSearch() {
+    const input = document.getElementById('wfInput');
+    const rawQuery = (input?.value || '').trim();
+    const resultsEl = document.getElementById('wfDeepResults');
+    if (!resultsEl) return;
+    if (!rawQuery) {
+      resultsEl.innerHTML = '';
+      resultsEl.style.display = 'none';
+      return;
+    }
+    if (!this._grenier) this.loadGrenier();
+    // Split query into terms
+    const terms = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    const MAX_RESULTS = 10;
+    const cards = (this._grenier?.cards || []).filter(c => !c.deleted);
+    // Score each card
+    const hits = [];
+    for (const card of cards) {
+      const wordLower = (card.word || '').toLowerCase();
+      const defRaw = card.definition || '';
+      // Strip HTML tags for text matching
+      const defText = defRaw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const defLower = defText.toLowerCase();
+      // Check all terms appear somewhere in word or def
+      const allMatch = terms.every(t => wordLower.includes(t) || defLower.includes(t));
+      if (!allMatch) continue;
+      // Build snippets: for each term, extract context from definition
+      const snippets = [];
+      for (const term of terms) {
+        const idx = defLower.indexOf(term);
+        if (idx === -1) continue;
+        const start = Math.max(0, idx - 40);
+        const end = Math.min(defText.length, idx + term.length + 60);
+        let snippet = (start > 0 ? '…' : '') + defText.slice(start, end) + (end < defText.length ? '…' : '');
+        // Highlight the hit term in snippet
+        snippet = snippet.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+          '<span class="wf-deep-hit">$1</span>');
+        snippets.push(snippet);
+      }
+      // Also highlight hits in word display
+      let wordDisplay = card.word || '';
+      for (const term of terms) {
+        wordDisplay = wordDisplay.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+          '<span class="wf-deep-hit">$1</span>');
+      }
+      const deck = (this._grenier?.decks || []).find(d => d.id === card.deckId);
+      hits.push({ card, wordDisplay, snippets, deckName: deck?.name || '?', deckColor: deck?.color || '#A78BFA' });
+      if (hits.length >= MAX_RESULTS) break;
+    }
+    if (!hits.length) {
+      resultsEl.style.display = 'flex';
+      resultsEl.innerHTML = `<div class="wf-deep-no-results">Aucun résultat pour « ${rawQuery.replace(/</g,'&lt;')} »</div>`;
+      return;
+    }
+    resultsEl.style.display = 'flex';
+    resultsEl.innerHTML = hits.map(h => `
+      <div class="wf-deep-result-card" onclick="App._wfDeepOpenResult('${(h.card.word||'').replace(/'/g,"\\'")}','${h.card.id}')">
+        <div class="wf-deep-result-word">${h.wordDisplay}</div>
+        <div class="wf-deep-result-deck">
+          <span style="width:7px;height:7px;border-radius:50%;background:${h.deckColor};display:inline-block;flex-shrink:0"></span>
+          <span style="color:${h.deckColor}">${h.deckName}</span>
+        </div>
+        ${h.snippets.length ? `<div class="wf-deep-result-snippets">${h.snippets.map(s=>`<div class="wf-deep-result-snippet">${s}</div>`).join('')}</div>` : ''}
+      </div>
+    `).join('');
+  },
+
+  _wfDeepOpenResult(word, cardId) {
+    // Exit deep mode first, then open the word in MOF normally
+    this._wfExitDeepMode();
+    // Preload definition from grenier card
+    const card = (this._grenier?.cards || []).find(c => c.id === cardId);
+    if (card?.definition) this._wfCurrentDef = card.definition;
+    // Navigate to MOF with the word
+    this.navigate('word-focus', { word });
+  },
+
+
   wfToggleSaveToRepertoire() {
     const word = this._wfCurrentWord;
     if (!word) return;
