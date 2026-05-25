@@ -2882,18 +2882,22 @@ body::before {
 .wf-deep-results {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  max-height: calc(100vh - 260px); /* leaves room for header + input bar */
+  flex-shrink: 0;
+  padding-right: 2px; /* prevents scrollbar overlap */
 }
 .wf-deep-result-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 14px 16px;
+  padding: 12px 14px;
   cursor: pointer;
   transition: all 0.18s;
-  overflow: hidden;
+  flex-shrink: 0; /* never squish — scroll instead */
+  min-height: 80px;
 }
 .wf-deep-result-card:hover, .wf-deep-result-card:active {
   border-color: rgba(139,92,246,0.5);
@@ -2931,7 +2935,7 @@ body::before {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.wf-deep-hit { color: #A78BFA; font-weight: 700; }
+.wf-deep-hit { color: #C4B5FD; font-weight: 800; font-size: 1.08em; background: rgba(139,92,246,0.18); border-radius: 3px; padding: 0 2px; }
 .wf-deep-no-results {
   text-align: center;
   color: var(--text3);
@@ -5994,7 +5998,15 @@ const BILAN_PASSAGES = [
         case 'labo': this.renderLabo(); break;
         case 'labo-scores': this.renderLaboScores(); break;
         case 'settings': this.renderSettings(); break;
-        case 'word-focus': this.renderWordFocus(params?.word || '', params?.compareWord || ''); break;
+        case 'word-focus':
+          if (params?.__deepSearch) {
+            this.renderWordFocus('', '');
+            // Re-enter deep mode after render, restoring the previous query
+            setTimeout(() => this._wfRestoreDeepMode(params.query || ''), 50);
+          } else {
+            this.renderWordFocus(params?.word || '', params?.compareWord || '');
+          }
+          break;
         case 'repertoire': this.renderRepertoire(); break;
         case 'grenier': this.renderGrenier(); break;
         case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
@@ -8106,15 +8118,27 @@ const BILAN_PASSAGES = [
     this._wfUpdateGrenierBtn?.();
   },
 
+  _wfDeepSearchDebounceTimer: null,
+
   _wfOnInputChange() {
     const input = document.getElementById('wfInput');
     const clearBtn = document.getElementById('wfClearBtn');
     if (clearBtn) clearBtn.style.display = input?.value ? 'flex' : 'none';
-    // In deep mode, don't show grenier suggestions; just clear results when input cleared
+    // In deep mode: live search (debounced), no grenier suggestions
     if (this._wfDeepMode) {
-      if (!input?.value?.trim()) {
+      const q = (input?.value || '').trim();
+      if (this._wfDeepSearchDebounceTimer) clearTimeout(this._wfDeepSearchDebounceTimer);
+      if (!q) {
         const results = document.getElementById('wfDeepResults');
         if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+        return;
+      }
+      // Start live search after at least one full word (no space needed — just ≥3 chars is natural)
+      const words = q.split(/\s+/).filter(Boolean);
+      const lastWord = words[words.length - 1] || '';
+      // Fire if: multiple words typed, OR the last (or only) word is ≥3 chars
+      if (words.length > 1 || lastWord.length >= 3) {
+        this._wfDeepSearchDebounceTimer = setTimeout(() => this._wfDeepSearch(), 280);
       }
       return;
     }
@@ -8221,6 +8245,9 @@ const BILAN_PASSAGES = [
 
   _wfEnterDeepMode() {
     this._wfDeepMode = true;
+    // Capture any word already in the input box
+    const input = document.getElementById('wfInput');
+    const existingText = (input?.value || '').trim();
     // Swap button to Chercher (purple)
     const goBtn = document.getElementById('wfGoBtn');
     if (goBtn) {
@@ -8237,11 +8264,14 @@ const BILAN_PASSAGES = [
     // Clear current word display
     const wordCard = document.getElementById('wfWordCard');
     if (wordCard) wordCard.style.display = 'none';
-    // Clear input and focus
-    const input = document.getElementById('wfInput');
-    if (input) { input.value = ''; input.placeholder = 'Chercher dans les définitions…'; input.focus(); }
+    // Set input (carry existing text, or blank)
+    if (input) {
+      input.value = existingText;
+      input.placeholder = 'Chercher dans les définitions…';
+      input.focus();
+    }
     const clearBtn = document.getElementById('wfClearBtn');
-    if (clearBtn) clearBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = existingText ? 'flex' : 'none';
     // Clear results
     const results = document.getElementById('wfDeepResults');
     if (results) { results.innerHTML = ''; results.style.display = 'none'; }
@@ -8250,8 +8280,14 @@ const BILAN_PASSAGES = [
     // Hide history
     const hist = document.getElementById('wfHistory');
     if (hist) hist.style.display = 'none';
+    // Push a special nav-history entry so Back button restores this deep search state
+    // We do NOT call navigate() to avoid a re-render; just push the breadcrumb manually
+    const deepEntry = { screen: 'word-focus', params: { __deepSearch: true, query: existingText } };
+    this.navHistory.push(deepEntry);
     // Light vibration feedback if available
     try { navigator.vibrate?.(30); } catch(e) {}
+    // If there's already text, kick off a live search immediately
+    if (existingText) this._wfOnInputChange();
   },
 
   _wfExitDeepMode() {
@@ -8353,13 +8389,45 @@ const BILAN_PASSAGES = [
     `).join('');
   },
 
+  _wfRestoreDeepMode(query) {
+    // Called after renderWordFocus when navigating back to a deep search session
+    this._wfDeepMode = true;
+    const goBtn = document.getElementById('wfGoBtn');
+    if (goBtn) { goBtn.textContent = 'Chercher'; goBtn.classList.add('wf-chercher-mode'); }
+    const ctxBtn = document.getElementById('wfContextBtn');
+    const grenierBtn = document.getElementById('wfGrenierAddBtn');
+    if (ctxBtn) ctxBtn.style.display = 'none';
+    if (grenierBtn) {
+      grenierBtn.outerHTML = `<button class="wf-deep-exit-btn" id="wfDeepExitBtn" onclick="App._wfExitDeepMode()" title="Quitter la recherche approfondie">✕</button>`;
+    }
+    const wordCard = document.getElementById('wfWordCard');
+    if (wordCard) wordCard.style.display = 'none';
+    const input = document.getElementById('wfInput');
+    if (input) { input.value = query; input.placeholder = 'Chercher dans les définitions…'; }
+    const clearBtn = document.getElementById('wfClearBtn');
+    if (clearBtn) clearBtn.style.display = query ? 'flex' : 'none';
+    const hist = document.getElementById('wfHistory');
+    if (hist) hist.style.display = 'none';
+    document.getElementById('wfGrenierSuggest')?.remove();
+    // Re-run search to repopulate results
+    if (query) this._wfDeepSearch();
+  },
+
   _wfDeepOpenResult(word, cardId) {
-    // Exit deep mode first, then open the word in MOF normally
-    this._wfExitDeepMode();
+    // Save the current deep search query so back-navigation can restore it
+    const input = document.getElementById('wfInput');
+    const currentQuery = (input?.value || '').trim();
+    // Update the top navHistory entry to record the current query
+    const topIdx = this.navHistory.length - 1;
+    if (topIdx >= 0 && this.navHistory[topIdx]?.params?.__deepSearch !== undefined) {
+      this.navHistory[topIdx].params.query = currentQuery;
+    }
+    // Temporarily exit deep mode state (not UI — navigate will re-render)
+    this._wfDeepMode = false;
     // Preload definition from grenier card
     const card = (this._grenier?.cards || []).find(c => c.id === cardId);
     if (card?.definition) this._wfCurrentDef = card.definition;
-    // Navigate to MOF with the word
+    // Navigate — this pushes a new entry on top of the deep search entry
     this.navigate('word-focus', { word });
   },
 
