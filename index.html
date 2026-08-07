@@ -5537,6 +5537,20 @@ const BILAN_PASSAGES = [
 ];
 // Slot index 5 is reserved for the AI-generated passage (stored in localStorage).
 
+// Azure ko-KR neural voices. All are standard Seoul Korean — Azure ships no
+// regional (Gyeongsang/Busan) Korean voice, so this is purely a timbre choice.
+const KO_VOICES = [
+  { id: 'ko-KR-InJoonNeural',   label: 'InJoon (일준) — homme' },
+  { id: 'ko-KR-HyunsuNeural',   label: 'Hyunsu (현수) — homme' },
+  { id: 'ko-KR-BongJinNeural',  label: 'BongJin (봉진) — homme' },
+  { id: 'ko-KR-GookMinNeural',  label: 'GookMin (국민) — homme' },
+  { id: 'ko-KR-SunHiNeural',    label: 'SunHi (선히) — femme' },
+  { id: 'ko-KR-JiMinNeural',    label: 'JiMin (지민) — femme' },
+  { id: 'ko-KR-SeoHyeonNeural', label: 'SeoHyeon (서현) — femme' },
+  { id: 'ko-KR-SoonBokNeural',  label: 'SoonBok (순복) — femme' },
+  { id: 'ko-KR-YuJinNeural',    label: 'YuJin (유진) — femme' },
+];
+
   const App = {
   currentScreen: 'home',
   navHistory: [],
@@ -5547,6 +5561,7 @@ const BILAN_PASSAGES = [
   settings: {
     darkMode: true,
     frVariant: 'fr-CA',
+    koVoice: 'ko-KR-InJoonNeural',
     openrouterKey: '',
     openrouterModel: 'openai/gpt-4o-mini',
     rhymesModel: 'google/gemini-2.5-flash-lite-preview-09-2025',
@@ -9773,6 +9788,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             </div>
             <div class="settings-row">
               <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                Voix coréenne
+              </div>
+              <select class="settings-select" onchange="App.setKoVoice(this.value)">
+                ${KO_VOICES.map(v => `<option value="${v.id}" ${this.getKoVoice() === v.id ? 'selected' : ''}>${v.label}</option>`).join('')}
+              </select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 Écran de démarrage
               </div>
@@ -10068,6 +10092,16 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       el.innerHTML = this.flagsHTML();
     });
   },
+  // Falls back to the default if the stored voice was retired by Azure.
+  getKoVoice() {
+    const v = this.settings.koVoice;
+    return KO_VOICES.some(x => x.id === v) ? v : KO_VOICES[0].id;
+  },
+  setKoVoice(val) {
+    this.settings.koVoice = val;
+    this.saveSettings();
+    this.speakText('한국어', false);
+  },
   confirmResetScores() {
     if (confirm('Réinitialiser tous les scores? Cette action est irréversible.')) {
       this.scores = {};
@@ -10230,7 +10264,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       const isKo = this.isKoreanText(text);
       const isCA = this.settings.frVariant === 'fr-CA';
       const lang = isKo ? 'ko-KR' : this.settings.frVariant;
-      const voiceName = isKo ? 'ko-KR-InJoonNeural'
+      const voiceName = isKo ? this.getKoVoice()
                              : (isCA ? 'fr-CA-SylvieNeural' : 'fr-FR-DeniseNeural');
       const rate = slow ? '0.8' : '1.0';
       const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">
