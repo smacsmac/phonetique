@@ -10192,6 +10192,17 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.retryRecording();
   },
 
+  // Hangul has its own Unicode blocks, so there's no overlap with French.
+  // Majority rule over letters only: punctuation and stray Latin tokens
+  // ("/", "vs.") shouldn't knock a Korean word back to the French voice.
+  isKoreanText(text) {
+    if (!text) return false;
+    const hangul = (text.match(/[가-힣ᄀ-ᇿ㄰-㆏ꥠ-꥿ힰ-퟿]/g) || []).length;
+    if (!hangul) return false;
+    const latin = (text.match(/[A-Za-zÀ-ɏ]/g) || []).length;
+    return hangul > latin;
+  },
+
   speakText(text, slow = false) {
     const SpeechSDK = window.SpeechSDK;
     console.log(`[TTS] speakText called. text="${text}", slow=${slow}, SDK=${!!SpeechSDK}, key=${!!this.settings.azureKey}, region=${this.settings.azureRegion}`);
@@ -10216,10 +10227,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     }
     if (SpeechSDK && this.settings.azureKey && this.settings.azureRegion) {
       // ── Azure Neural TTS ──────────────────────────────────────
+      const isKo = this.isKoreanText(text);
       const isCA = this.settings.frVariant === 'fr-CA';
-      const voiceName = isCA ? 'fr-CA-SylvieNeural' : 'fr-FR-DeniseNeural';
+      const lang = isKo ? 'ko-KR' : this.settings.frVariant;
+      const voiceName = isKo ? 'ko-KR-InJoonNeural'
+                             : (isCA ? 'fr-CA-SylvieNeural' : 'fr-FR-DeniseNeural');
       const rate = slow ? '0.8' : '1.0';
-      const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${this.settings.frVariant}">
+      const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">
         <voice name="${voiceName}">
           <prosody rate="${rate}">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</prosody>
         </voice>
@@ -10255,8 +10269,11 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         const utt = new SpeechSynthesisUtterance(text);
         utt.rate = slow ? 0.75 : 0.9;
         const voices = window.speechSynthesis.getVoices();
-        const variant = this.settings.frVariant;
-        const chosen = voices.find(v => v.lang.startsWith(variant)) || voices.find(v => v.lang.startsWith('fr'));
+        const variant = this.isKoreanText(text) ? 'ko-KR' : this.settings.frVariant;
+        const base = variant.split('-')[0];
+        // Some platforms report locales as ko_KR / fr_CA.
+        const norm = v => v.lang.replace('_', '-');
+        const chosen = voices.find(v => norm(v).startsWith(variant)) || voices.find(v => norm(v).startsWith(base));
         if (chosen) { utt.voice = chosen; utt.lang = chosen.lang; }
         else { utt.lang = variant; }
         window.speechSynthesis.speak(utt);
