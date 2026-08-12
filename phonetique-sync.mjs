@@ -34,6 +34,11 @@ const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
 const CERTDIR    = join(dirname(DATA), 'phonetique-certs');
 const APPNAME    = 'phonetique';
+// Quand le PC porte plusieurs adresses, PHON_HOST dit laquelle mettre en avant.
+// Utile pour donner à Phonétique une adresse bien à elle : sur Android, le
+// raccourci créé à l'installation revendique l'hôte entier sans regarder le
+// port, donc deux applis servies depuis la même adresse se marchent dessus.
+const PREF       = (process.env.PHON_HOST || '').trim();
 
 // Écriture atomique : on écrit à côté puis on renomme, pour qu'une coupure
 // de courant ne puisse jamais laisser un fichier de données à moitié écrit.
@@ -332,6 +337,7 @@ function mdnsName(){
 function certHosts(){
   const h = lanAddresses();
   const m = mdnsName();
+  if(PREF) h.unshift(PREF);
   if(m) h.push(m);
   h.push('localhost', '127.0.0.1');
   return [...new Set(h)];
@@ -341,7 +347,8 @@ function candidateURLs(secure){
   // L'IP d'abord, toujours : Android ne sait généralement pas résoudre un nom
   // .local, alors que Windows résout le sien — d'où une adresse qui marche sur
   // le PC et reste introuvable depuis le téléphone.
-  const ordered = [...lanAddresses(), ...(m ? [m] : [])];
+  let ordered = [...lanAddresses(), ...(m ? [m] : [])];
+  if(PREF) ordered = [PREF, ...ordered.filter(h => h !== PREF)];
   return ordered.map(h => secure ? `https://${h}:${HTTPS_PORT}` : `http://${h}:${PORT}`);
 }
 
@@ -372,7 +379,7 @@ server.listen(PORT, '0.0.0.0', async () => {
   candidateURLs(false).forEach(u => console.log(`      ${u}`));
   if(sec){
     console.log('');
-    const ip = lanAddresses()[0] || 'localhost';
+    const ip = PREF || lanAddresses()[0] || 'localhost';
     console.log('  TÉLÉPHONE  (application installable, marche hors du réseau)');
     console.log(`   1. installe l'autorité :  http://${ip}:${PORT}/ca.crt`);
     console.log(`   2. puis ouvre :           https://${ip}:${HTTPS_PORT}`);
