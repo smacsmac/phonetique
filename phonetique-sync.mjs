@@ -143,7 +143,14 @@ let ICON = null;
 
 // ── ce qui rend l'appli installable et utilisable hors réseau ────────────
 const MANIFEST = JSON.stringify({
-  name: 'Phonétique', short_name: 'Phonétique', start_url: '/', scope: '/',
+  // « id » donne son identité à l'application installée. Sans lui, le
+  // navigateur la déduit de start_url — « / » — c'est-à-dire la même valeur
+  // que noter, qui tourne sur la même machine. D'où un navigateur qui propose
+  // « ouvrir noter » au lieu d'installer Phonétique.
+  id: 'phonetique-app',
+  name: 'Phonétique', short_name: 'Phonétique',
+  description: 'Entraînement à la prononciation française et coréenne',
+  start_url: '/?app=phonetique', scope: '/',
   display: 'standalone', background_color: '#05060F', theme_color: '#05060F',
   lang: 'fr',
   icons: [
