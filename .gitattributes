@@ -1,0 +1,4 @@
+# cmd.exe exige des fins de ligne Windows. Avec des fins de ligne Unix, il
+# avale le premier caractere de certaines lignes ("'ode' n'est pas reconnu").
+*.cmd text eol=crlf
+*.bat text eol=crlf
