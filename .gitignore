@@ -1,0 +1,12 @@
+# Produits par le serveur de synchro, propres à chaque machine.
+
+# Contient la clé privée de l'autorité locale : avec elle, on peut se faire
+# passer pour n'importe quel site auprès des appareils où le certificat est
+# installé. Elle ne doit jamais quitter ton PC.
+phonetique-certs/
+
+# Tes données et leurs copies horodatées.
+phonetique-donnees.json
+phonetique-copies/
+
+node_modules/
