@@ -45,6 +45,35 @@ colle l'adresse affichée par le serveur, puis **tester**.
 Une copie locale du `.html` fonctionne et s'ouvre même hors réseau. Vise
 `http://<IP-du-PC>:8790`.
 
+### Une adresse par application
+
+Sur Android, le raccourci que crée le navigateur à l'installation revendique
+**l'hôte entier, sans regarder le port**. Deux applications servies depuis la
+même adresse se marchent donc dessus : la seconde ne peut plus s'installer, le
+navigateur proposant d'ouvrir la première à la place.
+
+D'où la répartition :
+
+| application | adresse |
+|---|---|
+| `noter` | `192.168.50.184` — l'adresse en chiffres |
+| Phonétique | `smac` — le nom de la machine |
+
+Le nom vient de l'annuaire de la box, qui inscrit les appareils qu'elle
+connaît. `PHON_HOST=smac` dans le lanceur suffit : le serveur met ce nom en
+tête et **l'ajoute au certificat**, sans toucher à l'autorité déjà installée
+sur le téléphone.
+
+N'ouvre pas Phonétique par l'adresse en chiffres, ni `noter` par le nom, sinon
+le conflit se reforme dans l'autre sens.
+
+> ⚠️ Ne cherche pas à donner une deuxième adresse IP au PC avec
+> `New-NetIPAddress` : sur une carte en DHCP, cette commande bascule la carte
+> en statique et **efface l'adresse, la passerelle et les DNS**. Le PC perd sa
+> connexion. Pour réparer : `Set-NetIPInterface -InterfaceAlias "Ethernet"
+> -Dhcp Enabled` puis `ipconfig /renew`. Le nom d'hôte fait le même travail
+> sans aucun risque.
+
 ### Téléphone Android
 
 1. Installe l'autorité : ouvre `http://<IP>:8790/ca.crt`, puis
@@ -113,7 +142,10 @@ jamais un fichier à moitié écrit.
 | L'appli installée ne s'ouvre plus | l'IP du PC a changé — réserve-la dans ta box |
 | Bandeau rouge « ne peut rien enregistrer » | fichier ouvert depuis les Téléchargements Android (`content://`) : passe par l'adresse du serveur |
 | L'appli servie ne s'ouvre pas hors réseau | c'est attendu en `http://` : utilise le lien de téléchargement du panneau, ou installe la version https |
+| Le navigateur propose « ouvrir *l'autre appli* » au lieu d'installer | les deux applis partagent le même hôte — voir « Une adresse par application » |
+| Avertissement de certificat sur `https://smac:8791` | le nom n'est pas encore dans le certificat : mets `PHON_HOST=smac` et relance |
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
+| `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
 
 ## Sauvegardes
 

@@ -10,12 +10,19 @@ cd /d "%~dp0"
 
 REM ---------------------------------------------------------------------
 REM  ADRESSE DEDIEE A PHONETIQUE
+REM
 REM  Sur Android, le raccourci cree a l'installation revendique l'hote
-REM  entier sans regarder le port : deux applis servies depuis la meme
-REM  adresse se marchent dessus. Donne donc a Phonetique son adresse a elle.
-REM  Retire le REM ci-dessous et mets ta deuxieme adresse IP.
+REM  entier SANS regarder le port. Deux applis servies depuis la meme
+REM  adresse se marchent donc dessus : la seconde ne peut plus s'installer,
+REM  le navigateur proposant d'ouvrir la premiere a la place.
+REM
+REM  D'ou une adresse par appli. Phonetique prend le NOM de la machine,
+REM  noter garde l'adresse en chiffres.
+REM
+REM  Si le nom change un jour, remplace simplement smac ci-dessous.
+REM  Pour revenir au comportement par defaut, remets REM devant.
 REM ---------------------------------------------------------------------
-REM set PHON_HOST=192.168.50.240
+set PHON_HOST=smac
 
 where node >nul 2>nul
 if errorlevel 1 (
