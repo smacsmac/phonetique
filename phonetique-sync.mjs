@@ -168,7 +168,7 @@ const MANIFEST = JSON.stringify({
 // est là), cache en secours quand tu es dehors. Les données ne sont jamais
 // mises en cache : elles doivent venir du serveur ou pas du tout.
 const SERVICE_WORKER = `
-const CACHE = 'phonetique-shell-v1';
+const CACHE = 'phonetique-shell-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -180,13 +180,28 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if(url.pathname === '/donnees' || url.pathname === '/health') return;   // jamais en cache
   if(e.request.method !== 'GET') return;
+  // Les polices et le SDK vocal vivent sur d'autres domaines : on les laisse
+  // passer sans y toucher. Les mettre en cache n'apporterait rien et les
+  // reponses opaques ne s'y stockent pas.
+  if(url.origin !== location.origin) return;
+  if(url.pathname === '/donnees' || url.pathname === '/health') return;   // jamais en cache
   const key = (e.request.mode === 'navigate' || url.pathname === '/index.html') ? '/' : e.request;
   e.respondWith(
     fetch(e.request)
-      .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(key, copy)); return r; })
-      .catch(() => caches.match(key).then(r => r || caches.match('/')))
+      .then(r => {
+        const copy = r.clone();
+        caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {});
+        return r;
+      })
+      .catch(() => caches.match(key).then(r => {
+        if(r) return r;
+        // Ne renvoyer la page d'accueil QUE pour une navigation. La renvoyer
+        // a la place d'un script ferait executer du HTML comme du JavaScript
+        // ("Unexpected token '<'") au lieu d'un simple echec reseau.
+        if(e.request.mode === 'navigate') return caches.match('/');
+        return Response.error();
+      }))
   );
 });
 `;

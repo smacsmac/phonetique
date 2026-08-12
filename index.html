@@ -2,16 +2,24 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+  <!-- async : hors réseau ou sur une connexion capricieuse, ce script ne doit
+       pas retarder l'affichage. Il n'est lu qu'au moment de parler. -->
+  <script async src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#05060F">
   <title>Phonétique</title>
+  <!-- Sans lui, le navigateur n'a pas d'application à installer : il ne peut
+       créer qu'un raccourci. Servi par phonetique-sync.mjs. -->
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <!-- media="print" puis bascule au chargement : une feuille de style
+       distante est bloquante, et hors réseau la requête ne peut qu'échouer —
+       c'est le grand classique de l'écran blanc hors-ligne. -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <style>
 /* ============================================================
    PHONÉTIQUE APP — STYLES
@@ -14627,6 +14635,25 @@ Réponds UNIQUEMENT avec ce JSON :
 
 // Démarrer l'application
     App.init();
+
+    // Le service worker est ce qui distingue une vraie application installée
+    // d'un simple raccourci : sans lui, le navigateur refuse d'installer et
+    // l'appli ne s'ouvre pas hors réseau.
+    //
+    // Il n'existe que dans un contexte sécurisé — https, ou localhost. Sur
+    // http://192.168.x.x il est tout simplement absent, ce qui est normal et
+    // sans conséquence : l'appli fonctionne, elle ne s'installe pas.
+    if ('serviceWorker' in navigator && window.isSecureContext
+        && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          // Attendu quand l'appli est ouverte ailleurs que depuis son serveur
+          // (copie locale, GitHub Pages) : il n'y a pas de /sw.js à cette
+          // adresse. Rien à signaler à l'utilisateur.
+          console.info('[PWA] service worker non enregistré :', err.message);
+        });
+      });
+    }
   </script>
 </body>
 </html>
