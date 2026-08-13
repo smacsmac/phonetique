@@ -39,6 +39,10 @@ const APPNAME    = 'phonetique';
 // raccourci créé à l'installation revendique l'hôte entier sans regarder le
 // port, donc deux applis servies depuis la même adresse se marchent dessus.
 const PREF       = (process.env.PHON_HOST || '').trim();
+// standalone : plus de barre d'adresse, on garde l'heure et la batterie.
+// fullscreen : l'écran entier, y compris la barre d'état d'Android.
+const DISPLAY    = ['standalone','fullscreen','minimal-ui'].includes(process.env.PHON_DISPLAY)
+                   ? process.env.PHON_DISPLAY : 'standalone';
 
 // Écriture atomique : on écrit à côté puis on renomme, pour qu'une coupure
 // de courant ne puisse jamais laisser un fichier de données à moitié écrit.
@@ -156,7 +160,7 @@ const MANIFEST = JSON.stringify({
   name: 'Phonétique', short_name: 'Phonétique',
   description: 'Entraînement à la prononciation française et coréenne',
   start_url: '/?app=phonetique', scope: '/',
-  display: 'standalone', background_color: '#05060F', theme_color: '#05060F',
+  display: DISPLAY, background_color: '#05060F', theme_color: '#05060F',
   lang: 'fr',
   icons: [
     { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

@@ -5812,6 +5812,7 @@ const KO_VOICES = [
     this.setupSpeechSynthVoices();
     this._setupLongPress();
     this._syncStartAuto();
+    this._installWire();
   },
 
   // Un .html ouvert depuis les Téléchargements d'Android devient une page
@@ -7692,6 +7693,43 @@ const KO_VOICES = [
     input.click();
   },
 
+  // ── installation en vraie application ─────────────────────────────────
+  // Le menu du navigateur affiche « Installer l'application » même quand il ne
+  // fabriquera qu'un raccourci — d'où un résultat trompeur. En passant par
+  // l'invite officielle, on obtient la vraie installation, seule à donner le
+  // plein écran sans barre d'adresse.
+  _installPrompt: null,
+
+  _installWire() {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();          // on choisit NOUS le moment de proposer
+      this._installPrompt = e;
+      this._syncRenderPanel();
+    });
+    window.addEventListener('appinstalled', () => {
+      this._installPrompt = null;
+      this.showToast('Application installée ✓');
+      this._syncRenderPanel();
+    });
+  },
+
+  _isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+        || window.navigator.standalone === true;
+  },
+
+  async installApp() {
+    if (!this._installPrompt) return;
+    this._installPrompt.prompt();
+    try {
+      const { outcome } = await this._installPrompt.userChoice;
+      if (outcome === 'accepted') this._installPrompt = null;
+    } catch(e) {}
+    this._syncRenderPanel();
+  },
+
   // ── panneau des Paramètres ────────────────────────────────────────────
   _syncPanelHTML() {
     const cfg = this._syncCfg || {};
@@ -7739,7 +7777,18 @@ const KO_VOICES = [
         <a href="${esc(location.origin)}/?download=1" download="phonetique.html">télécharger phonetique.html</a>
       </div>` : '';
 
+    // Une barre d'adresse visible = raccourci, pas application installée.
+    const install = this._isStandalone()
+      ? `<div class="sync-alts" style="color:var(--text2)">✓ ouverte en application — pas de barre d'adresse</div>`
+      : (this._installPrompt
+          ? `<button class="sync-now-btn" onclick="App.installApp()">installer en vraie application</button>
+             <div class="sync-alts">supprime d'abord l'ancien raccourci de l'écran d'accueil</div>`
+          : (servedFromServer && window.isSecureContext
+              ? `<div class="sync-alts">Déjà installée, ou le navigateur ne propose pas l'installation ici. Sur Android, <code>chrome://webapks</code> liste les vraies applications installées.</div>`
+              : ''));
+
     return `<div class="sync-body">
+      ${install}
       <div class="sync-modes">
         <button class="sync-mode-btn ${!lan ? 'active' : ''}" onclick="App.setSyncMode('file')">fichier partagé</button>
         <button class="sync-mode-btn ${lan ? 'active' : ''}" onclick="App.setSyncMode('lan')">réseau local</button>

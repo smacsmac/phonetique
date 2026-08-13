@@ -20,9 +20,18 @@ REM  D'ou une adresse par appli. Phonetique prend le NOM de la machine,
 REM  noter garde l'adresse en chiffres.
 REM
 REM  Si le nom change un jour, remplace simplement smac ci-dessous.
-REM  Pour revenir au comportement par defaut, remets REM devant.
 REM ---------------------------------------------------------------------
 set PHON_HOST=smac
+
+REM ---------------------------------------------------------------------
+REM  AFFICHAGE UNE FOIS INSTALLEE
+REM    standalone  (defaut) plus de barre d'adresse, l'heure reste visible
+REM    fullscreen  l'ecran entier, barre d'etat d'Android comprise
+REM  Retire le REM ci-dessous pour le plein ecran total.
+REM  Apres changement : desinstalle puis reinstalle l'appli sur le telephone,
+REM  le mode d'affichage est fige au moment de l'installation.
+REM ---------------------------------------------------------------------
+REM set PHON_DISPLAY=fullscreen
 
 where node >nul 2>nul
 if errorlevel 1 (
