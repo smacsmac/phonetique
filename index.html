@@ -2,16 +2,24 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+  <!-- async : hors réseau ou sur une connexion capricieuse, ce script ne doit
+       pas retarder l'affichage. Il n'est lu qu'au moment de parler. -->
+  <script async src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#05060F">
   <title>Phonétique</title>
+  <!-- Sans lui, le navigateur n'a pas d'application à installer : il ne peut
+       créer qu'un raccourci. Servi par phonetique-sync.mjs. -->
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <!-- media="print" puis bascule au chargement : une feuille de style
+       distante est bloquante, et hors réseau la requête ne peut qu'échouer —
+       c'est le grand classique de l'écran blanc hors-ligne. -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <style>
 /* ============================================================
    PHONÉTIQUE APP — STYLES
@@ -1322,6 +1330,85 @@ body::before {
 .settings-sub-group.open .settings-chev { transform: rotate(90deg); }
 .settings-sub-group .settings-group-body { display: none; padding: 0 12px; }
 .settings-sub-group.open .settings-group-body { display: block; }
+
+/* ── SYNCHRO ─────────────────────────────────────────────────── */
+.sync-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text3); flex-shrink: 0;
+  margin-left: 8px; transition: background 0.3s;
+}
+.sync-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.sync-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.sync-mode-btn {
+  padding: 12px 10px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-family: var(--font-display);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sync-mode-btn:hover { border-color: var(--border-bright); color: var(--text); }
+.sync-mode-btn.active { border-color: var(--blue); color: var(--electric); background: rgba(79,142,247,0.08); }
+.sync-url-row { display: flex; gap: 10px; }
+.sync-url-input {
+  flex: 1; min-width: 0;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+.sync-url-input:focus { outline: none; border-color: var(--blue); }
+.sync-test-btn {
+  padding: 12px 18px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-family: var(--font-display);
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.sync-test-btn:hover { border-color: var(--border-bright); color: var(--text); }
+.sync-alts { font-size: 11px; color: var(--text3); line-height: 1.5; word-break: break-all; }
+.sync-auto { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer; }
+.sync-auto input { width: 18px; height: 18px; accent-color: var(--blue); cursor: pointer; }
+.sync-now-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(79,142,247,0.08);
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+  color: var(--electric);
+  font-family: var(--font-display);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sync-now-btn:hover { background: rgba(79,142,247,0.18); }
+.sync-status { font-size: 12px; color: var(--text3); font-family: var(--font-display); }
+.sync-warn {
+  border: 1px solid rgba(245,158,11,0.45);
+  background: rgba(245,158,11,0.07);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.sync-warn-title {
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: #F59E0B;
+}
+.sync-warn-text { font-size: 12px; color: var(--text2); line-height: 1.55; }
+.sync-warn a { color: var(--electric); font-size: 12px; }
 
 .settings-row {
   display: flex;
@@ -5537,6 +5624,20 @@ const BILAN_PASSAGES = [
 ];
 // Slot index 5 is reserved for the AI-generated passage (stored in localStorage).
 
+// Azure ko-KR neural voices. All are standard Seoul Korean — Azure ships no
+// regional (Gyeongsang/Busan) Korean voice, so this is purely a timbre choice.
+const KO_VOICES = [
+  { id: 'ko-KR-InJoonNeural',   label: 'InJoon (일준) — homme' },
+  { id: 'ko-KR-HyunsuNeural',   label: 'Hyunsu (현수) — homme' },
+  { id: 'ko-KR-BongJinNeural',  label: 'BongJin (봉진) — homme' },
+  { id: 'ko-KR-GookMinNeural',  label: 'GookMin (국민) — homme' },
+  { id: 'ko-KR-SunHiNeural',    label: 'SunHi (선히) — femme' },
+  { id: 'ko-KR-JiMinNeural',    label: 'JiMin (지민) — femme' },
+  { id: 'ko-KR-SeoHyeonNeural', label: 'SeoHyeon (서현) — femme' },
+  { id: 'ko-KR-SoonBokNeural',  label: 'SoonBok (순복) — femme' },
+  { id: 'ko-KR-YuJinNeural',    label: 'YuJin (유진) — femme' },
+];
+
   const App = {
   currentScreen: 'home',
   navHistory: [],
@@ -5547,6 +5648,7 @@ const BILAN_PASSAGES = [
   settings: {
     darkMode: true,
     frVariant: 'fr-CA',
+    koVoice: 'ko-KR-InJoonNeural',
     openrouterKey: '',
     openrouterModel: 'openai/gpt-4o-mini',
     rhymesModel: 'google/gemini-2.5-flash-lite-preview-09-2025',
@@ -5624,6 +5726,16 @@ const BILAN_PASSAGES = [
       });
     },
 
+    async _idbKeys() {
+      const db = await this._idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('images', 'readonly');
+        const req = tx.objectStore('images').getAllKeys();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    },
+
     // Hydrate all <img data-idb-key="..."> in a container element with blob URLs
     async _idbHydrateImages(container) {
       if (!container) return;
@@ -5633,7 +5745,11 @@ const BILAN_PASSAGES = [
         const key = img.dataset.idbKey;
         if (img.src?.startsWith('blob:') && this._idbBlobUrls?.[key] === img.src) continue;
         try {
-          const blob = await this._idbGet(key);
+          let blob = await this._idbGet(key);
+          // Absente de cette base ? Elle est peut-être sauvegardée sur le PC.
+          // C'est ce qui rattrape un changement d'adresse (IndexedDB est liée
+          // à l'origine) ou une carte reçue d'un autre appareil.
+          if (!blob) blob = await this._syncImageFetch(key);
           if (blob) {
             const url = URL.createObjectURL(blob);
             (this._idbBlobUrls = this._idbBlobUrls || {})[key] = url;
@@ -5687,6 +5803,7 @@ const BILAN_PASSAGES = [
     // ── End IndexedDB helpers ─────────────────────────────────────────────────
 
     init() {
+    if (!this._storageWorks()) return;   // bandeau bloquant, on ne va pas plus loin
     this.loadSettings();
     this.loadScores();
     this.loadDiagScores();
@@ -5694,6 +5811,11 @@ const BILAN_PASSAGES = [
     this.loadRepertoire();
     this.loadLookupHistory();
     this.loadGrenier();
+    this.loadSyncConfig();
+    // Photographier l'état de départ AVANT toute sauvegarde, sinon la
+    // première écriture marquerait toutes les données comme « modifiées
+    // maintenant » et cet appareil écraserait les autres.
+    this._syncSnapshot();
     this._grDeduplicateCards();
     this._syncReconcile();
     this.applyTheme();
@@ -5703,6 +5825,41 @@ const BILAN_PASSAGES = [
     else this.renderHome();
     this.setupSpeechSynthVoices();
     this._setupLongPress();
+    this._syncStartAuto();
+    this._installWire();
+  },
+
+  // Un .html ouvert depuis les Téléchargements d'Android devient une page
+  // content:// — le stockage y échoue, mais silencieusement. L'appli aurait
+  // l'air de marcher et tout serait perdu à la fermeture de l'onglet. On
+  // vérifie donc pour de vrai : écrire, relire, effacer.
+  _storageWorks() {
+    let ok = false;
+    try {
+      const k = '__phonetique_test__';
+      localStorage.setItem(k, 'x');
+      ok = localStorage.getItem(k) === 'x';
+      localStorage.removeItem(k);
+    } catch(e) { ok = false; }
+    if (ok) return true;
+    document.body.innerHTML = `
+      <div style="padding:24px;font-family:system-ui,sans-serif;color:#E8EAF8;background:#05060F;min-height:100vh">
+        <div style="max-width:520px;margin:40px auto;border:2px solid #EF4444;border-radius:16px;padding:20px;background:rgba(239,68,68,0.08)">
+          <h2 style="margin:0 0 12px;color:#EF4444">Cette page ne peut rien enregistrer</h2>
+          <p style="line-height:1.6;color:#9BA3C4">
+            Le navigateur refuse le stockage local, donc <strong>tout ce que tu ferais ici
+            serait perdu</strong> en fermant l'onglet. L'appli s'arrête volontairement
+            plutôt que de faire semblant de fonctionner.
+          </p>
+          <p style="line-height:1.6;color:#9BA3C4">
+            C'est presque toujours un fichier ouvert depuis les Téléchargements sur Android
+            (adresse <code>content://</code>). Ouvre plutôt l'appli depuis l'adresse du
+            serveur, ou installe-la sur l'écran d'accueil.
+          </p>
+          <p style="font-family:monospace;font-size:12px;color:#5A6080;word-break:break-all">${location.href}</p>
+        </div>
+      </div>`;
+    return false;
   },
 
   _setupLongPress() {
@@ -5864,6 +6021,13 @@ const BILAN_PASSAGES = [
     } catch (e) {}
   },
   saveSettings() {
+    // Les réglages forment un seul bloc : le dernier appareil qui les modifie
+    // gagne. Ne pas réestampiller pendant qu'on applique une fusion, sinon
+    // l'appareil se déclarerait indéfiniment plus récent que le serveur.
+    if (!this._syncApplying) {
+      this._syncSettingsU = Date.now();
+      localStorage.setItem('phonetique_settings_u', String(this._syncSettingsU));
+    }
     localStorage.setItem('phonetique_settings', JSON.stringify(this.settings));
   },
   loadScores() {
@@ -7000,22 +7164,34 @@ const BILAN_PASSAGES = [
     } catch(e) {}
     if (!this._repertoire.folders) this._repertoire.folders = [];
     if (!this._repertoire.words) this._repertoire.words = [];
-    // Remove legacy 'default' / 'Mes mots' folder — words will float to first real folder
+    // Remove legacy 'default' / 'Mes mots' folder
     this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== 'default');
-    // Reassign any words still pointing to 'default' to the first real folder (if any)
-    if (this._repertoire.words.some(w => !w.folderId || w.folderId === 'default')) {
-      const firstFolder = this._repertoire.folders[0];
-      if (firstFolder) {
-        this._repertoire.words.forEach(w => {
-          if (!w.folderId || w.folderId === 'default') w.folderId = firstFolder.id;
-        });
-        this.saveRepertoire();
+
+    // Un mot dont le dossier a disparu était jusqu'ici versé dans le PREMIER
+    // dossier venu. Avec plusieurs appareils, il suffit qu'un dossier soit
+    // supprimé ailleurs pour que tout son contenu atterrisse silencieusement
+    // dans un dossier sans rapport — deux dossiers qui n'en font plus qu'un.
+    // On les rassemble désormais à part, où ils sont visibles et récupérables.
+    const vivants = new Set(this._repertoire.folders.map(f => f.id));
+    const orphelins = this._repertoire.words.filter(
+      w => !w.folderId || w.folderId === 'default' || !vivants.has(w.folderId));
+    if (orphelins.length) {
+      let bac = this._repertoire.folders.find(f => f.name === 'À ranger');
+      if (!bac) {
+        bac = { id: 'folder_a_ranger', name: 'À ranger', emoji: '📥', createdAt: Date.now() };
+        this._repertoire.folders.push(bac);
       }
-      // If no folders yet, words will be shown once a folder is created
+      orphelins.forEach(w => { w.folderId = bac.id; });
+      this.saveRepertoire();
+      console.info(`[Répertoire] ${orphelins.length} mot(s) sans dossier rangés dans « À ranger »`);
     }
   },
 
   saveRepertoire() {
+    if (!this._syncApplying) {
+      this._syncStamp('folder', this._repertoire.folders);
+      this._syncStamp('word',   this._repertoire.words);
+    }
     localStorage.setItem('phonetique_repertoire', JSON.stringify(this._repertoire));
   },
 
@@ -7032,6 +7208,990 @@ const BILAN_PASSAGES = [
 
   saveLookupHistory() {
     localStorage.setItem('phonetique_lookup_history', JSON.stringify(this._lookupHistory));
+  },
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SYNCHRO — réseau local (phonetique-sync.mjs) ou fichier partagé
+  //
+  // Offline-first : l'appli fonctionne sans réseau, la synchro est une étape
+  // séparée qui ne bloque jamais. La fusion se fait enregistrement par
+  // enregistrement, jamais fichier par fichier.
+  //
+  // Trois horodatages par carte plutôt que deux : réviser sur le téléphone
+  // et corriger une définition sur le PC touchent des champs différents, et
+  // un seul horodatage ferait perdre l'un des deux.
+  //   uContent — ce que la carte dit (mot, API, définition, genre…)
+  //   uReview  — où elle en est (intervalle, facilité, prochaine échéance)
+  //   uPlace   — dans quel paquet elle range
+  // ══════════════════════════════════════════════════════════════════════
+
+  _SYNC_GROUPS: {
+    // « deleted » fait partie du contenu : sans ça, supprimer une carte ne
+    // changerait aucun champ suivi, l'horodatage resterait vieux, et la
+    // suppression perdrait contre une simple relecture faite ailleurs.
+    card:   { uContent: ['word','ipa','definition','gender','tags','color','deleted'],
+              uReview:  ['interval','ease','reps','lastReviewed','nextDue'],
+              uPlace:   ['deckId'] },
+    deck:   { uContent: ['name','color','_emoji'] },
+    folder: { uContent: ['name','emoji'] },
+    word:   { uContent: ['word','ipa','source'], uPlace: ['folderId'] },
+  },
+  _SYNC_TOMB_MAXAGE: 90 * 86400000,   // purge des pierres tombales à 90 jours
+
+  // Config propre à CHAQUE appareil — jamais synchronisée : chaque appareil
+  // vise le serveur à sa façon (le téléphone en https, le PC en http).
+  _syncCfg: null,
+  _syncSnap: null,       // dernier état sauvegardé, pour repérer ce qui change
+  _syncDeleted: null,    // { id: horodatage de suppression }
+  _syncSettingsU: 0,
+  _syncState: 'idle',    // idle | busy | ok | offline | error
+  _syncMsg: '',
+  _syncApplying: false,  // vrai pendant qu'on écrit l'état fusionné
+
+  loadSyncConfig() {
+    this._syncCfg = { url: '', alts: [], mode: 'lan', auto: true, lastSync: 0 };
+    try {
+      const raw = localStorage.getItem('phonetique_sync_config');
+      if (raw) Object.assign(this._syncCfg, JSON.parse(raw));
+    } catch(e) {}
+    try {
+      this._syncDeleted = JSON.parse(localStorage.getItem('phonetique_deleted') || '{}');
+    } catch(e) { this._syncDeleted = {}; }
+    this._syncSettingsU = Number(localStorage.getItem('phonetique_settings_u') || 0);
+    // Si l'appli est servie par le serveur, il est son propre candidat évident.
+    if (!this._syncCfg.url && /^https?:$/.test(location.protocol) && location.host) {
+      this._syncCfg.url = location.origin;
+    }
+  },
+  saveSyncConfig() {
+    localStorage.setItem('phonetique_sync_config', JSON.stringify(this._syncCfg));
+  },
+  _syncSaveDeleted() {
+    localStorage.setItem('phonetique_deleted', JSON.stringify(this._syncDeleted));
+  },
+
+  // Une suppression doit laisser une trace, sinon l'autre appareil renvoie
+  // l'enregistrement à la synchro suivante et il ressuscite.
+  _syncTombstone(...ids) {
+    if (!this._syncDeleted) this._syncDeleted = {};
+    const now = Date.now();
+    for (const id of ids.flat()) if (id) this._syncDeleted[id] = now;
+    this._syncSaveDeleted();
+  },
+  _syncIsDeleted(id) {
+    return !!(this._syncDeleted && this._syncDeleted[id]);
+  },
+  // Paquet et dossier portent le même nom mais des id différents sur chaque
+  // appareil : c'est le NOM qui les relie. On marque donc aussi le nom, sinon
+  // le jumeau survivant recrée le disparu à la réconciliation suivante.
+  // Paquets, dossiers, mots et cartes se recopient mutuellement. Si chaque
+  // appareil invente un id au hasard pour le miroir, les deux versions
+  // survivent à la fusion et le mot apparaît en double — sans fin. En dérivant
+  // l'id du couple (nom du paquet, mot), les deux appareils fabriquent
+  // exactement le même enregistrement, qui fusionne en un seul.
+  _syncMirrorId(prefix, key) {
+    const s = String(key).toLowerCase();
+    let h1 = 5381, h2 = 52711;
+    for (let i = 0; i < s.length; i++) h1 = ((h1 * 33) ^ s.charCodeAt(i)) >>> 0;
+    for (let i = s.length - 1; i >= 0; i--) h2 = ((h2 * 31) ^ s.charCodeAt(i)) >>> 0;
+    return prefix + h1.toString(36) + h2.toString(36);
+  },
+  _syncTombstoneNamed(name, ...ids) {
+    if (name) this._syncTombstone('nom:' + String(name).toLowerCase());
+    if (ids.length) this._syncTombstone(...ids);
+  },
+  // Un miroir bloqué doit pouvoir se débloquer : si la source est modifiée
+  // après la suppression (le mot est réajouté), le miroir redevient légitime.
+  // D'où la comparaison d'horodatage plutôt qu'un simple « déjà supprimé ».
+  _syncMirrorBlocked(mid, src) {
+    const t = this._syncDeleted?.[mid];
+    if (!t) return false;
+    const newest = Math.max(
+      Number(src?.uContent || 0), Number(src?.uPlace || 0),
+      Number(src?.createdAt || 0), Number(src?.addedAt || 0));
+    return t >= newest;
+  },
+
+  // ── horodatage par comparaison ────────────────────────────────────────
+  // Plutôt que d'estampiller à la main dans les ~60 endroits qui modifient
+  // une carte ou un mot — où un oubli se paierait en données perdues — on
+  // compare l'état sauvegardé au précédent et on n'estampille que ce qui a
+  // réellement changé.
+  _syncSig(rec, fields) {
+    let out = '';
+    for (const f of fields) out += '' + JSON.stringify(rec[f] ?? null);
+    return out;
+  },
+  _syncStamp(kind, list) {
+    if (!this._syncSnap) this._syncSnap = { card:{}, deck:{}, folder:{}, word:{} };
+    const groups = this._SYNC_GROUPS[kind];
+    const prevAll = this._syncSnap[kind] || {};
+    const nextAll = {};
+    const now = Date.now();
+    for (const rec of (list || [])) {
+      if (!rec || !rec.id) continue;
+      const prev = prevAll[rec.id];
+      const sigs = {};
+      for (const stamp in groups) {
+        const sig = this._syncSig(rec, groups[stamp]);
+        sigs[stamp] = sig;
+        if (prev && prev[stamp] !== sig) {
+          rec[stamp] = now;                       // modifié à l'instant
+        } else if (typeof rec[stamp] !== 'number') {
+          // Première rencontre : on date de la création, jamais de maintenant.
+          // Sinon un appareil qui vient d'installer l'appli écraserait des
+          // données plus récentes venues d'ailleurs.
+          rec[stamp] = rec.createdAt || rec.addedAt || now;
+        }
+      }
+      nextAll[rec.id] = sigs;
+    }
+    this._syncSnap[kind] = nextAll;
+  },
+  // Appelé après le chargement initial : fige l'état de départ pour que la
+  // première sauvegarde ne marque pas tout comme « modifié maintenant ».
+  _syncSnapshot() {
+    this._syncSnap = { card:{}, deck:{}, folder:{}, word:{} };
+    this._syncStamp('deck',   this._grenier?.decks);
+    this._syncStamp('card',   this._grenier?.cards);
+    this._syncStamp('folder', this._repertoire?.folders);
+    this._syncStamp('word',   this._repertoire?.words);
+    this._syncCollectCardTombstones();
+  },
+
+  _syncCollectCardTombstones() {
+    if (!this._syncDeleted) this._syncDeleted = {};
+    let changed = false;
+    for (const c of (this._grenier?.cards || [])) {
+      if (c.deleted && !this._syncIsDeleted(c.id)) {
+        // Une carte déjà supprimée avant l'arrivée de la synchro n'a pas de
+        // date : on prend sa dernière modification connue, pas maintenant,
+        // pour ne pas écraser une version vivante venue d'un autre appareil.
+        const ts = c.deletedAt || c.uContent || c.createdAt || Date.now();
+        this._syncDeleted[c.id] = ts;
+        // Marquer aussi l'id miroir (paquet|mot) : sinon la réconciliation
+        // recrée la carte depuis le mot resté au Répertoire, sous un id neuf
+        // que la pierre tombale ne couvre pas.
+        const deck = this._grenier.decks.find(d => d.id === c.deckId);
+        if (deck && c.word) this._syncDeleted[this._syncMirrorId('mc_', deck.name + '|' + c.word)] = ts;
+        changed = true;
+      }
+    }
+    if (changed) this._syncSaveDeleted();
+  },
+
+  // ── fusion ────────────────────────────────────────────────────────────
+  _syncMergeList(kind, localList, remoteList, tombs) {
+    const groups = this._SYNC_GROUPS[kind];
+    const byId = new Map();
+    for (const r of (localList || [])) if (r && r.id) byId.set(r.id, r);
+    for (const rem of (remoteList || [])) {
+      if (!rem || !rem.id) continue;
+      const loc = byId.get(rem.id);
+      if (!loc) { byId.set(rem.id, rem); continue; }
+      // groupe par groupe : le plus récent gagne, indépendamment des autres
+      for (const stamp in groups) {
+        const rt = Number(rem[stamp] || 0), lt = Number(loc[stamp] || 0);
+        if (rt > lt) {
+          for (const f of groups[stamp]) loc[f] = rem[f];
+          loc[stamp] = rt;
+        }
+      }
+    }
+    // pierres tombales : on supprime si la suppression est postérieure à
+    // toute modification connue de l'enregistrement
+    const out = [];
+    for (const r of byId.values()) {
+      const t = tombs[r.id];
+      if (t) {
+        let newest = 0;
+        for (const stamp in groups) newest = Math.max(newest, Number(r[stamp] || 0));
+        if (t >= newest) continue;              // resté supprimé
+        delete tombs[r.id];                     // ressuscité volontairement
+      }
+      out.push(r);
+    }
+    // tri déterministe : deux appareils doivent aboutir au même ordre
+    out.sort((a, b) => (Number(b.createdAt || b.addedAt || 0) - Number(a.createdAt || a.addedAt || 0))
+                    || String(a.id).localeCompare(String(b.id)));
+    return out;
+  },
+
+  _syncMergeMax(local, remote) {
+    const out = { ...(local || {}) };
+    for (const [k, v] of Object.entries(remote || {})) {
+      if (typeof v === 'number') { if (!(k in out) || v > out[k]) out[k] = v; }
+      else if (!(k in out)) out[k] = v;
+    }
+    return out;
+  },
+
+  _syncMerge(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+
+    // 1. pierres tombales des deux côtés
+    const tombs = { ...(this._syncDeleted || {}) };
+    for (const [id, ts] of Object.entries(remote.deleted || {})) {
+      if (!tombs[id] || ts > tombs[id]) tombs[id] = ts;
+    }
+
+    // 2. collections, enregistrement par enregistrement
+    const rg = remote.grenier || {}, rr = remote.repertoire || {};
+    this._grenier.decks    = this._syncMergeList('deck',   this._grenier.decks,      rg.decks,   tombs);
+    this._grenier.cards    = this._syncMergeList('card',   this._grenier.cards,      rg.cards,   tombs);
+    this._repertoire.folders = this._syncMergeList('folder', this._repertoire.folders, rr.folders, tombs);
+    this._repertoire.words   = this._syncMergeList('word',   this._repertoire.words,   rr.words,   tombs);
+
+    // 3. scores : garder le meilleur, comme le fait déjà l'import
+    this.scores        = this._syncMergeMax(this.scores, remote.scores);
+    this.passageScores = this._syncMergeMax(this.passageScores, remote.passageScores);
+    if (remote.bilan) {
+      this.bilanBestScores = this._syncMergeMax(this.bilanBestScores, remote.bilan.best);
+      // « dernier bilan » est une photo d'un moment : on ne garde le distant
+      // que si on n'en a pas localement, plutôt que de mélanger deux séances.
+      if (!this.bilanScores || !Object.keys(this.bilanScores).length) {
+        this.bilanScores = remote.bilan.latest || this.bilanScores;
+        if (remote.bilan.passageIndex != null) this.bilanPassageIndex = remote.bilan.passageIndex;
+        if (remote.bilan.aiPassage) this.bilanAiPassage = remote.bilan.aiPassage;
+      }
+    }
+    // 4. passages IA : union, le local prime (ils sont longs à regénérer)
+    this.aiPassages = { ...(remote.aiPassages || {}), ...(this.aiPassages || {}) };
+
+    // 5. historique : union dédoublonnée, plus récent d'abord, plafonné à 30
+    if (Array.isArray(remote.lookupHistory)) {
+      const seen = new Set();
+      this._lookupHistory = [...(this._lookupHistory || []), ...remote.lookupHistory]
+        .filter(e => e && e.word)
+        .sort((a, b) => Number(b.lookedUpAt || 0) - Number(a.lookedUpAt || 0))
+        .filter(e => { const k = e.word.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+        .slice(0, 30);
+    }
+
+    // 6. réglages : objet unique, le plus récemment modifié gagne
+    if (remote.settings && Number(remote.settingsU || 0) > Number(this._syncSettingsU || 0)) {
+      Object.assign(this.settings, remote.settings);
+      this._syncSettingsU = Number(remote.settingsU);
+      localStorage.setItem('phonetique_settings_u', String(this._syncSettingsU));
+    }
+
+    // 7. purge des vieilles pierres tombales
+    const cutoff = Date.now() - this._SYNC_TOMB_MAXAGE;
+    for (const [id, ts] of Object.entries(tombs)) if (ts < cutoff) delete tombs[id];
+    this._syncDeleted = tombs;
+    return true;
+  },
+
+  _syncPayload() {
+    return {
+      _app: 'phonetique',
+      _version: 3,
+      _updatedAt: Date.now(),
+      grenier:       this._grenier,
+      repertoire:    this._repertoire,
+      deleted:       this._syncDeleted || {},
+      settings:      this.settings,
+      settingsU:     this._syncSettingsU || 0,
+      scores:        this.scores,
+      passageScores: this.passageScores,
+      aiPassages:    this.aiPassages,
+      lookupHistory: this._lookupHistory,
+      bilan: {
+        latest:       this.bilanScores,
+        best:         this.bilanBestScores,
+        passageIndex: this.bilanPassageIndex,
+        aiPassage:    this.bilanAiPassage,
+      },
+    };
+  },
+
+  // Écrit tout l'état fusionné, sans réestampiller : la fusion a déjà posé
+  // les bons horodatages, et les réécrire ferait osciller les appareils.
+  _syncPersist() {
+    this._syncApplying = true;
+    try {
+      this.saveGrenier();
+      this.saveRepertoire();
+      this.saveScores();
+      this.savePassageScores();
+      this.saveLookupHistory();
+      this.saveSettings();
+      this.saveDiagScores();
+      this.saveAiPassages();
+      this._syncSaveDeleted();
+    } finally {
+      this._syncApplying = false;
+    }
+    this._syncSnapshot();
+  },
+
+  // ── réseau ────────────────────────────────────────────────────────────
+  async _syncFetch(base, path, opts = {}, timeout = 2500) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeout);
+    try {
+      return await fetch(base.replace(/\/+$/, '') + path, { ...opts, signal: ctl.signal, cache: 'no-store' });
+    } finally { clearTimeout(t); }
+  },
+
+  // Une IP qui change ne doit pas tout casser : on essaie les adresses
+  // connues et on promeut celle qui répond.
+  async _syncResolve() {
+    const cfg = this._syncCfg;
+    const tried = [];
+    for (const base of [cfg.url, ...(cfg.alts || [])]) {
+      if (!base || tried.includes(base)) continue;
+      tried.push(base);
+      // Une page https ne peut pas appeler du http : inutile d'essayer.
+      if (location.protocol === 'https:' && base.startsWith('http:')) continue;
+      try {
+        const r = await this._syncFetch(base, '/health');
+        if (!r.ok) continue;
+        const h = await r.json();
+        if (h && h.app && h.app !== 'phonetique') continue;   // pas le bon serveur
+        if (base !== cfg.url) {
+          cfg.url = base;
+          this._syncMsg = 'adresse de secours retenue : ' + base;
+        }
+        // /health renvoie les adresses du même schéma que la requête
+        if (Array.isArray(h.addresses)) {
+          cfg.alts = [...new Set([...h.addresses, ...(cfg.alts || [])])].filter(u => u !== cfg.url);
+        }
+        this.saveSyncConfig();
+        return base;
+      } catch(e) { /* on essaie la suivante */ }
+    }
+    return null;
+  },
+
+  async _syncNow(manual = false) {
+    if (this._syncState === 'busy') return;
+    const cfg = this._syncCfg;
+    if (!cfg || !cfg.url) {
+      if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur');
+      return;
+    }
+    this._syncState = 'busy'; this._syncMsg = '';
+    this._syncRenderStatus();
+    try {
+      const base = await this._syncResolve();
+      if (!base) throw new Error('offline');
+
+      // 1. vider l'éditeur dans l'état avant de lire quoi que ce soit
+      if (this._grenierCardRecording) { /* ne pas interrompre un enregistrement */ }
+
+      // 2. état distant (404 = serveur neuf, ce n'est pas une erreur)
+      let remote = null;
+      const g = await this._syncFetch(base, '/donnees', {}, 8000);
+      if (g.ok) remote = await g.json();
+      else if (g.status !== 404) throw new Error('HTTP ' + g.status);
+
+      // 3. fusion
+      if (remote) this._syncMerge(remote);
+
+      // 4. renvoi de l'état fusionné
+      const p = await this._syncFetch(base, '/donnees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this._syncPayload()),
+      }, 15000);
+      if (!p.ok) {
+        let why = 'HTTP ' + p.status;
+        try { why = (await p.json()).error || why; } catch(e) {}
+        throw new Error(why);
+      }
+
+      // 5. persister et rafraîchir
+      this._syncPersist();
+      this._syncReconcile();
+      cfg.lastSync = Date.now();
+      this.saveSyncConfig();
+      this._syncState = 'ok';
+      this._syncRefreshUI();
+      if (manual) this.showToast('Synchronisé ✓');
+    } catch (err) {
+      const off = err.name === 'AbortError' || err.message === 'offline' ||
+                  err.message === 'Failed to fetch' || !navigator.onLine;
+      this._syncState = off ? 'offline' : 'error';
+      if (!off) this._syncMsg = err.message;
+      if (manual) this.showToast(off ? 'Serveur injoignable — les modifications attendent'
+                                     : 'Échec de la synchro : ' + err.message);
+    }
+    this._syncRenderStatus();
+  },
+
+  // ── mode sauvegarde : on envoie, on ne rapatrie jamais ────────────────
+  // Un seul appareil décide de la vérité. Le serveur n'est plus qu'un coffre.
+  async _syncBackupNow(manual = false) {
+    if (this._syncState === 'busy') return;
+    const cfg = this._syncCfg;
+    if (!cfg || !cfg.url) {
+      if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur');
+      return;
+    }
+    this._syncState = 'busy'; this._syncMsg = '';
+    this._syncRenderStatus();
+    try {
+      const base = await this._syncResolve();
+      if (!base) throw new Error('offline');
+      const p = await this._syncFetch(base, '/donnees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this._syncPayload()),
+      }, 15000);
+      if (!p.ok) {
+        let why = 'HTTP ' + p.status;
+        try { why = (await p.json()).error || why; } catch(e) {}
+        throw new Error(why);
+      }
+      // Les images suivent : une carte sans son image n'est qu'à moitié
+      // sauvegardée. Seules les manquantes partent, donc c'est vite fait.
+      await this.syncImagesUp(false);
+      cfg.lastSync = Date.now();
+      this.saveSyncConfig();
+      this._syncState = 'ok';
+      if (manual) this.showToast('Sauvegarde envoyée ✓');
+    } catch (err) {
+      const off = err.name === 'AbortError' || err.message === 'offline' ||
+                  err.message === 'Failed to fetch' || !navigator.onLine;
+      this._syncState = off ? 'offline' : 'error';
+      if (!off) this._syncMsg = err.message;
+      if (manual) this.showToast(off ? 'Serveur injoignable — sauvegarde reportée'
+                                     : 'Échec : ' + err.message);
+    }
+    this._syncRenderStatus();
+  },
+
+  // ── images : de la base du navigateur vers un vrai dossier du PC ──────
+  // IndexedDB est liée à l'adresse d'ouverture et n'est sauvegardée nulle
+  // part. Une image générée sur le téléphone n'existe donc qu'à un seul
+  // endroit, et change d'adresse suffit à la rendre invisible.
+
+  // Récupère une image depuis le serveur et la remet en base locale, pour ne
+  // la retélécharger qu'une fois.
+  async _syncImageFetch(key) {
+    const base = this._syncCfg?.url;
+    if (!base || !key) return null;
+    if (this._syncImgMissing?.has(key)) return null;   // déjà cherchée en vain
+    try {
+      const r = await this._syncFetch(base, '/images/' + encodeURIComponent(key), {}, 8000);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      await this._idbPut(key, blob);
+      return blob;
+    } catch (e) {
+      (this._syncImgMissing = this._syncImgMissing || new Set()).add(key);
+      return null;
+    }
+  },
+
+  // Combien d'images cet appareil détient-il, et combien manquent au serveur ?
+  async _syncImageStatus() {
+    let locales = [];
+    try { locales = await this._idbKeys(); } catch(e) { return { locales: 0, aEnvoyer: 0, dossier: '' }; }
+    const base = this._syncCfg?.url;
+    if (!base) return { locales: locales.length, aEnvoyer: locales.length, dossier: '' };
+    try {
+      const r = await this._syncFetch(base, '/images', {}, 5000);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const surServeur = new Set(j.cles || []);
+      return {
+        locales: locales.length,
+        aEnvoyer: locales.filter(k => !surServeur.has(k)).length,
+        dossier: j.dossier || '',
+      };
+    } catch (e) {
+      return { locales: locales.length, aEnvoyer: locales.length, dossier: '' };
+    }
+  },
+
+  // ── pont hors réseau pour les images ──────────────────────────────────
+  // Les images d'une origine ne sont lisibles que depuis cette origine. Quand
+  // l'appli a changé d'adresse — ou qu'elle vivait sur GitHub Pages — il faut
+  // pouvoir les faire voyager par un fichier, sans dépendre du réseau local.
+  // Un seul fichier plutôt que N téléchargements : sur téléphone, chaque
+  // téléchargement demande une confirmation.
+  async syncImagesExportFile() {
+    let keys = [];
+    try { keys = await this._idbKeys(); } catch(e) {}
+    if (!keys.length) { this.showToast('Aucune image sur cet appareil'); return; }
+    this.showToast(`Préparation de ${keys.length} image(s)…`);
+    const images = {};
+    for (const k of keys) {
+      const blob = await this._idbGet(k);
+      if (!blob) continue;
+      images[k] = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);          // data:image/png;base64,…
+        r.onerror = () => res(null);
+        r.readAsDataURL(blob);
+      });
+    }
+    const bundle = { _app: 'phonetique', _type: 'images',
+                     _exportedAt: new Date().toISOString(), images };
+    const blob = new Blob([JSON.stringify(bundle)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'phonetique_images_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showToast(`${Object.keys(images).length} image(s) exportée(s) ✓`);
+  },
+
+  syncImagesImportFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        let data;
+        try { data = JSON.parse(ev.target.result); }
+        catch { this.showToast('Fichier illisible'); return; }
+        if (data._type !== 'images' || !data.images) {
+          this.showToast('Ce fichier ne contient pas d\'images Phonétique'); return;
+        }
+        let n = 0;
+        for (const [k, dataUrl] of Object.entries(data.images)) {
+          if (!dataUrl) continue;
+          try {
+            const blob = await (await fetch(dataUrl)).blob();
+            await this._idbPut(k, blob);
+            this._syncImgMissing?.delete(k);      // on peut la réessayer
+            n++;
+          } catch(err) { /* image abîmée : on continue */ }
+        }
+        this.showToast(`${n} image(s) importée(s) ✓`);
+        this._syncRenderPanel();
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
+  async syncImagesUp(manual = false) {
+    const base = this._syncCfg?.url;
+    if (!base) { if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur'); return; }
+    let locales = [];
+    try { locales = await this._idbKeys(); } catch(e) {}
+    if (!locales.length) { if (manual) this.showToast('Aucune image sur cet appareil'); return; }
+    let surServeur = new Set();
+    try {
+      const r = await this._syncFetch(base, '/images', {}, 5000);
+      if (r.ok) surServeur = new Set((await r.json()).cles || []);
+    } catch (e) {
+      if (manual) this.showToast('Serveur injoignable');
+      return;
+    }
+    const aFaire = locales.filter(k => !surServeur.has(k));
+    if (!aFaire.length) { if (manual) this.showToast('Toutes les images sont déjà sauvegardées ✓'); return; }
+
+    let envoyees = 0, echecs = 0;
+    for (const key of aFaire) {
+      try {
+        const blob = await this._idbGet(key);
+        if (!blob) continue;
+        const r = await this._syncFetch(base, '/images/' + encodeURIComponent(key), {
+          method: 'PUT',
+          headers: { 'Content-Type': blob.type || 'image/png' },
+          body: blob,
+        }, 30000);
+        if (r.ok) envoyees++; else echecs++;
+      } catch (e) { echecs++; }
+      if (manual && (envoyees + echecs) % 5 === 0) {
+        this._syncMsg = `images : ${envoyees + echecs}/${aFaire.length}`;
+        this._syncRenderStatus();
+      }
+    }
+    this._syncMsg = '';
+    if (manual) {
+      this.showToast(echecs ? `${envoyees} image(s) envoyée(s), ${echecs} échec(s)`
+                            : `${envoyees} image(s) sauvegardée(s) ✓`);
+      this._syncRenderPanel();
+    }
+    return { envoyees, echecs };
+  },
+
+  // Remplace TOUT l'état local. Rien à voir avec la fusion : c'est un retour
+  // en arrière, et il écrase. D'où la copie de sécurité prise avant.
+  _syncReplaceAll(data) {
+    this._syncApplying = true;
+    try {
+      if (data.grenier) this._grenier = {
+        decks: data.grenier.decks || [], cards: data.grenier.cards || [] };
+      if (data.repertoire) this._repertoire = {
+        folders: data.repertoire.folders || [], words: data.repertoire.words || [] };
+      this._syncDeleted = data.deleted || {};
+      if (data.settings) Object.assign(this.settings, data.settings);
+      if (data.scores) this.scores = data.scores;
+      if (data.passageScores) this.passageScores = data.passageScores;
+      if (data.aiPassages) this.aiPassages = data.aiPassages;
+      if (Array.isArray(data.lookupHistory)) this._lookupHistory = data.lookupHistory;
+      if (data.bilan) {
+        this.bilanScores = data.bilan.latest || {};
+        this.bilanBestScores = data.bilan.best || {};
+        if (data.bilan.passageIndex != null) this.bilanPassageIndex = data.bilan.passageIndex;
+        this.bilanAiPassage = data.bilan.aiPassage || null;
+      }
+      this.saveGrenier(); this.saveRepertoire(); this.saveScores();
+      this.savePassageScores(); this.saveAiPassages(); this.saveLookupHistory();
+      this.saveSettings(); this.saveDiagScores(); this._syncSaveDeleted();
+    } finally {
+      this._syncApplying = false;
+    }
+    this._syncSnapshot();
+    this._syncRefreshUI();
+  },
+
+  _syncConfirmRestore() {
+    if (!confirm('Remplacer TOUTES les données de cet appareil par la sauvegarde ?\n\n'
+      + 'Ce n\'est pas une fusion : ce qui est ici sera écrasé.\n'
+      + 'Une copie de l\'état actuel va être téléchargée d\'abord, par sécurité.')) return false;
+    this.exportAllData();   // filet : on ne remplace jamais sans garder l'ancien
+    return true;
+  },
+
+  async syncRestoreFromServer() {
+    if (!this._syncCfg?.url) { this.showToast('Renseigne d\'abord l\'adresse du serveur'); return; }
+    if (!this._syncConfirmRestore()) return;
+    try {
+      const base = await this._syncResolve();
+      if (!base) throw new Error('serveur injoignable');
+      const r = await this._syncFetch(base, '/donnees', {}, 8000);
+      if (r.status === 404) { this.showToast('Le serveur n\'a encore aucune sauvegarde'); return; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      this._syncReplaceAll(await r.json());
+      this.showToast('Restauré depuis le serveur ✓');
+    } catch (err) {
+      this.showToast('Échec de la restauration : ' + err.message);
+    }
+  },
+
+  // Les copies horodatées du serveur vivent dans phonetique-copies/ :
+  // c'est par là qu'on revient à un état antérieur précis.
+  syncRestoreFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        let data;
+        try { data = JSON.parse(ev.target.result); }
+        catch { this.showToast('Fichier illisible'); return; }
+        if (data._app && data._app !== 'phonetique') { this.showToast('Ce fichier vient d\'une autre appli'); return; }
+        if (!data.grenier && !data.repertoire) { this.showToast('Ce fichier ne contient pas de données Phonétique'); return; }
+        if (!this._syncConfirmRestore()) return;
+        this._syncReplaceAll(data);
+        this.showToast('Restauré depuis le fichier ✓');
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
+  // Un serveur injoignable est un état d'attente, pas une panne.
+  _syncPendingCount() {
+    const since = Number(this._syncCfg?.lastSync || 0);
+    if (!since) return 0;
+    let n = 0;
+    const scan = (kind, list) => {
+      const groups = this._SYNC_GROUPS[kind];
+      for (const r of (list || [])) {
+        for (const s in groups) if (Number(r[s] || 0) > since) { n++; break; }
+      }
+    };
+    scan('deck', this._grenier?.decks);   scan('card', this._grenier?.cards);
+    scan('folder', this._repertoire?.folders); scan('word', this._repertoire?.words);
+    for (const ts of Object.values(this._syncDeleted || {})) if (ts > since) n++;
+    return n;
+  },
+
+  _syncStatusText() {
+    const cfg = this._syncCfg || {};
+    if (this._syncState === 'busy') return 'synchro en cours…';
+    if (this._syncState === 'error') return 'erreur · ' + (this._syncMsg || 'inconnue');
+    const n = this._syncPendingCount();
+    if (this._syncState === 'offline') {
+      return n ? `hors réseau · ${n} modification${n > 1 ? 's' : ''} en attente` : 'hors réseau';
+    }
+    if (!cfg.lastSync) return 'jamais synchronisé';
+    const t = new Date(cfg.lastSync).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    return n ? `${n} modification${n > 1 ? 's' : ''} en attente · ${t}` : `à jour · ${t}`;
+  },
+
+  _syncRenderStatus() {
+    const el = document.getElementById('syncStatus');
+    if (el) el.textContent = this._syncStatusText();
+    const dot = document.getElementById('syncDot');
+    if (dot) {
+      const c = { ok:'#22C55E', busy:'#F59E0B', offline:'#5A6080', error:'#EF4444', idle:'#5A6080' };
+      dot.style.background = c[this._syncState] || c.idle;
+    }
+  },
+
+  _syncRefreshUI() {
+    // Ne jamais arracher l'écran sous les doigts pendant une révision.
+    if (this._grenierStudySession) return;
+    const cur = this.navHistory[this.navHistory.length - 1];
+    if (!cur) return;
+    try { this.navigate(cur.screen, cur.params, true); } catch(e) {}
+  },
+
+  // ── déclencheurs automatiques ─────────────────────────────────────────
+  _syncStartAuto() {
+    if (this._syncAutoWired) return;
+    this._syncAutoWired = true;
+    const kick = () => {
+      const cfg = this._syncCfg;
+      if (!cfg?.auto) return;
+      if (document.visibilityState === 'hidden') return;
+      if (cfg.mode === 'lan') this._syncNow(false);
+      else if (cfg.mode === 'backup') this._syncBackupNow(false);
+    };
+    window.addEventListener('online', kick);
+    window.addEventListener('focus', kick);
+    document.addEventListener('visibilitychange', kick);
+    setInterval(kick, 45000);
+    setTimeout(kick, 1500);
+  },
+
+  // ── mode « fichier partagé » ──────────────────────────────────────────
+  // Même moteur de fusion, mais sur un fichier que tu choisis (clé USB,
+  // dossier partagé, Drive…). Contrairement à l'import, ceci FUSIONNE au
+  // lieu d'écraser.
+  syncFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        let data;
+        try { data = JSON.parse(ev.target.result); }
+        catch { this.showToast('Fichier illisible'); return; }
+        if (data._app && data._app !== 'phonetique') { this.showToast('Ce fichier vient d\'une autre appli'); return; }
+        this._syncMerge(data);
+        this._syncPersist();
+        this._syncReconcile();
+        this._syncCfg.lastSync = Date.now();
+        this.saveSyncConfig();
+        this._syncState = 'ok';
+        this._syncRefreshUI();
+        this.showToast('Fusionné ✓ — réexporte pour partager le résultat');
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
+  // ── installation en vraie application ─────────────────────────────────
+  // Le menu du navigateur affiche « Installer l'application » même quand il ne
+  // fabriquera qu'un raccourci — d'où un résultat trompeur. En passant par
+  // l'invite officielle, on obtient la vraie installation, seule à donner le
+  // plein écran sans barre d'adresse.
+  _installPrompt: null,
+
+  _installWire() {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();          // on choisit NOUS le moment de proposer
+      this._installPrompt = e;
+      this._syncRenderPanel();
+    });
+    window.addEventListener('appinstalled', () => {
+      this._installPrompt = null;
+      this.showToast('Application installée ✓');
+      this._syncRenderPanel();
+    });
+  },
+
+  _isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+        || window.navigator.standalone === true;
+  },
+
+  async installApp() {
+    if (!this._installPrompt) return;
+    this._installPrompt.prompt();
+    try {
+      const { outcome } = await this._installPrompt.userChoice;
+      if (outcome === 'accepted') this._installPrompt = null;
+    } catch(e) {}
+    this._syncRenderPanel();
+  },
+
+  // ── panneau des Paramètres ────────────────────────────────────────────
+  _syncPanelHTML() {
+    const cfg = this._syncCfg || {};
+    const mode = cfg.mode || 'lan';
+    const lan = mode === 'lan';
+    const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const alts = (cfg.alts || []).filter(Boolean);
+    const servedFromServer = /^https?:$/.test(location.protocol) && !!location.host;
+    // Pas de contexte sécurisé → pas de service worker → l'appli servie ne
+    // s'ouvrira pas hors du réseau. C'est le cas de http://192.168.x.x.
+    const fragile = servedFromServer && !window.isSecureContext;
+
+    // Mode sauvegarde : on envoie, on ne rapatrie jamais. Aucune fusion, donc
+    // aucun risque qu'un autre appareil vienne remuer les dossiers.
+    const blocSauvegarde = `
+      <div class="sync-url-row">
+        <input class="sync-url-input" id="syncUrl" value="${esc(cfg.url)}"
+               placeholder="https://smac:8791" spellcheck="false"
+               onchange="App.setSyncUrl(this.value)">
+        <button class="sync-test-btn" onclick="App.testSync()">tester</button>
+      </div>
+      <div class="sync-alts">
+        Cet appareil <strong>envoie</strong> ses données au serveur, sans jamais
+        rien reprendre. Rien ne peut donc être modifié dans ton dos. Le serveur
+        garde les 30 dernières versions.
+      </div>
+      <label class="sync-auto">
+        <input type="checkbox" ${cfg.auto ? 'checked' : ''} onchange="App.setSyncAuto(this.checked)">
+        sauvegarde automatique
+      </label>
+      <button class="sync-now-btn" onclick="App._syncBackupNow(true)">envoyer une sauvegarde</button>
+      <div class="sync-alts" id="syncImgInfo">images : vérification…</div>
+      <button class="sync-now-btn" onclick="App.syncImagesUp(true)">envoyer les images</button>
+      <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+              onclick="App.syncRestoreFromServer()">restaurer depuis le serveur…</button>
+      <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+              onclick="App.syncRestoreFromFile()">restaurer depuis un fichier…</button>
+    `;
+
+    const bloc = mode === 'backup' ? blocSauvegarde : lan ? `
+      <div class="sync-url-row">
+        <input class="sync-url-input" id="syncUrl" value="${esc(cfg.url)}"
+               placeholder="http://192.168.1.20:8790" spellcheck="false"
+               onchange="App.setSyncUrl(this.value)">
+        <button class="sync-test-btn" onclick="App.testSync()">tester</button>
+      </div>
+      <div class="sync-alts">
+        ${alts.length ? 'adresses de secours connues : ' + alts.map(esc).join(' · ') : 'aucune adresse de secours connue pour l\'instant'}
+        ${servedFromServer ? ' · cette page : ' + esc(location.origin) : ''}
+      </div>
+      <label class="sync-auto">
+        <input type="checkbox" ${cfg.auto ? 'checked' : ''} onchange="App.setSyncAuto(this.checked)">
+        synchro automatique
+      </label>
+      <button class="sync-now-btn" onclick="App._syncNow(true)">synchroniser maintenant</button>
+    ` : `
+      <div class="sync-alts">
+        Fusionne un fichier de sauvegarde depuis une clé USB, un dossier partagé ou
+        un nuage. Contrairement à l'import, ceci <strong>fusionne</strong> au lieu
+        d'écraser : rien n'est perdu des deux côtés.
+      </div>
+      <button class="sync-now-btn" onclick="App.syncFromFile()">fusionner un fichier…</button>
+      <button class="sync-now-btn" onclick="App.exportAllData()">exporter l'état fusionné</button>
+    `;
+
+    const avert = fragile ? `
+      <div class="sync-warn">
+        <div class="sync-warn-title">Appli chargée depuis le serveur</div>
+        <div class="sync-warn-text">
+          elle ne s'ouvrira pas hors de chez toi. Garde une copie sur l'appareil
+          et ouvre celle-là :
+        </div>
+        <a href="${esc(location.origin)}/?download=1" download="phonetique.html">télécharger phonetique.html</a>
+      </div>` : '';
+
+    // Une barre d'adresse visible = raccourci, pas application installée.
+    const install = this._isStandalone()
+      ? `<div class="sync-alts" style="color:var(--text2)">✓ ouverte en application — pas de barre d'adresse</div>`
+      : (this._installPrompt
+          ? `<button class="sync-now-btn" onclick="App.installApp()">installer en vraie application</button>
+             <div class="sync-alts">supprime d'abord l'ancien raccourci de l'écran d'accueil</div>`
+          : (servedFromServer && window.isSecureContext
+              ? `<div class="sync-alts">Déjà installée, ou le navigateur ne propose pas l'installation ici. Sur Android, <code>chrome://webapks</code> liste les vraies applications installées.</div>`
+              : ''));
+
+    return `<div class="sync-body">
+      ${install}
+      <div class="sync-modes">
+        <button class="sync-mode-btn ${mode === 'backup' ? 'active' : ''}" onclick="App.setSyncMode('backup')">sauvegarde</button>
+        <button class="sync-mode-btn ${lan ? 'active' : ''}" onclick="App.setSyncMode('lan')">réseau local</button>
+        <button class="sync-mode-btn ${mode === 'file' ? 'active' : ''}" onclick="App.setSyncMode('file')">fichier partagé</button>
+      </div>
+      ${bloc}
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="sync-alts">
+          Les images sont liées à l'adresse d'où l'appli est ouverte. Pour les
+          emmener d'une adresse à une autre, passe par un fichier :
+        </div>
+        <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+                onclick="App.syncImagesExportFile()">exporter les images vers un fichier</button>
+        <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+                onclick="App.syncImagesImportFile()">importer des images depuis un fichier…</button>
+      </div>
+      <div class="sync-status" id="syncStatus">${this._syncStatusText()}</div>
+      ${avert}
+    </div>`;
+  },
+
+  _syncRenderPanel() {
+    const body = document.querySelector('#sg-synchro .settings-group-body');
+    if (body) body.innerHTML = this._syncPanelHTML();
+    this._syncRenderStatus();
+    this._syncRenderImageInfo();
+  },
+
+  // Asynchrone : le panneau se rend tout de suite, l'état des images arrive
+  // ensuite plutôt que de faire attendre l'écran.
+  async _syncRenderImageInfo() {
+    const el = document.getElementById('syncImgInfo');
+    if (!el) return;
+    const s = await this._syncImageStatus();
+    if (!document.getElementById('syncImgInfo')) return;   // panneau déjà remplacé
+    if (!s.locales) { el.textContent = 'aucune image sur cet appareil'; return; }
+    const où = s.dossier ? ` — sur le PC : ${s.dossier}` : '';
+    el.textContent = s.aEnvoyer
+      ? `${s.locales} image(s) ici, ${s.aEnvoyer} à envoyer${où}`
+      : `${s.locales} image(s), toutes sauvegardées ✓${où}`;
+  },
+
+  setSyncMode(mode) {
+    this._syncCfg.mode = mode;
+    this.saveSyncConfig();
+    this._syncRenderPanel();
+  },
+  setSyncUrl(url) {
+    url = String(url || '').trim().replace(/\/+$/, '');
+    // Une adresse sans schéma ne part jamais : on complète plutôt que d'échouer.
+    if (url && !/^https?:\/\//i.test(url)) url = 'http://' + url;
+    this._syncCfg.url = url;
+    this._syncCfg.alts = [];          // repartir de zéro : nouvelle cible
+    this.saveSyncConfig();
+    this._syncRenderPanel();
+  },
+  setSyncAuto(on) {
+    this._syncCfg.auto = !!on;
+    this.saveSyncConfig();
+    if (!on) return;
+    if (this._syncCfg.mode === 'backup') this._syncBackupNow(false);
+    else if (this._syncCfg.mode === 'lan') this._syncNow(false);
+  },
+  async testSync() {
+    if (!this._syncCfg.url) { this.showToast('Renseigne d\'abord une adresse'); return; }
+    this._syncState = 'busy'; this._syncRenderStatus();
+    const base = await this._syncResolve();
+    if (base) {
+      this._syncState = 'ok';
+      this.showToast('Serveur joignable : ' + base);
+    } else {
+      this._syncState = 'offline';
+      this.showToast('Aucune adresse ne répond');
+    }
+    this._syncRenderPanel();
   },
 
   _wfRecordLookup(word, ipa) {
@@ -7157,6 +8317,10 @@ const BILAN_PASSAGES = [
 
   repAddWord(word, ipa, folderId = 'default', source = 'mot-en-focus') {
     // Remove existing entry if present (re-add fresh)
+    // Le remplaçant reçoit un nouvel id : sans pierre tombale, l'ancien
+    // reviendrait du serveur et le mot apparaîtrait en double.
+    this._syncTombstone(this._repertoire.words
+      .filter(w => w.word.toLowerCase() === word.toLowerCase()).map(w => w.id));
     this._repertoire.words = this._repertoire.words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
     this._repertoire.words.unshift({
       id: Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -7200,6 +8364,7 @@ const BILAN_PASSAGES = [
 
   repRemoveWord(wordId, skipNavigate = false) {
     const repWord = this._repertoire.words.find(w => w.id === wordId);
+    this._syncTombstone(wordId);
     this._repertoire.words = this._repertoire.words.filter(w => w.id !== wordId);
     this.saveRepertoire();
     // Mirror deletion to Grenier: soft-delete the matching card
@@ -7225,6 +8390,7 @@ const BILAN_PASSAGES = [
     if (!confirm(msg)) return;
     this._repSelectedIds.forEach(id => {
       const repWord = this._repertoire.words.find(w => w.id === id);
+      this._syncTombstone(id);
       this._repertoire.words = this._repertoire.words.filter(w => w.id !== id);
       // Mirror deletion to Grenier
       if (repWord && this._grenier) {
@@ -7269,12 +8435,15 @@ const BILAN_PASSAGES = [
     this._repertoire.words.forEach(w => {
       if (w.folderId === folderId) w.folderId = fallback ? fallback.id : null;
     });
+    this._syncTombstoneNamed(folderName, folderId);
     this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folderId);
     this.saveRepertoire();
     // Mirror: delete matching Grenier deck and its cards
     if (folderName && this._grenier) {
       const deck = this._grenier.decks.find(d => d.name === folderName);
       if (deck) {
+        this._syncTombstone(deck.id,
+          this._grenier.cards.filter(c => c.deckId === deck.id).map(c => c.id));
         this._grenier.decks = this._grenier.decks.filter(d => d.id !== deck.id);
         this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deck.id);
         this.saveGrenier();
@@ -7285,8 +8454,14 @@ const BILAN_PASSAGES = [
 
   exportAllData() {
     const bundle = {
-      _version: 2,
+      _app: 'phonetique',
+      _version: 3,
       _exportedAt: new Date().toISOString(),
+      // Sans les pierres tombales, fusionner un export ferait revenir tout ce
+      // que tu as supprimé depuis. Les horodatages par enregistrement, eux,
+      // voyagent déjà dans grenier/repertoire.
+      deleted:         this._syncDeleted || {},
+      settingsU:       this._syncSettingsU || 0,
       repertoire:      this._repertoire,
       grenier:         this._grenier,
       settings:        this.settings,
@@ -7838,6 +9013,8 @@ const BILAN_PASSAGES = [
     const lower = wordText.toLowerCase();
     const existed = this._repertoire.words.some(w => w.word.toLowerCase() === lower);
     if (!existed) return;
+    this._syncTombstone(this._repertoire.words
+      .filter(w => w.word.toLowerCase() === lower).map(w => w.id));
     this._repertoire.words = this._repertoire.words.filter(w => w.word.toLowerCase() !== lower);
     this.saveRepertoire();
   },
@@ -7878,6 +9055,7 @@ const BILAN_PASSAGES = [
       repSeen.add(key);
     }
     if (repToRemove.size) {
+      this._syncTombstone([...repToRemove]);
       this._repertoire.words = this._repertoire.words.filter(w => !repToRemove.has(w.id));
       this.saveRepertoire();
     }
@@ -7888,11 +9066,40 @@ const BILAN_PASSAGES = [
     if (!this._grenier) return;
     let changed = false;
 
+    // Paquets et dossiers se recréent mutuellement par leur NOM. Après une
+    // fusion qui rapporte la suppression d'un paquet fait sur un autre
+    // appareil, ce miroir le recréerait aussitôt et le renverrait au serveur :
+    // une suppression qui revient toute seule, en boucle. On propage donc la
+    // suppression au jumeau survivant au lieu de ressusciter le disparu.
+    const killed = name => {
+      const t = this._syncDeleted?.['nom:' + String(name || '').toLowerCase()];
+      return t ? t : 0;
+    };
+    for (const deck of [...this._grenier.decks]) {
+      const t = killed(deck.name);
+      if (t && t >= Number(deck.uContent || deck.createdAt || 0)) {
+        this._syncTombstone(deck.id, this._grenier.cards.filter(c => c.deckId === deck.id).map(c => c.id));
+        this._grenier.decks = this._grenier.decks.filter(d => d.id !== deck.id);
+        this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deck.id);
+        changed = true;
+      }
+    }
+    for (const folder of [...this._repertoire.folders]) {
+      const t = killed(folder.name);
+      if (t && t >= Number(folder.uContent || folder.createdAt || 0)) {
+        this._syncTombstone(folder.id);
+        this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folder.id);
+        changed = true;
+      }
+    }
+
     // 1. For every Grenier deck, ensure a matching Répertoire folder exists
     for (const deck of this._grenier.decks) {
       if (!this._repertoire.folders.find(f => f.name === deck.name)) {
+        const mid = this._syncMirrorId('mf_', deck.name);
+        if (this._syncMirrorBlocked(mid, deck)) continue;
         this._repertoire.folders.push({
-          id: 'folder_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+          id: mid,
           name: deck.name,
           emoji: deck._emoji || '📁',
           createdAt: deck.createdAt || Date.now()
@@ -7904,8 +9111,10 @@ const BILAN_PASSAGES = [
     // 2. For every Répertoire folder, ensure a matching Grenier deck exists
     for (const folder of this._repertoire.folders) {
       if (!this._grenier.decks.find(d => d.name === folder.name)) {
+        const mid = this._syncMirrorId('md_', folder.name);
+        if (this._syncMirrorBlocked(mid, folder)) continue;
         this._grenier.decks.push({
-          id: this._gid(), name: folder.name,
+          id: mid, name: folder.name,
           color: this.GRENIER_COLORS[Math.floor(Math.random() * this.GRENIER_COLORS.length)],
           _emoji: folder.emoji || '📁', createdAt: folder.createdAt || Date.now()
         });
@@ -7926,8 +9135,10 @@ const BILAN_PASSAGES = [
         w => w.word.toLowerCase() === card.word?.toLowerCase() && w.folderId === folder.id
       );
       if (!alreadyIn) {
+        const mid = this._syncMirrorId('mw_', folder.name + '|' + card.word);
+        if (this._syncMirrorBlocked(mid, card)) continue;
         this._repertoire.words.unshift({
-          id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+          id: mid,
           word: card.word, ipa: card.ipa || '',
           folderId: folder.id,
           addedAt: card.createdAt || Date.now(),
@@ -7965,8 +9176,10 @@ const BILAN_PASSAGES = [
       }
 
       // Word is genuinely missing from Grenier — create it
+      const mid = this._syncMirrorId('mc_', deck.name + '|' + rw.word);
+      if (this._syncMirrorBlocked(mid, rw)) continue;
       this._grenier.cards.push({
-        id: this._gid(), deckId: deck.id, word: rw.word, ipa: rw.ipa || '',
+        id: mid, deckId: deck.id, word: rw.word, ipa: rw.ipa || '',
         interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
         showListen: true, showRecord: true, showRhymes: true,
         color: null, definition: '', createdAt: rw.addedAt || Date.now()
@@ -9745,6 +10958,19 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       </div>
       <div class="settings-container">
 
+        <!-- SYNCHRO -->
+        <div class="settings-group open" id="sg-synchro">
+          <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-synchro')">
+            <span style="display:flex;align-items:center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:8px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Synchro<span class="sync-dot" id="syncDot"></span>
+            </span>${chevSvg}
+          </div>
+          <div class="settings-group-body">
+            ${this._syncPanelHTML()}
+          </div>
+        </div>
+
         <!-- APPARENCE -->
         <div class="settings-group" id="sg-apparence">
           <div class="settings-group-title" onclick="App._toggleSettingsGroup('sg-apparence')">
@@ -9769,6 +10995,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               <select class="settings-select" onchange="App.setFrVariant(this.value)">
                 <option value="fr-CA" ${this.settings.frVariant === 'fr-CA' ? 'selected' : ''}>Français canadien</option>
                 <option value="fr-FR" ${this.settings.frVariant === 'fr-FR' ? 'selected' : ''}>Français standard</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                Voix coréenne
+              </div>
+              <select class="settings-select" onchange="App.setKoVoice(this.value)">
+                ${KO_VOICES.map(v => `<option value="${v.id}" ${this.getKoVoice() === v.id ? 'selected' : ''}>${v.label}</option>`).join('')}
               </select>
             </div>
             <div class="settings-row">
@@ -10068,6 +11303,16 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       el.innerHTML = this.flagsHTML();
     });
   },
+  // Falls back to the default if the stored voice was retired by Azure.
+  getKoVoice() {
+    const v = this.settings.koVoice;
+    return KO_VOICES.some(x => x.id === v) ? v : KO_VOICES[0].id;
+  },
+  setKoVoice(val) {
+    this.settings.koVoice = val;
+    this.saveSettings();
+    this.speakText('한국어', false);
+  },
   confirmResetScores() {
     if (confirm('Réinitialiser tous les scores? Cette action est irréversible.')) {
       this.scores = {};
@@ -10230,7 +11475,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       const isKo = this.isKoreanText(text);
       const isCA = this.settings.frVariant === 'fr-CA';
       const lang = isKo ? 'ko-KR' : this.settings.frVariant;
-      const voiceName = isKo ? 'ko-KR-InJoonNeural'
+      const voiceName = isKo ? this.getKoVoice()
                              : (isCA ? 'fr-CA-SylvieNeural' : 'fr-FR-DeniseNeural');
       const rate = slow ? '0.8' : '1.0';
       const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">
@@ -11282,6 +12527,16 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   },
 
   saveGrenier() {
+    // Estampiller AVANT d'écrire : c'est le seul point de passage obligé des
+    // ~39 endroits qui modifient le Grenier.
+    if (!this._syncApplying) {
+      this._syncStamp('deck', this._grenier.decks);
+      this._syncStamp('card', this._grenier.cards);
+      // Les cartes se suppriment en douceur (card.deleted) depuis plusieurs
+      // endroits. On récolte ici plutôt qu'à chaque site : impossible d'en
+      // oublier un, aujourd'hui ou plus tard.
+      this._syncCollectCardTombstones();
+    }
     localStorage.setItem('phonetique_grenier', JSON.stringify(this._grenier));
   },
 
@@ -11645,6 +12900,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   _grDeleteDeck(deckId) {
     const deck = this._grenier.decks.find(d => d.id === deckId);
     const deckName = deck?.name;
+    this._syncTombstoneNamed(deckName, deckId,
+      this._grenier.cards.filter(c => c.deckId === deckId).map(c => c.id));
     this._grenier.decks = this._grenier.decks.filter(d => d.id !== deckId);
     this._grenier.cards = this._grenier.cards.filter(c => c.deckId !== deckId);
     this.saveGrenier();
@@ -11657,6 +12914,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         this._repertoire.words.forEach(w => {
           if (w.folderId === folder.id) w.folderId = fallback ? fallback.id : null;
         });
+        this._syncTombstone(folder.id);
         this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== folder.id);
         this.saveRepertoire();
       }
@@ -13782,6 +15040,25 @@ Réponds UNIQUEMENT avec ce JSON :
 
 // Démarrer l'application
     App.init();
+
+    // Le service worker est ce qui distingue une vraie application installée
+    // d'un simple raccourci : sans lui, le navigateur refuse d'installer et
+    // l'appli ne s'ouvre pas hors réseau.
+    //
+    // Il n'existe que dans un contexte sécurisé — https, ou localhost. Sur
+    // http://192.168.x.x il est tout simplement absent, ce qui est normal et
+    // sans conséquence : l'appli fonctionne, elle ne s'installe pas.
+    if ('serviceWorker' in navigator && window.isSecureContext
+        && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          // Attendu quand l'appli est ouverte ailleurs que depuis son serveur
+          // (copie locale, GitHub Pages) : il n'y a pas de /sw.js à cette
+          // adresse. Rien à signaler à l'utilisateur.
+          console.info('[PWA] service worker non enregistré :', err.message);
+        });
+      });
+    }
   </script>
 </body>
 </html>
