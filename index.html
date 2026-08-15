@@ -1338,7 +1338,7 @@ body::before {
   margin-left: 8px; transition: background 0.3s;
 }
 .sync-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-.sync-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sync-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
 .sync-mode-btn {
   padding: 12px 10px;
   background: var(--bg2);
@@ -1346,7 +1346,7 @@ body::before {
   border-radius: var(--radius-sm);
   color: var(--text2);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -7150,18 +7150,26 @@ const KO_VOICES = [
     } catch(e) {}
     if (!this._repertoire.folders) this._repertoire.folders = [];
     if (!this._repertoire.words) this._repertoire.words = [];
-    // Remove legacy 'default' / 'Mes mots' folder — words will float to first real folder
+    // Remove legacy 'default' / 'Mes mots' folder
     this._repertoire.folders = this._repertoire.folders.filter(f => f.id !== 'default');
-    // Reassign any words still pointing to 'default' to the first real folder (if any)
-    if (this._repertoire.words.some(w => !w.folderId || w.folderId === 'default')) {
-      const firstFolder = this._repertoire.folders[0];
-      if (firstFolder) {
-        this._repertoire.words.forEach(w => {
-          if (!w.folderId || w.folderId === 'default') w.folderId = firstFolder.id;
-        });
-        this.saveRepertoire();
+
+    // Un mot dont le dossier a disparu était jusqu'ici versé dans le PREMIER
+    // dossier venu. Avec plusieurs appareils, il suffit qu'un dossier soit
+    // supprimé ailleurs pour que tout son contenu atterrisse silencieusement
+    // dans un dossier sans rapport — deux dossiers qui n'en font plus qu'un.
+    // On les rassemble désormais à part, où ils sont visibles et récupérables.
+    const vivants = new Set(this._repertoire.folders.map(f => f.id));
+    const orphelins = this._repertoire.words.filter(
+      w => !w.folderId || w.folderId === 'default' || !vivants.has(w.folderId));
+    if (orphelins.length) {
+      let bac = this._repertoire.folders.find(f => f.name === 'À ranger');
+      if (!bac) {
+        bac = { id: 'folder_a_ranger', name: 'À ranger', emoji: '📥', createdAt: Date.now() };
+        this._repertoire.folders.push(bac);
       }
-      // If no folders yet, words will be shown once a folder is created
+      orphelins.forEach(w => { w.folderId = bac.id; });
+      this.saveRepertoire();
+      console.info(`[Répertoire] ${orphelins.length} mot(s) sans dossier rangés dans « À ranger »`);
     }
   },
 
@@ -7598,6 +7606,125 @@ const KO_VOICES = [
     this._syncRenderStatus();
   },
 
+  // ── mode sauvegarde : on envoie, on ne rapatrie jamais ────────────────
+  // Un seul appareil décide de la vérité. Le serveur n'est plus qu'un coffre.
+  async _syncBackupNow(manual = false) {
+    if (this._syncState === 'busy') return;
+    const cfg = this._syncCfg;
+    if (!cfg || !cfg.url) {
+      if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur');
+      return;
+    }
+    this._syncState = 'busy'; this._syncMsg = '';
+    this._syncRenderStatus();
+    try {
+      const base = await this._syncResolve();
+      if (!base) throw new Error('offline');
+      const p = await this._syncFetch(base, '/donnees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this._syncPayload()),
+      }, 15000);
+      if (!p.ok) {
+        let why = 'HTTP ' + p.status;
+        try { why = (await p.json()).error || why; } catch(e) {}
+        throw new Error(why);
+      }
+      cfg.lastSync = Date.now();
+      this.saveSyncConfig();
+      this._syncState = 'ok';
+      if (manual) this.showToast('Sauvegarde envoyée ✓');
+    } catch (err) {
+      const off = err.name === 'AbortError' || err.message === 'offline' ||
+                  err.message === 'Failed to fetch' || !navigator.onLine;
+      this._syncState = off ? 'offline' : 'error';
+      if (!off) this._syncMsg = err.message;
+      if (manual) this.showToast(off ? 'Serveur injoignable — sauvegarde reportée'
+                                     : 'Échec : ' + err.message);
+    }
+    this._syncRenderStatus();
+  },
+
+  // Remplace TOUT l'état local. Rien à voir avec la fusion : c'est un retour
+  // en arrière, et il écrase. D'où la copie de sécurité prise avant.
+  _syncReplaceAll(data) {
+    this._syncApplying = true;
+    try {
+      if (data.grenier) this._grenier = {
+        decks: data.grenier.decks || [], cards: data.grenier.cards || [] };
+      if (data.repertoire) this._repertoire = {
+        folders: data.repertoire.folders || [], words: data.repertoire.words || [] };
+      this._syncDeleted = data.deleted || {};
+      if (data.settings) Object.assign(this.settings, data.settings);
+      if (data.scores) this.scores = data.scores;
+      if (data.passageScores) this.passageScores = data.passageScores;
+      if (data.aiPassages) this.aiPassages = data.aiPassages;
+      if (Array.isArray(data.lookupHistory)) this._lookupHistory = data.lookupHistory;
+      if (data.bilan) {
+        this.bilanScores = data.bilan.latest || {};
+        this.bilanBestScores = data.bilan.best || {};
+        if (data.bilan.passageIndex != null) this.bilanPassageIndex = data.bilan.passageIndex;
+        this.bilanAiPassage = data.bilan.aiPassage || null;
+      }
+      this.saveGrenier(); this.saveRepertoire(); this.saveScores();
+      this.savePassageScores(); this.saveAiPassages(); this.saveLookupHistory();
+      this.saveSettings(); this.saveDiagScores(); this._syncSaveDeleted();
+    } finally {
+      this._syncApplying = false;
+    }
+    this._syncSnapshot();
+    this._syncRefreshUI();
+  },
+
+  _syncConfirmRestore() {
+    if (!confirm('Remplacer TOUTES les données de cet appareil par la sauvegarde ?\n\n'
+      + 'Ce n\'est pas une fusion : ce qui est ici sera écrasé.\n'
+      + 'Une copie de l\'état actuel va être téléchargée d\'abord, par sécurité.')) return false;
+    this.exportAllData();   // filet : on ne remplace jamais sans garder l'ancien
+    return true;
+  },
+
+  async syncRestoreFromServer() {
+    if (!this._syncCfg?.url) { this.showToast('Renseigne d\'abord l\'adresse du serveur'); return; }
+    if (!this._syncConfirmRestore()) return;
+    try {
+      const base = await this._syncResolve();
+      if (!base) throw new Error('serveur injoignable');
+      const r = await this._syncFetch(base, '/donnees', {}, 8000);
+      if (r.status === 404) { this.showToast('Le serveur n\'a encore aucune sauvegarde'); return; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      this._syncReplaceAll(await r.json());
+      this.showToast('Restauré depuis le serveur ✓');
+    } catch (err) {
+      this.showToast('Échec de la restauration : ' + err.message);
+    }
+  },
+
+  // Les copies horodatées du serveur vivent dans phonetique-copies/ :
+  // c'est par là qu'on revient à un état antérieur précis.
+  syncRestoreFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        let data;
+        try { data = JSON.parse(ev.target.result); }
+        catch { this.showToast('Fichier illisible'); return; }
+        if (data._app && data._app !== 'phonetique') { this.showToast('Ce fichier vient d\'une autre appli'); return; }
+        if (!data.grenier && !data.repertoire) { this.showToast('Ce fichier ne contient pas de données Phonétique'); return; }
+        if (!this._syncConfirmRestore()) return;
+        this._syncReplaceAll(data);
+        this.showToast('Restauré depuis le fichier ✓');
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
   // Un serveur injoignable est un état d'attente, pas une panne.
   _syncPendingCount() {
     const since = Number(this._syncCfg?.lastSync || 0);
@@ -7651,9 +7778,11 @@ const KO_VOICES = [
     if (this._syncAutoWired) return;
     this._syncAutoWired = true;
     const kick = () => {
-      if (!this._syncCfg?.auto || this._syncCfg.mode !== 'lan') return;
+      const cfg = this._syncCfg;
+      if (!cfg?.auto) return;
       if (document.visibilityState === 'hidden') return;
-      this._syncNow(false);
+      if (cfg.mode === 'lan') this._syncNow(false);
+      else if (cfg.mode === 'backup') this._syncBackupNow(false);
     };
     window.addEventListener('online', kick);
     window.addEventListener('focus', kick);
@@ -7733,7 +7862,8 @@ const KO_VOICES = [
   // ── panneau des Paramètres ────────────────────────────────────────────
   _syncPanelHTML() {
     const cfg = this._syncCfg || {};
-    const lan = cfg.mode !== 'file';
+    const mode = cfg.mode || 'lan';
+    const lan = mode === 'lan';
     const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
     const alts = (cfg.alts || []).filter(Boolean);
     const servedFromServer = /^https?:$/.test(location.protocol) && !!location.host;
@@ -7741,7 +7871,32 @@ const KO_VOICES = [
     // s'ouvrira pas hors du réseau. C'est le cas de http://192.168.x.x.
     const fragile = servedFromServer && !window.isSecureContext;
 
-    const bloc = lan ? `
+    // Mode sauvegarde : on envoie, on ne rapatrie jamais. Aucune fusion, donc
+    // aucun risque qu'un autre appareil vienne remuer les dossiers.
+    const blocSauvegarde = `
+      <div class="sync-url-row">
+        <input class="sync-url-input" id="syncUrl" value="${esc(cfg.url)}"
+               placeholder="https://smac:8791" spellcheck="false"
+               onchange="App.setSyncUrl(this.value)">
+        <button class="sync-test-btn" onclick="App.testSync()">tester</button>
+      </div>
+      <div class="sync-alts">
+        Cet appareil <strong>envoie</strong> ses données au serveur, sans jamais
+        rien reprendre. Rien ne peut donc être modifié dans ton dos. Le serveur
+        garde les 30 dernières versions.
+      </div>
+      <label class="sync-auto">
+        <input type="checkbox" ${cfg.auto ? 'checked' : ''} onchange="App.setSyncAuto(this.checked)">
+        sauvegarde automatique
+      </label>
+      <button class="sync-now-btn" onclick="App._syncBackupNow(true)">envoyer une sauvegarde</button>
+      <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+              onclick="App.syncRestoreFromServer()">restaurer depuis le serveur…</button>
+      <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+              onclick="App.syncRestoreFromFile()">restaurer depuis un fichier…</button>
+    `;
+
+    const bloc = mode === 'backup' ? blocSauvegarde : lan ? `
       <div class="sync-url-row">
         <input class="sync-url-input" id="syncUrl" value="${esc(cfg.url)}"
                placeholder="http://192.168.1.20:8790" spellcheck="false"
@@ -7790,8 +7945,9 @@ const KO_VOICES = [
     return `<div class="sync-body">
       ${install}
       <div class="sync-modes">
-        <button class="sync-mode-btn ${!lan ? 'active' : ''}" onclick="App.setSyncMode('file')">fichier partagé</button>
+        <button class="sync-mode-btn ${mode === 'backup' ? 'active' : ''}" onclick="App.setSyncMode('backup')">sauvegarde</button>
         <button class="sync-mode-btn ${lan ? 'active' : ''}" onclick="App.setSyncMode('lan')">réseau local</button>
+        <button class="sync-mode-btn ${mode === 'file' ? 'active' : ''}" onclick="App.setSyncMode('file')">fichier partagé</button>
       </div>
       ${bloc}
       <div class="sync-status" id="syncStatus">${this._syncStatusText()}</div>
@@ -7822,7 +7978,9 @@ const KO_VOICES = [
   setSyncAuto(on) {
     this._syncCfg.auto = !!on;
     this.saveSyncConfig();
-    if (on) this._syncNow(false);
+    if (!on) return;
+    if (this._syncCfg.mode === 'backup') this._syncBackupNow(false);
+    else if (this._syncCfg.mode === 'lan') this._syncNow(false);
   },
   async testSync() {
     if (!this._syncCfg.url) { this.showToast('Renseigne d\'abord une adresse'); return; }
