@@ -54,6 +54,11 @@ appareil** fait autorité et que le serveur ne sert que de coffre.
 donc envoyer — sinon le dernier à parler efface le précédent. Sur les autres,
 décoche la sauvegarde automatique.
 
+La sauvegarde automatique n'envoie que si **quelque chose a changé** : sans
+cela elle écrirait toutes les 45 secondes, et comme le serveur archive une
+copie horodatée à chaque écriture en n'en gardant que 30, l'historique
+entier tournerait en vingt minutes. Un envoi manuel, lui, part toujours.
+
 Deux boutons de retour en arrière : **restaurer depuis le serveur** et
 **restaurer depuis un fichier** (pour piocher dans `phonetique-copies/`). Les
 deux *remplacent* tout, et téléchargent d'abord une copie de l'état actuel.

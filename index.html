@@ -7622,11 +7622,35 @@ const KO_VOICES = [
 
   // ── mode sauvegarde : on envoie, on ne rapatrie jamais ────────────────
   // Un seul appareil décide de la vérité. Le serveur n'est plus qu'un coffre.
+  // Empreinte bon marché de l'état, pour reconnaître « rien n'a changé ».
+  // On écarte _updatedAt, qui bouge à chaque appel et masquerait l'égalité.
+  async _syncSignature() {
+    const p = this._syncPayload();
+    delete p._updatedAt;
+    const json = JSON.stringify(p);
+    let h = 5381;
+    for (let i = 0; i < json.length; i++) h = ((h * 33) ^ json.charCodeAt(i)) >>> 0;
+    let img = 0;
+    try { img = (await this._idbKeys()).length; } catch(e) {}
+    return `${json.length}:${h.toString(36)}:${img}`;
+  },
+
   async _syncBackupNow(manual = false) {
     if (this._syncState === 'busy') return;
     const cfg = this._syncCfg;
     if (!cfg || !cfg.url) {
       if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur');
+      return;
+    }
+    // Le serveur archive une copie horodatée à CHAQUE écriture et n'en garde
+    // que 30. Sans ce garde-fou, la sauvegarde automatique en écrirait une
+    // toutes les 45 secondes et ferait tourner tout l'historique en vingt
+    // minutes — le filet de sécurité s'auto-détruirait. On n'envoie donc que
+    // si quelque chose a réellement changé. Un envoi manuel passe toujours.
+    const sig = await this._syncSignature();
+    if (!manual && sig === this._syncLastSig) {
+      this._syncState = 'ok';
+      this._syncRenderStatus();
       return;
     }
     this._syncState = 'busy'; this._syncMsg = '';
@@ -7647,6 +7671,7 @@ const KO_VOICES = [
       // Les images suivent : une carte sans son image n'est qu'à moitié
       // sauvegardée. Seules les manquantes partent, donc c'est vite fait.
       await this.syncImagesUp(false);
+      this._syncLastSig = sig;
       cfg.lastSync = Date.now();
       this.saveSyncConfig();
       this._syncState = 'ok';
