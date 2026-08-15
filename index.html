@@ -7706,6 +7706,73 @@ const KO_VOICES = [
     }
   },
 
+  // ── pont hors réseau pour les images ──────────────────────────────────
+  // Les images d'une origine ne sont lisibles que depuis cette origine. Quand
+  // l'appli a changé d'adresse — ou qu'elle vivait sur GitHub Pages — il faut
+  // pouvoir les faire voyager par un fichier, sans dépendre du réseau local.
+  // Un seul fichier plutôt que N téléchargements : sur téléphone, chaque
+  // téléchargement demande une confirmation.
+  async syncImagesExportFile() {
+    let keys = [];
+    try { keys = await this._idbKeys(); } catch(e) {}
+    if (!keys.length) { this.showToast('Aucune image sur cet appareil'); return; }
+    this.showToast(`Préparation de ${keys.length} image(s)…`);
+    const images = {};
+    for (const k of keys) {
+      const blob = await this._idbGet(k);
+      if (!blob) continue;
+      images[k] = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);          // data:image/png;base64,…
+        r.onerror = () => res(null);
+        r.readAsDataURL(blob);
+      });
+    }
+    const bundle = { _app: 'phonetique', _type: 'images',
+                     _exportedAt: new Date().toISOString(), images };
+    const blob = new Blob([JSON.stringify(bundle)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'phonetique_images_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showToast(`${Object.keys(images).length} image(s) exportée(s) ✓`);
+  },
+
+  syncImagesImportFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        let data;
+        try { data = JSON.parse(ev.target.result); }
+        catch { this.showToast('Fichier illisible'); return; }
+        if (data._type !== 'images' || !data.images) {
+          this.showToast('Ce fichier ne contient pas d\'images Phonétique'); return;
+        }
+        let n = 0;
+        for (const [k, dataUrl] of Object.entries(data.images)) {
+          if (!dataUrl) continue;
+          try {
+            const blob = await (await fetch(dataUrl)).blob();
+            await this._idbPut(k, blob);
+            this._syncImgMissing?.delete(k);      // on peut la réessayer
+            n++;
+          } catch(err) { /* image abîmée : on continue */ }
+        }
+        this.showToast(`${n} image(s) importée(s) ✓`);
+        this._syncRenderPanel();
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
   async syncImagesUp(manual = false) {
     const base = this._syncCfg?.url;
     if (!base) { if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur'); return; }
@@ -8056,6 +8123,16 @@ const KO_VOICES = [
         <button class="sync-mode-btn ${mode === 'file' ? 'active' : ''}" onclick="App.setSyncMode('file')">fichier partagé</button>
       </div>
       ${bloc}
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="sync-alts">
+          Les images sont liées à l'adresse d'où l'appli est ouverte. Pour les
+          emmener d'une adresse à une autre, passe par un fichier :
+        </div>
+        <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+                onclick="App.syncImagesExportFile()">exporter les images vers un fichier</button>
+        <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
+                onclick="App.syncImagesImportFile()">importer des images depuis un fichier…</button>
+      </div>
       <div class="sync-status" id="syncStatus">${this._syncStatusText()}</div>
       ${avert}
     </div>`;

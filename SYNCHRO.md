@@ -158,12 +158,26 @@ carte reçue d'un autre appareil retrouve donc son image toute seule.
 ### Récupérer des images d'une ancienne adresse
 
 Si des images ont disparu après un changement d'adresse, elles sont encore là,
-sous l'ancienne origine :
+sous l'ancienne origine — y compris un ancien lien GitHub Pages. Il faut donc
+ouvrir l'appli **à cette ancienne adresse** pour les atteindre.
 
-1. Ouvre l'**ancienne** adresse dans le navigateur (`https://<ancienne>:8791`).
-2. Paramètres › Synchro › sauvegarde › **envoyer les images**.
-3. Rouvre l'appli à la **nouvelle** adresse : les images reviennent d'elles-mêmes
-   au fil de l'affichage des cartes.
+Elles ne sont pas trouvables comme fichiers sur l'appareil : le navigateur les
+garde dans son stockage privé, inaccessible sans rooter le téléphone.
+
+**Par un fichier** (marche partout, même sans serveur joignable) :
+
+1. Ouvre l'appli à l'**ancienne** adresse.
+2. Paramètres › Synchro › **exporter les images vers un fichier**.
+3. Ouvre l'appli à la **nouvelle** adresse.
+4. Paramètres › Synchro › **importer des images depuis un fichier…**
+
+**Par le serveur** (si l'ancienne adresse peut le joindre) : à l'étape 2,
+utilise plutôt le mode **sauvegarde** › **envoyer les images**. Rien à faire à
+l'arrivée : les images reviennent d'elles-mêmes au fil de l'affichage.
+
+> Une page servie depuis une adresse publique (GitHub Pages) vers un serveur
+> du réseau local se heurte parfois au blocage « réseau privé » d'Android.
+> D'où la voie par fichier, qui ne dépend d'aucun réseau.
 
 ## Comment la fusion décide
 
