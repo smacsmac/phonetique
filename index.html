@@ -5726,6 +5726,16 @@ const KO_VOICES = [
       });
     },
 
+    async _idbKeys() {
+      const db = await this._idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('images', 'readonly');
+        const req = tx.objectStore('images').getAllKeys();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    },
+
     // Hydrate all <img data-idb-key="..."> in a container element with blob URLs
     async _idbHydrateImages(container) {
       if (!container) return;
@@ -5735,7 +5745,11 @@ const KO_VOICES = [
         const key = img.dataset.idbKey;
         if (img.src?.startsWith('blob:') && this._idbBlobUrls?.[key] === img.src) continue;
         try {
-          const blob = await this._idbGet(key);
+          let blob = await this._idbGet(key);
+          // Absente de cette base ? Elle est peut-être sauvegardée sur le PC.
+          // C'est ce qui rattrape un changement d'adresse (IndexedDB est liée
+          // à l'origine) ou une carte reçue d'un autre appareil.
+          if (!blob) blob = await this._syncImageFetch(key);
           if (blob) {
             const url = URL.createObjectURL(blob);
             (this._idbBlobUrls = this._idbBlobUrls || {})[key] = url;
@@ -7630,6 +7644,9 @@ const KO_VOICES = [
         try { why = (await p.json()).error || why; } catch(e) {}
         throw new Error(why);
       }
+      // Les images suivent : une carte sans son image n'est qu'à moitié
+      // sauvegardée. Seules les manquantes partent, donc c'est vite fait.
+      await this.syncImagesUp(false);
       cfg.lastSync = Date.now();
       this.saveSyncConfig();
       this._syncState = 'ok';
@@ -7643,6 +7660,93 @@ const KO_VOICES = [
                                      : 'Échec : ' + err.message);
     }
     this._syncRenderStatus();
+  },
+
+  // ── images : de la base du navigateur vers un vrai dossier du PC ──────
+  // IndexedDB est liée à l'adresse d'ouverture et n'est sauvegardée nulle
+  // part. Une image générée sur le téléphone n'existe donc qu'à un seul
+  // endroit, et change d'adresse suffit à la rendre invisible.
+
+  // Récupère une image depuis le serveur et la remet en base locale, pour ne
+  // la retélécharger qu'une fois.
+  async _syncImageFetch(key) {
+    const base = this._syncCfg?.url;
+    if (!base || !key) return null;
+    if (this._syncImgMissing?.has(key)) return null;   // déjà cherchée en vain
+    try {
+      const r = await this._syncFetch(base, '/images/' + encodeURIComponent(key), {}, 8000);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      await this._idbPut(key, blob);
+      return blob;
+    } catch (e) {
+      (this._syncImgMissing = this._syncImgMissing || new Set()).add(key);
+      return null;
+    }
+  },
+
+  // Combien d'images cet appareil détient-il, et combien manquent au serveur ?
+  async _syncImageStatus() {
+    let locales = [];
+    try { locales = await this._idbKeys(); } catch(e) { return { locales: 0, aEnvoyer: 0, dossier: '' }; }
+    const base = this._syncCfg?.url;
+    if (!base) return { locales: locales.length, aEnvoyer: locales.length, dossier: '' };
+    try {
+      const r = await this._syncFetch(base, '/images', {}, 5000);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const surServeur = new Set(j.cles || []);
+      return {
+        locales: locales.length,
+        aEnvoyer: locales.filter(k => !surServeur.has(k)).length,
+        dossier: j.dossier || '',
+      };
+    } catch (e) {
+      return { locales: locales.length, aEnvoyer: locales.length, dossier: '' };
+    }
+  },
+
+  async syncImagesUp(manual = false) {
+    const base = this._syncCfg?.url;
+    if (!base) { if (manual) this.showToast('Renseigne d\'abord l\'adresse du serveur'); return; }
+    let locales = [];
+    try { locales = await this._idbKeys(); } catch(e) {}
+    if (!locales.length) { if (manual) this.showToast('Aucune image sur cet appareil'); return; }
+    let surServeur = new Set();
+    try {
+      const r = await this._syncFetch(base, '/images', {}, 5000);
+      if (r.ok) surServeur = new Set((await r.json()).cles || []);
+    } catch (e) {
+      if (manual) this.showToast('Serveur injoignable');
+      return;
+    }
+    const aFaire = locales.filter(k => !surServeur.has(k));
+    if (!aFaire.length) { if (manual) this.showToast('Toutes les images sont déjà sauvegardées ✓'); return; }
+
+    let envoyees = 0, echecs = 0;
+    for (const key of aFaire) {
+      try {
+        const blob = await this._idbGet(key);
+        if (!blob) continue;
+        const r = await this._syncFetch(base, '/images/' + encodeURIComponent(key), {
+          method: 'PUT',
+          headers: { 'Content-Type': blob.type || 'image/png' },
+          body: blob,
+        }, 30000);
+        if (r.ok) envoyees++; else echecs++;
+      } catch (e) { echecs++; }
+      if (manual && (envoyees + echecs) % 5 === 0) {
+        this._syncMsg = `images : ${envoyees + echecs}/${aFaire.length}`;
+        this._syncRenderStatus();
+      }
+    }
+    this._syncMsg = '';
+    if (manual) {
+      this.showToast(echecs ? `${envoyees} image(s) envoyée(s), ${echecs} échec(s)`
+                            : `${envoyees} image(s) sauvegardée(s) ✓`);
+      this._syncRenderPanel();
+    }
+    return { envoyees, echecs };
   },
 
   // Remplace TOUT l'état local. Rien à voir avec la fusion : c'est un retour
@@ -7890,6 +7994,8 @@ const KO_VOICES = [
         sauvegarde automatique
       </label>
       <button class="sync-now-btn" onclick="App._syncBackupNow(true)">envoyer une sauvegarde</button>
+      <div class="sync-alts" id="syncImgInfo">images : vérification…</div>
+      <button class="sync-now-btn" onclick="App.syncImagesUp(true)">envoyer les images</button>
       <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
               onclick="App.syncRestoreFromServer()">restaurer depuis le serveur…</button>
       <button class="sync-now-btn" style="border-color:var(--text3);color:var(--text2);background:transparent"
@@ -7959,6 +8065,21 @@ const KO_VOICES = [
     const body = document.querySelector('#sg-synchro .settings-group-body');
     if (body) body.innerHTML = this._syncPanelHTML();
     this._syncRenderStatus();
+    this._syncRenderImageInfo();
+  },
+
+  // Asynchrone : le panneau se rend tout de suite, l'état des images arrive
+  // ensuite plutôt que de faire attendre l'écran.
+  async _syncRenderImageInfo() {
+    const el = document.getElementById('syncImgInfo');
+    if (!el) return;
+    const s = await this._syncImageStatus();
+    if (!document.getElementById('syncImgInfo')) return;   // panneau déjà remplacé
+    if (!s.locales) { el.textContent = 'aucune image sur cet appareil'; return; }
+    const où = s.dossier ? ` — sur le PC : ${s.dossier}` : '';
+    el.textContent = s.aEnvoyer
+      ? `${s.locales} image(s) ici, ${s.aEnvoyer} à envoyer${où}`
+      : `${s.locales} image(s), toutes sauvegardées ✓${où}`;
   },
 
   setSyncMode(mode) {

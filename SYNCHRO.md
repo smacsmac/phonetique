@@ -26,19 +26,53 @@ La fenêtre affiche les adresses à utiliser. Laisse-la ouverte ; `Ctrl+C` arrê
 > Le port par défaut est **8790** (https sur 8791), différent de `noter` pour
 > que les deux serveurs tournent en même temps sans se marcher dessus.
 
+## Réglages du serveur
+
+Tous facultatifs, à poser dans `phonetique-sync.cmd` :
+
+| réglage | rôle |
+|---|---|
+| `PORT` | http ; https = `PORT+1` (défaut 8790) |
+| `PHON_HOST` | l'adresse ou le nom mis en avant, et ajouté au certificat |
+| `PHON_DISPLAY` | `standalone` (défaut) ou `fullscreen` une fois installée |
+| `PHON_IMAGES` | où ranger les images sauvegardées |
+| `PHON_APP` / `PHON_DATA` | chemins du `.html` servi et du json partagé |
+
 ## Sur chaque appareil
 
-Ouvre l'appli, va dans **Paramètres › Synchro**, choisis **réseau local**,
-colle l'adresse affichée par le serveur, puis **tester**.
+Ouvre l'appli, va dans **Paramètres › Synchro**, et choisis un mode.
 
 ![le panneau Synchro](apercu-synchro.png)
 
+### sauvegarde — le plus sûr
+
+L'appareil **envoie** son état, sans jamais rien reprendre. Aucune fusion,
+donc rien ne bouge dans ton dos. C'est le mode à choisir quand **un seul
+appareil** fait autorité et que le serveur ne sert que de coffre.
+
+⚠️ La sauvegarde **écrase** ce que le serveur contenait. Un seul appareil doit
+donc envoyer — sinon le dernier à parler efface le précédent. Sur les autres,
+décoche la sauvegarde automatique.
+
+Deux boutons de retour en arrière : **restaurer depuis le serveur** et
+**restaurer depuis un fichier** (pour piocher dans `phonetique-copies/`). Les
+deux *remplacent* tout, et téléchargent d'abord une copie de l'état actuel.
+
+### réseau local — la vraie synchro
+
+Tous les appareils fusionnent, dans les deux sens. Puissant, mais c'est là que
+les surprises arrivent si plusieurs appareils modifient les mêmes dossiers.
+
 - **synchro automatique** : au retour du réseau, au retour sur l'appli, et
   toutes les 45 secondes.
-- **synchroniser maintenant** : force un tour immédiat.
 - La ligne d'état indique `à jour · 20:40`, ou `hors réseau · 3 modifications
   en attente` quand le PC est éteint — ce n'est pas une erreur, juste une
   attente.
+
+### fichier partagé — sans serveur
+
+**Fusionne** un `.json` venu d'ailleurs, au lieu d'écraser comme le fait
+l'import classique.
 
 ### Chromebook et PC
 
@@ -98,6 +132,39 @@ autre appareil (clé USB, dossier partagé, nuage) et le **fusionne** au lieu
 d'écraser — contrairement à l'import classique. Puis **exporter l'état
 fusionné** pour le rapporter.
 
+## Les images
+
+Les images générées par l'appli **ne sont pas dans un dossier** : elles vivent
+dans une base interne du navigateur (IndexedDB, `pho_images`). Deux
+conséquences qui surprennent :
+
+- **Elles sont liées à l'adresse d'ouverture.** Passer de
+  `https://192.168.50.184:8791` à `https://smac:8791` change d'origine : les
+  images restent sur l'appareil, mais deviennent invisibles pour la nouvelle
+  adresse. Les cartes s'affichent alors avec « ⚠ image introuvable ».
+- **Rien ne les sauvegarde**, ni l'export, ni la synchro des cartes.
+
+Le serveur leur donne donc de vrais fichiers, dans `phonetique-images/`
+(modifiable par `PHON_IMAGES`), nommés d'après leur clé : `img_….png`.
+
+**Envoyer** — Paramètres › Synchro › sauvegarde › **envoyer les images**. Le
+panneau indique combien il en reste à envoyer et où elles atterrissent sur le
+PC. Une sauvegarde de données les emporte aussi, automatiquement.
+
+**Récupérer** — rien à faire : quand une carte réclame une image absente de la
+base locale, l'appli va la chercher sur le serveur et la remet en base. Une
+carte reçue d'un autre appareil retrouve donc son image toute seule.
+
+### Récupérer des images d'une ancienne adresse
+
+Si des images ont disparu après un changement d'adresse, elles sont encore là,
+sous l'ancienne origine :
+
+1. Ouvre l'**ancienne** adresse dans le navigateur (`https://<ancienne>:8791`).
+2. Paramètres › Synchro › sauvegarde › **envoyer les images**.
+3. Rouvre l'appli à la **nouvelle** adresse : les images reviennent d'elles-mêmes
+   au fil de l'affichage des cartes.
+
 ## Comment la fusion décide
 
 Enregistrement par enregistrement, jamais fichier par fichier. Chaque carte
@@ -144,6 +211,7 @@ jamais un fichier à moitié écrit.
 | L'appli servie ne s'ouvre pas hors réseau | c'est attendu en `http://` : utilise le lien de téléchargement du panneau, ou installe la version https |
 | Le navigateur propose « ouvrir *l'autre appli* » au lieu d'installer | les deux applis partagent le même hôte — voir « Une adresse par application » |
 | Avertissement de certificat sur `https://smac:8791` | le nom n'est pas encore dans le certificat : mets `PHON_HOST=smac` et relance |
+| « ⚠ image introuvable » sur des cartes | l'image appartient à une autre adresse — voir « Récupérer des images d'une ancienne adresse » |
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
 | `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
 

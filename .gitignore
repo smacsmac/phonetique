@@ -10,3 +10,6 @@ phonetique-donnees.json
 phonetique-copies/
 
 node_modules/
+
+# Les images sauvegardees depuis les appareils.
+phonetique-images/

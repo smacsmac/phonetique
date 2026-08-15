@@ -18,7 +18,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { deflateSync } from 'node:zlib';
 import { createCA, createServerCert } from './phonetique-cert.mjs';
-import { readFile, writeFile, rename, mkdir, readdir, unlink } from 'node:fs/promises';
+import { readFile, writeFile, rename, mkdir, readdir, unlink, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { networkInterfaces, hostname } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -29,6 +29,10 @@ const PORT       = Number(process.env.PORT || 8790);
 const APP        = resolve(process.env.PHON_APP  || join(HERE, 'index.html'));
 const DATA       = resolve(process.env.PHON_DATA || join(HERE, 'phonetique-donnees.json'));
 const BACKUPS    = join(dirname(DATA), 'phonetique-copies');
+// Les images vivent dans IndexedDB côté navigateur — une base interne, liée à
+// l'adresse d'où l'appli est ouverte, et que rien ne sauvegarde. Ici, elles
+// deviennent de vrais fichiers que tu peux voir, copier et archiver.
+const IMGDIR     = resolve(process.env.PHON_IMAGES || join(dirname(DATA), 'phonetique-images'));
 const MAX_BODY   = 64 * 1024 * 1024;
 const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
@@ -218,6 +222,7 @@ function send(res, code, body, type='application/json; charset=utf-8', extra={})
     // en fichier local (origine "null") de parler à ce serveur
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+    'Access-Control-Max-Age': '600',
     'Access-Control-Allow-Headers': 'Content-Type',
     // Private Network Access : Chrome traite une page locale (file://) comme
     // « publique », et bloque ses requêtes vers une adresse privée 192.168.x.x
@@ -241,6 +246,39 @@ function looksLikePhonetique(o){
   if(!g || !Array.isArray(g.cards) || !Array.isArray(g.decks)) return 'il manque le Grenier';
   if(!r || !Array.isArray(r.words) || !Array.isArray(r.folders)) return 'il manque le Répertoire';
   return null;
+}
+
+// ── images ───────────────────────────────────────────────────────────────
+const IMG_TYPES = { 'image/png':'png', 'image/jpeg':'jpg', 'image/webp':'webp',
+                    'image/gif':'gif', 'image/avif':'avif' };
+const EXT_TYPES = Object.fromEntries(Object.entries(IMG_TYPES).map(([t,e]) => [e,t]));
+// Une clé vient du navigateur : elle ne doit jamais pouvoir désigner un chemin.
+const safeKey = k => /^[A-Za-z0-9._-]{1,120}$/.test(k) && !k.includes('..') ? k : null;
+
+let imgIndex = null;                       // clé → nom de fichier
+async function imgList(){
+  if(imgIndex) return imgIndex;
+  imgIndex = new Map();
+  try{
+    for(const f of await readdir(IMGDIR)){
+      const dot = f.lastIndexOf('.');
+      if(dot > 0) imgIndex.set(f.slice(0, dot), f);
+    }
+  }catch{ /* dossier pas encore créé */ }
+  return imgIndex;
+}
+
+async function readBody(req, max){
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on('data', c => {
+      size += c.length;
+      if(size > max){ reject(new Error('trop volumineux')); req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
 }
 
 const server = http.createServer(async (req, res) => {
@@ -291,6 +329,47 @@ const server = http.createServer(async (req, res) => {
     return send(res, 405, '{"error":"méthode non permise"}');
   }
 
+  // ── les images ──
+  // La liste, pour que l'appli sache lesquelles restent à envoyer.
+  if(path === '/images' && req.method === 'GET'){
+    const idx = await imgList();
+    return send(res, 200, JSON.stringify({ dossier: IMGDIR, cles: [...idx.keys()] }));
+  }
+  if(path.startsWith('/images/')){
+    const key = safeKey(decodeURIComponent(path.slice('/images/'.length)));
+    if(!key) return send(res, 400, '{"error":"clé invalide"}');
+
+    if(req.method === 'PUT'){
+      const type = (req.headers['content-type'] || '').split(';')[0].trim();
+      const ext = IMG_TYPES[type];
+      if(!ext) return send(res, 415, JSON.stringify({ error: `type non accepté : ${type || 'absent'}` }));
+      try{
+        const body = await readBody(req, MAX_BODY);
+        await mkdir(IMGDIR, { recursive: true });
+        const name = `${key}.${ext}`;
+        // Même écriture atomique que pour les données : jamais de fichier
+        // à moitié écrit si le réseau ou le courant lâche.
+        const tmp = join(IMGDIR, name + '.tmp-' + process.pid);
+        await writeFile(tmp, body);
+        await rename(tmp, join(IMGDIR, name));
+        (await imgList()).set(key, name);
+        console.log(`  ← ${new Date().toLocaleTimeString('fr-FR')}  image ${name} (${Math.round(body.length/1024)} Ko)`);
+        return send(res, 200, JSON.stringify({ ok:true, fichier:name }));
+      }catch(err){ return send(res, 500, JSON.stringify({ error: err.message })); }
+    }
+
+    if(req.method === 'GET'){
+      const name = (await imgList()).get(key);
+      if(!name) return send(res, 404, '{"error":"image inconnue"}');
+      try{
+        const buf = await readFile(join(IMGDIR, name));
+        const ext = name.slice(name.lastIndexOf('.') + 1);
+        return send(res, 200, buf, EXT_TYPES[ext] || 'application/octet-stream');
+      }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+    }
+    return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
   // ── l'application ──
   if(req.method === 'GET' && (path === '/' || path === '/index.html')){
     try{
@@ -331,6 +410,7 @@ const server = http.createServer(async (req, res) => {
     const secure = !!req.socket.encrypted;
     return send(res, 200, JSON.stringify({
       ok: true, name: hostname(), app: 'phonetique', secure,
+      images: IMGDIR,
       addresses: candidateURLs(secure),      // même protocole : une page https
       https: candidateURLs(true),            // ne peut pas parler à du http
     }));
@@ -382,6 +462,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   console.log('  ' + '─'.repeat(52));
   console.log(`  données    ${DATA}${existsSync(DATA) ? `  (${cards} cartes)` : '  (nouveau)'}`);
   console.log(`  copies     ${BACKUPS}  (${KEEP} dernières)`);
+  let nImg = 0;
+  try{ nImg = (await readdir(IMGDIR)).filter(f => !f.includes('.tmp-')).length; }catch{}
+  console.log(`  images     ${IMGDIR}${nImg ? `  (${nImg})` : '  (vide)'}`);
 
   let sec = null;
   try{

@@ -33,6 +33,15 @@ REM  le mode d'affichage est fige au moment de l'installation.
 REM ---------------------------------------------------------------------
 REM set PHON_DISPLAY=fullscreen
 
+REM ---------------------------------------------------------------------
+REM  OU RANGER LES IMAGES SAUVEGARDEES
+REM  Par defaut : phonetique-images\ a cote de ce fichier.
+REM  Les images generees par l'appli vivent dans une base interne du
+REM  navigateur, liee a l'adresse d'ouverture et sauvegardee nulle part.
+REM  Ici, elles deviennent de vrais fichiers.
+REM ---------------------------------------------------------------------
+REM set PHON_IMAGES=D:\Sauvegardes\Phonetique\images
+
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
