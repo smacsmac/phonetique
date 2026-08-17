@@ -6486,16 +6486,7 @@ const KO_VOICES = [
     // Always force-close the definition panel (back face) before loading a new word.
     // If the card is currently showing the back face, restore the front face so that
     // all the front-face elements (#wfWordDisplay, #wfIpa, etc.) exist in the DOM.
-    if (this._wfDefPanelOpen) {
-      const cardEl = document.getElementById('wfWordCard');
-      if (cardEl && cardEl.dataset.frontHtml) {
-        cardEl.innerHTML = cardEl.dataset.frontHtml;
-      }
-      this._wfDefPanelOpen = false;
-    }
-    // Delete any stale frontHtml so a subsequent flip for this new word starts fresh.
-    const _wfc = document.getElementById('wfWordCard');
-    if (_wfc) delete _wfc.dataset.frontHtml;
+    this._wfRestoreFront();
     // Context is never cleared by Analyser — only by Effacer or typing a new word.
     // Reset UI
     const card = document.getElementById('wfWordCard');
@@ -6704,6 +6695,9 @@ const KO_VOICES = [
     this._wfCurrentWord = h.word;
     this._wfCurrentIpa = h.ipa || '';
     const card = document.getElementById('wfWordCard');
+    // La face avant doit être rétablie AVANT de toucher à ses éléments :
+    // #wfWordDisplay et compagnie n'existent pas tant que le verso est affiché.
+    this._wfRestoreFront(card);
     const wordDisplay = document.getElementById('wfWordDisplay');
     const ipaEl = document.getElementById('wfIpa');
     const listenBtn = document.getElementById('wfListenBtn');
@@ -6948,20 +6942,27 @@ const KO_VOICES = [
     }
   },
 
+  // Revenir à la face avant, c'est défaire TROIS choses : le contenu, la
+  // hauteur figée et le mode défilement. Elles étaient défaites séparément à
+  // cinq endroits, et la plupart oubliaient la hauteur — d'où une carte
+  // écrasée à la taille du mot précédent, avec le texte qui déborde.
+  _wfRestoreFront(card = document.getElementById('wfWordCard')) {
+    if (!card) return;
+    if (card.dataset.frontHtml) {
+      card.innerHTML = card.dataset.frontHtml;
+      delete card.dataset.frontHtml;
+    }
+    card.classList.remove('wf-card-scrollable');
+    card.style.height = '';
+    card.style.maxHeight = '';
+    this._wfDefPanelOpen = false;
+  },
+
   _wfToggleDefinition() {
     const card = document.getElementById('wfWordCard');
     if (!card) return;
     if (this._wfDefPanelOpen) {
-      // Restore front
-      if (card.dataset.frontHtml) {
-        card.innerHTML = card.dataset.frontHtml;
-        delete card.dataset.frontHtml;
-      }
-      // Remove scroll mode
-      card.classList.remove('wf-card-scrollable');
-      card.style.maxHeight = '';
-      card.style.height = '';
-      this._wfDefPanelOpen = false;
+      this._wfRestoreFront(card);
     } else {
       // Store front, show back
       card.dataset.frontHtml = card.innerHTML;
@@ -6969,8 +6970,15 @@ const KO_VOICES = [
       // Constrain the card height so it becomes a scroll container
       // Match the card's current rendered height as the fixed max
       const currentH = card.getBoundingClientRect().height;
-      card.style.height = currentH + 'px';
-      card.style.maxHeight = currentH + 'px';
+      // Une mesure aberrante — carte encore masquée, police pas encore
+      // appliquée — figerait la carte à une taille absurde. Mieux vaut alors
+      // s'en remettre à la hauteur de la fenêtre.
+      if (currentH >= 120) {
+        card.style.height = currentH + 'px';
+        card.style.maxHeight = currentH + 'px';
+      } else {
+        card.style.maxHeight = '60vh';
+      }
       card.classList.add('wf-card-scrollable');
       const word = this._wfCurrentWord;
       const def = this._wfCurrentDef;
@@ -9333,10 +9341,8 @@ const KO_VOICES = [
     // If the def panel (back face) is open, restore front face HTML before hiding the card
     // so the card is clean for the next word.
     const card = document.getElementById('wfWordCard');
-    if (this._wfDefPanelOpen && card && card.dataset.frontHtml) {
-      card.innerHTML = card.dataset.frontHtml;
-    }
-    if (card) { delete card.dataset.frontHtml; card.style.display = 'none'; }
+    this._wfRestoreFront(card);
+    if (card) card.style.display = 'none';
     // Clear context box
     const contextRow = document.getElementById('wfContextRow');
     if (contextRow) { contextRow.innerHTML = ''; contextRow.style.display = 'none'; }
@@ -14380,6 +14386,7 @@ Réponds UNIQUEMENT avec ce JSON :
       this._wfCurrentIpa = '';
       // Update word display card
       const card = document.getElementById('wfWordCard');
+      this._wfRestoreFront(card);
       const wordDisplay = document.getElementById('wfWordDisplay');
       const ipaEl = document.getElementById('wfIpa');
       const listenBtn = document.getElementById('wfListenBtn');
