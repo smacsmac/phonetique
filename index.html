@@ -3557,6 +3557,18 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-deck-due.zero { background: rgba(255,255,255,0.05); color: var(--text3); }
 
 /* List view deck row */
+/* ── réordonnancement des paquets ─────────────────────────── */
+.grenier-deck-card.gr-dragging {
+  opacity: 0.9;
+  transform: scale(1.04);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 5;
+}
+.grenier-decks-grid.gr-reordering .grenier-deck-card,
+.grenier-decks-list.gr-reordering .grenier-deck-card {
+  transition: transform 0.15s ease;
+}
 .grenier-decks-list .grenier-deck-card {
   display: flex;
   align-items: center;
@@ -6256,18 +6268,10 @@ const KO_VOICES = [
         </div>
       </div>
       <div class="category-grid labo-grid">
-        <button class="category-tile labo-tile" style="--cat-color:#003D38;--cat-accent:#00F5D4" onclick="App.navigate('phrase-libre')">
-          <div class="cat-icon">✏️</div>
-          <div class="cat-label">Phrase libre</div>
-          <div class="cat-desc">Prononcez votre propre phrase</div>
-          <div class="cat-glow"></div>
-        </button>
-        <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
-          style="--cat-color:#003330;--cat-accent:#2DD4BF"
-          onclick="${hasKey ? "App.navigate('bilan')" : 'App.showNoKeyMsg()'}">
-          <div class="cat-icon">${hasKey ? '🔬' : '🔒'}</div>
-          <div class="cat-label">Bilan</div>
-          <div class="cat-desc">${hasKey ? 'Diagnostic de tous vos sons' : 'Requiert une clé OpenRouter'}</div>
+        <button class="category-tile labo-tile labo-tile-grenier" style="--cat-color:#2A0E00;--cat-accent:#FF6B1A" onclick="App.navigate('grenier')">
+          <div class="cat-icon">🗃️</div>
+          <div class="cat-label">Le Grenier</div>
+          <div class="cat-desc">Révisez vos mots par répétition</div>
           <div class="cat-glow"></div>
         </button>
         <button class="category-tile labo-tile" style="--cat-color:#002A28;--cat-accent:#14B8A6" onclick="App._wfFromBilan=false; App.navigate('word-focus')">
@@ -6282,10 +6286,18 @@ const KO_VOICES = [
           <div class="cat-desc">Vos mots &amp; expressions sauvegardés</div>
           <div class="cat-glow"></div>
         </button>
-        <button class="category-tile labo-tile labo-tile-grenier" style="--cat-color:#2A0E00;--cat-accent:#FF6B1A" onclick="App.navigate('grenier')">
-          <div class="cat-icon">🗃️</div>
-          <div class="cat-label">Le Grenier</div>
-          <div class="cat-desc">Révisez vos mots par répétition</div>
+        <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
+          style="--cat-color:#003330;--cat-accent:#2DD4BF"
+          onclick="${hasKey ? "App.navigate('bilan')" : 'App.showNoKeyMsg()'}">
+          <div class="cat-icon">${hasKey ? '🔬' : '🔒'}</div>
+          <div class="cat-label">Bilan</div>
+          <div class="cat-desc">${hasKey ? 'Diagnostic de tous vos sons' : 'Requiert une clé OpenRouter'}</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile" style="--cat-color:#003D38;--cat-accent:#00F5D4" onclick="App.navigate('phrase-libre')">
+          <div class="cat-icon">✏️</div>
+          <div class="cat-label">Phrase libre</div>
+          <div class="cat-desc">Prononcez votre propre phrase</div>
           <div class="cat-glow"></div>
         </button>
         <button class="category-tile labo-tile labo-coming-soon" style="--cat-color:#002220;--cat-accent:#0D9488" disabled>
@@ -7240,8 +7252,10 @@ const KO_VOICES = [
     card:   { uContent: ['word','ipa','definition','gender','tags','color','deleted'],
               uReview:  ['interval','ease','reps','lastReviewed','nextDue'],
               uPlace:   ['deckId'] },
-    deck:   { uContent: ['name','color','_emoji'] },
-    folder: { uContent: ['name','emoji'] },
+    // « ord » est un rangement, pas un contenu : réordonner sur un appareil
+    // ne doit pas écraser un renommage fait sur un autre.
+    deck:   { uContent: ['name','color','_emoji'], uPlace: ['ord'] },
+    folder: { uContent: ['name','emoji'],          uPlace: ['ord'] },
     word:   { uContent: ['word','ipa','source'], uPlace: ['folderId'] },
   },
   _SYNC_TOMB_MAXAGE: 90 * 86400000,   // purge des pierres tombales à 90 jours
@@ -7419,9 +7433,16 @@ const KO_VOICES = [
       }
       out.push(r);
     }
-    // tri déterministe : deux appareils doivent aboutir au même ordre
-    out.sort((a, b) => (Number(b.createdAt || b.addedAt || 0) - Number(a.createdAt || a.addedAt || 0))
-                    || String(a.id).localeCompare(String(b.id)));
+    // Tri déterministe : deux appareils doivent aboutir au même ordre.
+    // « ord » d'abord, pour que le rangement choisi à la main voyage avec la
+    // synchro ; puis la date de création et l'id, qui départagent partout.
+    out.sort((a, b) => {
+      const ra = Number.isFinite(a.ord) ? a.ord : Infinity;
+      const rb = Number.isFinite(b.ord) ? b.ord : Infinity;
+      if (ra !== rb) return ra - rb;
+      return (Number(b.createdAt || b.addedAt || 0) - Number(a.createdAt || a.addedAt || 0))
+          || String(a.id).localeCompare(String(b.id));
+    });
     return out;
   },
 
@@ -12555,6 +12576,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!this._grenier) this._grenier = { decks: [], cards: [] };
     if (!this._grenier.decks) this._grenier.decks = [];
     if (!this._grenier.cards) this._grenier.cards = [];
+    this._grSortDecks();
   },
 
   saveGrenier() {
@@ -12690,11 +12712,21 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.currentScreen = 'grenier';
     // Remove any stale grenier-study entries from history so back works cleanly
     this.navHistory = this.navHistory.filter(e => e.screen !== 'grenier-study');
+    // navigate('grenier') empile déjà une entrée AVANT d'appeler ce rendu.
+    // Une fois la révision retirée ci-dessus, il reste donc deux « grenier »
+    // qui se suivent — et le premier retour se contente de réafficher le même
+    // écran. On replie ces doublons pour que « retour » recule vraiment.
+    while (this.navHistory.length > 1
+           && this.navHistory[this.navHistory.length - 1].screen === 'grenier'
+           && this.navHistory[this.navHistory.length - 2].screen === 'grenier') {
+      this.navHistory.pop();
+    }
     // Ensure navHistory has exactly one grenier entry at the top
     const top = this.navHistory[this.navHistory.length - 1];
     if (!top || top.screen !== 'grenier') {
       this.navHistory.push({ screen: 'grenier', params: {} });
     }
+    this._grSortDecks();
     const decks = this._grenier.decks;
     const view = this._grenierView;
     this._grenierFabOpen = false;
@@ -12773,7 +12805,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         </div>
         <div class="grenier-decks-area">
           ${emptyHtml}
-          <div class="grenier-decks-${view}">${deckCards}</div>
+          <div class="grenier-decks-${view}" id="grenierDecks">${deckCards}</div>
         </div>
       </div>
       <div class="grenier-fab-menu" id="grFabMenu">
@@ -12789,6 +12821,101 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       <button class="grenier-fab" id="grFab" onclick="App._grToggleFab()">+</button>
     `;
     this._grSetupLongPress();
+    this._grWireDeckDrag();
+  },
+
+  // Le Répertoire trie ses dossiers d'après l'ordre de ce tableau, donc c'est
+  // bien le tableau qu'on ordonne — pas seulement l'affichage. Tri stable :
+  // un paquet sans ordre explicite garde sa place relative.
+  _grSortDecks() {
+    if (!this._grenier?.decks) return;
+    const rang = d => Number.isFinite(d.ord) ? d.ord : Infinity;
+    this._grenier.decks.sort((a, b) => rang(a) - rang(b));
+  },
+
+  // Appui long puis glissement pour réordonner les paquets.
+  _grWireDeckDrag() {
+    const zone = document.getElementById('grenierDecks');
+    if (!zone || zone._drag) return;
+    zone._drag = true;
+
+    let tenu = null, minuteur = null, x0 = 0, y0 = 0, glisse = false;
+
+    const arreter = () => {
+      clearTimeout(minuteur); minuteur = null;
+      tenu?.classList.remove('gr-dragging');
+      zone.classList.remove('gr-reordering');
+      if (glisse) {
+        this._grPersistDeckOrder(zone);
+        // Le relâchement produit un clic : sans ce garde, réordonner
+        // ouvrirait le paquet qu'on vient de déposer.
+        zone.addEventListener('click', ev => {
+          ev.stopPropagation(); ev.preventDefault();
+        }, { capture: true, once: true });
+      }
+      tenu = null; glisse = false;
+    };
+
+    zone.addEventListener('pointerdown', e => {
+      const carte = e.target.closest('.grenier-deck-card');
+      if (!carte) return;
+      tenu = carte; x0 = e.clientX; y0 = e.clientY; glisse = false;
+      minuteur = setTimeout(() => {
+        glisse = true;
+        carte.classList.add('gr-dragging');
+        zone.classList.add('gr-reordering');
+        navigator.vibrate?.(15);
+      }, 350);
+    });
+
+    zone.addEventListener('pointermove', e => {
+      if (!tenu) return;
+      if (!glisse) {
+        // Un vrai défilement annule l'appui long.
+        if (Math.abs(e.clientY - y0) > 8 || Math.abs(e.clientX - x0) > 8) {
+          clearTimeout(minuteur); tenu = null;
+        }
+        return;
+      }
+      const sous = document.elementFromPoint(e.clientX, e.clientY)?.closest('.grenier-deck-card');
+      if (!sous || sous === tenu) return;
+      const r = sous.getBoundingClientRect();
+      const apres = (e.clientY - r.top) > r.height / 2;
+      sous.parentNode.insertBefore(tenu, apres ? sous.nextSibling : sous);
+    });
+
+    // touch-action ne peut plus être changé une fois le geste commencé : c'est
+    // ce touchmove non passif qui empêche la page de défiler pendant le
+    // glissement, sans gêner le défilement normal le reste du temps.
+    zone.addEventListener('touchmove', e => { if (glisse) e.preventDefault(); }, { passive: false });
+
+    ['pointerup', 'pointercancel'].forEach(ev => zone.addEventListener(ev, arreter));
+  },
+
+  _grPersistDeckOrder(zone) {
+    const ids = [...zone.querySelectorAll('.grenier-deck-card')].map(el => el.dataset.deckId);
+    if (!ids.length) return;
+    ids.forEach((id, i) => {
+      const d = this._grenier.decks.find(x => x.id === id);
+      if (d) d.ord = i;
+    });
+    this._grSortDecks();
+    this.saveGrenier();
+    // Le Répertoire suit l'ordre des paquets par leur nom ; on recopie
+    // néanmoins l'ordre sur les dossiers pour qu'il voyage avec la synchro.
+    if (this._repertoire?.folders) {
+      const rang = new Map();
+      this._grenier.decks.forEach(d => {
+        if (Number.isFinite(d.ord)) rang.set((d.name || '').toLowerCase(), d.ord);
+      });
+      let change = false;
+      for (const f of this._repertoire.folders) {
+        const o = rang.get((f.name || '').toLowerCase());
+        if (o !== undefined && f.ord !== o) { f.ord = o; change = true; }
+      }
+      if (change) this.saveRepertoire();
+    }
+    this.showToast('Ordre enregistré ✓');
   },
 
   _grSetView(v) {
