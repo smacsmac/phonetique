@@ -3557,18 +3557,47 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-deck-due.zero { background: rgba(255,255,255,0.05); color: var(--text3); }
 
 /* List view deck row */
-/* ── réordonnancement des paquets ─────────────────────────── */
-.grenier-deck-card.gr-dragging {
-  opacity: 0.9;
-  transform: scale(1.04);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.5);
-  position: relative;
-  z-index: 5;
+/* ── mode réorganisation des paquets ──────────────────────── */
+.gr-reorder-toggle { margin-left: 8px; }
+.gr-reorder-toggle.active {
+  background: rgba(255,107,26,0.15);
+  border-color: var(--gr-orange);
+  color: var(--gr-orange);
 }
-.grenier-decks-grid.gr-reordering .grenier-deck-card,
-.grenier-decks-list.gr-reordering .grenier-deck-card {
-  transition: transform 0.15s ease;
+.grenier-deck-card.gr-reorder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
 }
+.gr-reorder-row .grenier-deck-name { flex: 1; margin-bottom: 0; text-align: left; }
+.gr-reorder-arrows { display: flex; gap: 6px; flex-shrink: 0; }
+.gr-arrow-btn {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gr-surface2);
+  border: 1px solid var(--gr-border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.gr-arrow-btn svg { width: 18px; height: 18px; }
+.gr-arrow-btn:hover:not(:disabled) { border-color: var(--gr-orange); color: var(--gr-orange); }
+.gr-arrow-btn:disabled { opacity: 0.25; cursor: default; }
+.gr-reorder-done {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(255,107,26,0.12);
+  border: 1.5px solid var(--gr-orange);
+  border-radius: var(--radius-sm);
+  color: var(--gr-orange);
+  font-family: var(--font-display);
+  font-size: 15px;
+  cursor: pointer;
+}
+.gr-reorder-done:hover { background: rgba(255,107,26,0.22); }
 .grenier-decks-list .grenier-deck-card {
   display: flex;
   align-items: center;
@@ -7616,6 +7645,7 @@ const KO_VOICES = [
       else if (g.status !== 404) throw new Error('HTTP ' + g.status);
 
       // 3. fusion
+      const avant = await this._syncSignature();
       if (remote) this._syncMerge(remote);
 
       // 4. renvoi de l'état fusionné
@@ -7636,7 +7666,10 @@ const KO_VOICES = [
       cfg.lastSync = Date.now();
       this.saveSyncConfig();
       this._syncState = 'ok';
-      this._syncRefreshUI();
+      // Ne redessiner que si la fusion a réellement rapporté quelque chose.
+      // Sinon la synchro automatique refait l'écran toutes les 45 secondes,
+      // transition comprise — d'où un clignotement régulier sans raison.
+      if (await this._syncSignature() !== avant) this._syncRefreshUI();
       if (manual) this.showToast('Synchronisé ✓');
     } catch (err) {
       const off = err.name === 'AbortError' || err.message === 'offline' ||
@@ -12554,7 +12587,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   // ── Data ──────────────────────────────────────────────────────
   _grenier: null,   // { decks: [...], cards: [...] }
   _grenierFabOpen: false,
-  _grenierView: 'list',   // 'grid' | 'list'
+  _grenierView: 'list',   // 'grid' | 'list' — repris de settings.grenierView au chargement
   _grenierStudySession: null, // { deckId, queue:[], idx, stats }
   _grenierCardRecording: false,
   _grenierCardAudioBlob: null,
@@ -12577,6 +12610,8 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     if (!this._grenier.decks) this._grenier.decks = [];
     if (!this._grenier.cards) this._grenier.cards = [];
     this._grSortDecks();
+    const v = this.settings?.grenierView;
+    if (v === 'grid' || v === 'list') this._grenierView = v;
   },
 
   saveGrenier() {
@@ -12731,10 +12766,29 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const view = this._grenierView;
     this._grenierFabOpen = false;
 
-    const deckCards = decks.map(deck => {
+    const reorder = this._grenierReorder && decks.length > 1;
+    const deckCards = decks.map((deck, i) => {
       const due = this._grDeckDueCount(deck.id);
       const total = (this._grenier.cards || []).filter(c => c.deckId === deck.id && !c.deleted).length;
       const accent = deck.color || '#FF6B1A';
+      if (reorder) {
+        // En mode réorganisation, la carte n'ouvre plus rien : deux flèches
+        // suffisent, et elles visent bien mieux qu'un glissement au doigt.
+        return `<div class="grenier-deck-card gr-reorder-row" style="--deck-accent:${accent}" data-deck-id="${deck.id}">
+          <div class="grenier-deck-accent-dot"></div>
+          <div class="grenier-deck-name">${deck.name}</div>
+          <div class="gr-reorder-arrows">
+            <button class="gr-arrow-btn" ${i === 0 ? 'disabled' : ''}
+              onclick="App._grMoveDeck('${deck.id}',-1)" title="Monter" aria-label="Monter ${deck.name}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button class="gr-arrow-btn" ${i === decks.length - 1 ? 'disabled' : ''}
+              onclick="App._grMoveDeck('${deck.id}',1)" title="Descendre" aria-label="Descendre ${deck.name}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+        </div>`;
+      }
       if (view === 'grid') {
         return `<button class="grenier-deck-card" style="--deck-accent:${accent}"
           onclick="App._grOpenDeck('${deck.id}')"
@@ -12802,10 +12856,17 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </button>
           </div>
+          ${decks.length > 1 ? `
+          <button class="grenier-view-btn gr-reorder-toggle ${reorder ? 'active' : ''}"
+            onclick="App._grToggleReorder()" title="Changer l'ordre des paquets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 3 7 21"/><polyline points="4 6 7 3 10 6"/><polyline points="17 21 17 3"/><polyline points="14 18 17 21 20 18"/></svg>
+          </button>` : ''}
         </div>
         <div class="grenier-decks-area">
           ${emptyHtml}
-          <div class="grenier-decks-${view}" id="grenierDecks">${deckCards}</div>
+          <div class="grenier-decks-${reorder ? 'list' : view}" id="grenierDecks">${deckCards}</div>
+          ${reorder ? `
+          <button class="gr-reorder-done" onclick="App._grToggleReorder(false)">Terminé</button>` : ''}
         </div>
       </div>
       <div class="grenier-fab-menu" id="grFabMenu">
@@ -12821,7 +12882,44 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       <button class="grenier-fab" id="grFab" onclick="App._grToggleFab()">+</button>
     `;
     this._grSetupLongPress();
-    this._grWireDeckDrag();
+  },
+
+  // ── réorganisation des paquets ────────────────────────────────────────
+  // Un mode dédié plutôt qu'un glissement : sur téléphone, viser une position
+  // au doigt en tenant l'écran est pénible, alors que deux flèches ne ratent
+  // jamais leur cible.
+  _grenierReorder: false,
+
+  _grToggleReorder(on) {
+    this._grenierReorder = (on === undefined) ? !this._grenierReorder : !!on;
+    this.renderGrenier();
+  },
+
+  _grMoveDeck(deckId, delta) {
+    this._grSortDecks();
+    const arr = this._grenier.decks;
+    const i = arr.findIndex(d => d.id === deckId);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    this._grApplyDeckOrder();
+    this.renderGrenier();
+  },
+
+  // Renumérote, enregistre, et recopie le rang sur les dossiers pour qu'il
+  // voyage avec la synchro. Le Répertoire, lui, suit déjà l'ordre du tableau.
+  _grApplyDeckOrder() {
+    this._grenier.decks.forEach((d, i) => { d.ord = i; });
+    this.saveGrenier();
+    if (!this._repertoire?.folders) return;
+    const rang = new Map();
+    this._grenier.decks.forEach(d => rang.set((d.name || '').toLowerCase(), d.ord));
+    let change = false;
+    for (const f of this._repertoire.folders) {
+      const o = rang.get((f.name || '').toLowerCase());
+      if (o !== undefined && f.ord !== o) { f.ord = o; change = true; }
+    }
+    if (change) this.saveRepertoire();
   },
 
   // Le Répertoire trie ses dossiers d'après l'ordre de ce tableau, donc c'est
@@ -12833,93 +12931,13 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this._grenier.decks.sort((a, b) => rang(a) - rang(b));
   },
 
-  // Appui long puis glissement pour réordonner les paquets.
-  _grWireDeckDrag() {
-    const zone = document.getElementById('grenierDecks');
-    if (!zone || zone._drag) return;
-    zone._drag = true;
 
-    let tenu = null, minuteur = null, x0 = 0, y0 = 0, glisse = false;
-
-    const arreter = () => {
-      clearTimeout(minuteur); minuteur = null;
-      tenu?.classList.remove('gr-dragging');
-      zone.classList.remove('gr-reordering');
-      if (glisse) {
-        this._grPersistDeckOrder(zone);
-        // Le relâchement produit un clic : sans ce garde, réordonner
-        // ouvrirait le paquet qu'on vient de déposer.
-        zone.addEventListener('click', ev => {
-          ev.stopPropagation(); ev.preventDefault();
-        }, { capture: true, once: true });
-      }
-      tenu = null; glisse = false;
-    };
-
-    zone.addEventListener('pointerdown', e => {
-      const carte = e.target.closest('.grenier-deck-card');
-      if (!carte) return;
-      tenu = carte; x0 = e.clientX; y0 = e.clientY; glisse = false;
-      minuteur = setTimeout(() => {
-        glisse = true;
-        carte.classList.add('gr-dragging');
-        zone.classList.add('gr-reordering');
-        navigator.vibrate?.(15);
-      }, 350);
-    });
-
-    zone.addEventListener('pointermove', e => {
-      if (!tenu) return;
-      if (!glisse) {
-        // Un vrai défilement annule l'appui long.
-        if (Math.abs(e.clientY - y0) > 8 || Math.abs(e.clientX - x0) > 8) {
-          clearTimeout(minuteur); tenu = null;
-        }
-        return;
-      }
-      const sous = document.elementFromPoint(e.clientX, e.clientY)?.closest('.grenier-deck-card');
-      if (!sous || sous === tenu) return;
-      const r = sous.getBoundingClientRect();
-      const apres = (e.clientY - r.top) > r.height / 2;
-      sous.parentNode.insertBefore(tenu, apres ? sous.nextSibling : sous);
-    });
-
-    // touch-action ne peut plus être changé une fois le geste commencé : c'est
-    // ce touchmove non passif qui empêche la page de défiler pendant le
-    // glissement, sans gêner le défilement normal le reste du temps.
-    zone.addEventListener('touchmove', e => { if (glisse) e.preventDefault(); }, { passive: false });
-
-    ['pointerup', 'pointercancel'].forEach(ev => zone.addEventListener(ev, arreter));
-  },
-
-  _grPersistDeckOrder(zone) {
-    const ids = [...zone.querySelectorAll('.grenier-deck-card')].map(el => el.dataset.deckId);
-    if (!ids.length) return;
-    ids.forEach((id, i) => {
-      const d = this._grenier.decks.find(x => x.id === id);
-      if (d) d.ord = i;
-    });
-    this._grSortDecks();
-    this.saveGrenier();
-    // Le Répertoire suit l'ordre des paquets par leur nom ; on recopie
-    // néanmoins l'ordre sur les dossiers pour qu'il voyage avec la synchro.
-    if (this._repertoire?.folders) {
-      const rang = new Map();
-      this._grenier.decks.forEach(d => {
-        if (Number.isFinite(d.ord)) rang.set((d.name || '').toLowerCase(), d.ord);
-      });
-      let change = false;
-      for (const f of this._repertoire.folders) {
-        const o = rang.get((f.name || '').toLowerCase());
-        if (o !== undefined && f.ord !== o) { f.ord = o; change = true; }
-      }
-      if (change) this.saveRepertoire();
-    }
-    this.showToast('Ordre enregistré ✓');
-  },
 
   _grSetView(v) {
     this._grenierView = v;
+    // La vue choisie était perdue à chaque ouverture. On la retient.
+    this.settings.grenierView = v;
+    this.saveSettings();
     this.renderGrenier();
   },
 
