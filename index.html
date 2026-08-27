@@ -2296,6 +2296,17 @@ body::before {
   white-space: nowrap;
   flex-shrink: 0;
 }
+/* Déjà au Grenier : le bouton s'éteint pour qu'on le voie au premier regard. */
+.wf-grenier-add-btn.in-grenier {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text3);
+}
+.wf-grenier-add-btn.in-grenier:hover {
+  background: var(--surface2);
+  border-color: var(--border-bright);
+  color: var(--text2);
+}
 .wf-grenier-add-btn:hover {
   background: linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.28) 100%);
   border-color: #8B5CF6;
@@ -5730,6 +5741,7 @@ const KO_VOICES = [
     azureRegion: 'eastus',
     speechSynthVoice: null,
     launchScreen: 'home',
+    defType: 'simple',        // dernier choix simple / complexe, retenu
     defSimpleModel: '',
     defSimplePrompt: '',
     defComplexModel: '',
@@ -7009,7 +7021,10 @@ const KO_VOICES = [
     const src = document.getElementById('wfInput');
     const dst = document.getElementById('wfContextInput');
     if (!src || !dst) return;
-    const mot = (src.value || '').trim();
+    // Le Grenier enregistre le mot en minuscules : la phrase de contexte doit
+    // suivre, sinon un « Levure » saisi au champ du haut se retrouve capitalisé
+    // au milieu d'une phrase.
+    let mot = (src.value || '').trim().toLowerCase();
     if (!mot) { this.showToast('Entrez d\'abord un mot'); return; }
 
     const v = dst.value;
@@ -7022,6 +7037,10 @@ const KO_VOICES = [
 
     // Espacement : ne pas coller au mot voisin, ni doubler une espace.
     const avant = v.slice(0, s), apres = v.slice(e);
+    // …sauf en début de phrase, où la majuscule est celle qu'on attend.
+    if (!avant.trim() || /[.!?…]\s*$/.test(avant)) {
+      mot = mot.charAt(0).toUpperCase() + mot.slice(1);
+    }
     const gauche = (avant && !/\s$/.test(avant)) ? ' ' : '';
     const droite = (apres && !/^\s/.test(apres)) ? ' ' : '';
     const ins = gauche + mot + droite;
@@ -7238,6 +7257,9 @@ const KO_VOICES = [
       const def = data.choices?.[0]?.message?.content?.trim() || '';
       if (def) {
         this._wfCurrentDef = def;
+        // Si la carte a été créée avant l'arrivée de la définition, elle est
+        // restée vide : on la complète maintenant.
+        this._wfPushDefToGrenier(this._wfCurrentWord, def);
         const content = document.getElementById('wfDefContent');
         if (content) { content.innerHTML = def; App._idbHydrateImages(content); }
         this._wfCurrentDef = def;
@@ -7262,6 +7284,9 @@ const KO_VOICES = [
   _wfDefType: 'simple', // 'simple' | 'complex'
   _wfSetDefType(type) {
     this._wfDefType = type;
+    // Le choix devient le défaut de la prochaine fois, jusqu'à changement.
+    this.settings.defType = type;
+    this.saveSettings();
     const simple = document.getElementById('wfDefTypeSimple');
     const complex = document.getElementById('wfDefTypeComplex');
     if (!simple || !complex) return;
@@ -9854,7 +9879,39 @@ const KO_VOICES = [
     this.navigate('repertoire');
   },
 
+  // Le mot courant est-il déjà au Grenier ? Le bouton le dit d'un coup d'œil.
+  _wfUpdateGrenierBtn() {
+    const btn = document.getElementById('wfGrenierAddBtn');
+    if (!btn) return;
+    const w = (this._wfCurrentWord || '').toLowerCase();
+    const dedans = !!w && (this._grenier?.cards || [])
+      .some(c => !c.deleted && c.word?.toLowerCase() === w);
+    btn.classList.toggle('in-grenier', dedans);
+    btn.title = dedans ? 'Déjà au Grenier — toucher pour changer les étiquettes'
+                       : 'Ajouter au Grenier';
+  },
+
+  // Une définition qui arrive après coup — le modèle met parfois du temps —
+  // n'atteignait jamais la carte déjà créée. On la dépose au passage, sans
+  // jamais écraser une définition existante.
+  _wfPushDefToGrenier(word, def) {
+    if (!def || !word || !this._grenier?.cards) return;
+    const w = word.toLowerCase();
+    let n = 0;
+    for (const c of this._grenier.cards) {
+      if (c.deleted || c.word?.toLowerCase() !== w) continue;
+      if ((c.definition || '').trim()) continue;
+      c.definition = def;
+      n++;
+    }
+    if (n) {
+      this.saveGrenier();
+      this.showToast(`Définition ajoutée à la carte du Grenier ✓`);
+    }
+  },
+
   _wfUpdateSaveBtn() {
+    this._wfUpdateGrenierBtn();
     const btn = document.getElementById('wfSaveBtn');
     if (!btn) return;
     const saved = this.repIsWordSaved(this._wfCurrentWord);
@@ -14659,6 +14716,20 @@ Réponds UNIQUEMENT avec ce JSON :
     const ipa = this._wfCurrentIpa || '';
     const context = this._wfGetContext();
     const existingDef = this._wfCurrentDef || '';
+
+    // Choix simple / complexe repris de la dernière fois.
+    const defType = this.settings.defType === 'complex' ? 'complex' : 'simple';
+    this._wfDefType = defType;
+    const styleTypeOn  = 'flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);background:rgba(167,139,250,0.2);border:1.5px solid #A78BFA;color:#A78BFA;transition:all 0.15s';
+    const styleTypeOff = 'flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);background:var(--surface);border:1px solid var(--border);color:var(--text3);transition:all 0.15s';
+
+    // Le mot est-il déjà au Grenier ? Si oui, la fenêtre sert à retoucher ses
+    // étiquettes : elles s'appliquent alors directement, sans rien confirmer.
+    const cartesExistantes = (this._grenier.cards || [])
+      .filter(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
+    this._wfGrenierEditCards = cartesExistantes.map(c => c.id);
+    const tagsActuels = new Set();
+    cartesExistantes.forEach(c => (c.tags || []).forEach(t => tagsActuels.add(t)));
     // If MOF already has a definition, default genDef to off (it will be carried over automatically)
     const defToggleOn = hasKey && !existingDef;
     const overlay = document.createElement('div');
@@ -14689,17 +14760,18 @@ Réponds UNIQUEMENT avec ce JSON :
           </label>
           ${!existingDef ? `<div id="wfGrenierDefTypeRow" style="margin-top:10px;display:${defToggleOn && hasKey ? 'flex' : 'none'};gap:8px">
             <button id="wfDefTypeSimple" onclick="App._wfSetDefType('simple')"
-              style="flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);background:rgba(167,139,250,0.2);border:1.5px solid #A78BFA;color:#A78BFA;transition:all 0.15s">
+              style="${defType === 'simple' ? styleTypeOn : styleTypeOff}">
               Simple
             </button>
             <button id="wfDefTypeComplex" onclick="App._wfSetDefType('complex')"
-              style="flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);background:var(--surface);border:1px solid var(--border);color:var(--text3);transition:all 0.15s">
+              style="${defType === 'complex' ? styleTypeOn : styleTypeOff}">
               Complexe
             </button>
           </div>` : ''}
         </div>
         <div style="margin-top:12px;padding:10px 12px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:var(--radius-sm)">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Étiquettes (optionnel)</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Étiquettes (optionnel)${
+            cartesExistantes.length ? ' — <span style="color:#A78BFA">appliquées aussitôt à la carte</span>' : ''}</div>
           <div style="display:flex;flex-wrap:wrap;gap:3px" id="wfGrenierTagRow">${
             [
               { id:'fr',    emoji:'🇫🇷', label:'Usage France' },
@@ -14710,9 +14782,11 @@ Réponds UNIQUEMENT avec ce JSON :
               { id:'sci',   emoji:'🌱', label:'Mot scientifique' },
               { id:'fun',   emoji:'😄', label:'Argot / décontracté' },
               { id:'arch',  emoji:'🏛️', label:'Vieux / désuet' },
-            ].map(t => `<button type="button" id="wfGrTag_${t.id}" title="${t.label}" onclick="App._wfGrToggleTag('${t.id}',this)"
-              style="font-size:18px;padding:3px 5px;border-radius:8px;border:2px solid transparent;
-              background:transparent;cursor:pointer;transition:all 0.15s;filter:grayscale(1) opacity(0.35)">${t.emoji}</button>`).join('')
+            ].map(t => { const on = tagsActuels.has(t.id);
+              return `<button type="button" id="wfGrTag_${t.id}" title="${t.label}" onclick="App._wfGrToggleTag('${t.id}',this)"
+              style="font-size:18px;padding:3px 5px;border-radius:8px;cursor:pointer;transition:all 0.15s;${on
+                ? 'border:2px solid #A78BFA;background:rgba(167,139,250,0.12);filter:none'
+                : 'border:2px solid transparent;background:transparent;filter:grayscale(1) opacity(0.35)'}">${t.emoji}</button>`; }).join('')
           }</div>
         </div>
         <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Annuler</button>
@@ -14724,7 +14798,7 @@ Réponds UNIQUEMENT avec ce JSON :
     this._wfGrenierPendingIpa = ipa;
     this._wfGrenierPendingContext = context;
     this._wfGrenierPendingDef = existingDef;
-    this._wfGrenierPendingTags = new Set();
+    this._wfGrenierPendingTags = tagsActuels;
   },
 
   _wfGrToggleTag(id, btn) {
@@ -14740,6 +14814,19 @@ Réponds UNIQUEMENT avec ce JSON :
       btn.style.filter = 'none';
       btn.style.borderColor = '#A78BFA';
       btn.style.background = 'rgba(167,139,250,0.12)';
+    }
+    // Mot déjà au Grenier : on écrit sans attendre de confirmation, puisqu'il
+    // n'y a plus rien à confirmer — la carte existe déjà.
+    const ids = this._wfGrenierEditCards || [];
+    if (!ids.length) return;
+    const tags = [...this._wfGrenierPendingTags];
+    let n = 0;
+    for (const c of this._grenier.cards) {
+      if (ids.includes(c.id)) { c.tags = [...tags]; n++; }
+    }
+    if (n) {
+      this.saveGrenier();
+      this.showToast(tags.length ? 'Étiquettes mises à jour ✓' : 'Étiquettes effacées ✓');
     }
   },
 
@@ -14773,8 +14860,8 @@ Réponds UNIQUEMENT avec ce JSON :
     this.showToast(`"${word}" ajouté au Grenier ✓`);
     // If MOF definition exists, use it directly — no need to generate
     if (!existingDef && genDef && this.settings.openrouterKey) {
-      const defType = this._wfDefType || 'simple';
-      this._wfDefType = 'simple';
+      // Ne plus revenir à « simple » d'office : le choix doit tenir.
+      const defType = this._wfDefType || this.settings.defType || 'simple';
       this._grGenerateDefForNewCard(cardId, word, context, defType);
     }
     this._wfUpdateSaveBtn();
