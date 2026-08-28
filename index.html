@@ -7057,6 +7057,9 @@ const KO_VOICES = [
       // Open
       this._wfContextOpen = true;
       row.style.display = '';
+      // La liste des mots déjà connus recouvrirait le champ qu'on vient
+      // d'ouvrir : on la retire tout de suite.
+      document.getElementById('wfGrenierSuggest')?.remove();
       // Réserve à droite du champ du haut la même colonne que le bouton
       // d'insertion, pour que les deux boîtes aient exactement la même largeur.
       document.querySelector('.wf-input-row')?.classList.add('wf-with-ctx');
@@ -9652,6 +9655,10 @@ const KO_VOICES = [
     const query = (input?.value || '').trim().toLowerCase();
     // Remove any existing dropdown
     document.getElementById('wfGrenierSuggest')?.remove();
+    // La liste se déploie juste au-dessus du champ de contexte et le masque.
+    // Tant que le contexte est ouvert, c'est lui qu'on veut voir ; refermer
+    // le contexte (✕) fait revenir la liste à la frappe suivante.
+    if (this._wfContextOpen) return;
     if (!query || query.length < 1) return;
     if (!this._grenier) this.loadGrenier();
     // Only active (non-deleted) cards — contains match anywhere in word
@@ -9969,6 +9976,14 @@ const KO_VOICES = [
     btn.classList.toggle('in-grenier', dedans);
     btn.title = dedans ? 'Déjà au Grenier — toucher pour changer les étiquettes'
                        : 'Ajouter au Grenier';
+    // La couleur seule ne suffit pas en noir et blanc : l'étoile devient une
+    // coche, une différence de FORME, lisible sans aucune couleur.
+    const svg = dedans
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+      stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">${svg}</svg>
+      Au Grenier`;
   },
 
   // Une définition qui arrive après coup — le modèle met parfois du temps —
