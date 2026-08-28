@@ -3401,19 +3401,92 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
+  /* Thème 2 « Braise » — le réglage par défaut. Les quatre valeurs dérivées
+     ci-dessous découlent de --gr-rgb : un thème n'a donc que six lignes à
+     redéfinir, et rien ne peut rester orange par oubli. */
+  --gr-rgb: 255,107,26;
   --gr-orange: #FF6B1A;
   --gr-orange2: #FF8C42;
-  --gr-orange-dim: rgba(255,107,26,0.18);
-  --gr-orange-glow: rgba(255,107,26,0.35);
   --gr-amber: #FFB347;
   --gr-bg: #100800;
   --gr-bg2: #1A0E00;
   --gr-bg3: #221500;
   --gr-surface: #2A1A00;
   --gr-surface2: #331F00;
-  --gr-border: rgba(255,107,26,0.20);
-  --gr-border-bright: rgba(255,107,26,0.45);
+
+  --gr-orange-dim:    rgba(var(--gr-rgb), 0.18);
+  --gr-orange-glow:   rgba(var(--gr-rgb), 0.35);
+  --gr-border:        rgba(var(--gr-rgb), 0.20);
+  --gr-border-bright: rgba(var(--gr-rgb), 0.45);
 }
+
+/* ── Thèmes du Grenier (le titre les fait défiler) ───────────── */
+
+/* 1 — « Lagune » : la palette de Mot en Focus */
+:root[data-gr-theme="1"] {
+  --gr-rgb: 20,184,166;
+  --gr-orange: #14B8A6;
+  --gr-orange2: #2DD4BF;
+  --gr-amber: #5EEAD4;
+  --gr-bg: #05060F;
+  --gr-bg2: #0D0F1E;
+  --gr-bg3: #131629;
+  --gr-surface: #1A1D35;
+  --gr-surface2: #222640;
+}
+
+/* 3 — « Néon » : bleu ciel et vert électrique */
+:root[data-gr-theme="3"] {
+  --gr-rgb: 56,189,248;
+  --gr-orange: #38BDF8;
+  --gr-orange2: #7DD3FC;
+  --gr-amber: #4ADE80;
+  --gr-bg: #01080F;
+  --gr-bg2: #04121F;
+  --gr-bg3: #061A2B;
+  --gr-surface: #0A2338;
+  --gr-surface2: #0E2C46;
+  --gr-border-bright: rgba(74,222,128,0.5);
+}
+
+/* 4 — « Fuchsia » : rose et violet */
+:root[data-gr-theme="4"] {
+  --gr-rgb: 244,114,182;
+  --gr-orange: #F472B6;
+  --gr-orange2: #F9A8D4;
+  --gr-amber: #A78BFA;
+  --gr-bg: #0B0413;
+  --gr-bg2: #150925;
+  --gr-bg3: #1D0D32;
+  --gr-surface: #26123F;
+  --gr-surface2: #2F164C;
+  --gr-border: rgba(167,139,250,0.28);
+}
+
+/* 5 — « Givre » : argent glacé, mon choix — le seul thème froid et sobre,
+       reposant après quatre palettes saturées */
+:root[data-gr-theme="5"] {
+  --gr-rgb: 203,213,225;
+  --gr-orange: #CBD5E1;
+  --gr-orange2: #E2E8F0;
+  --gr-amber: #7DD3FC;
+  --gr-bg: #06080B;
+  --gr-bg2: #0C1116;
+  --gr-bg3: #121820;
+  --gr-surface: #19212B;
+  --gr-surface2: #212B37;
+  --gr-orange-glow: rgba(186,230,253,0.35);
+}
+
+/* Le titre du Grenier fait office de sélecteur de thème. */
+.grenier-titlebox {
+  text-align: right;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.grenier-titlebox:active { transform: scale(0.96); opacity: 0.75; }
 
 /* ── Grenier Home ────────────────────────────────────────────── */
 .grenier-screen {
@@ -3429,7 +3502,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   width: 180%;
   height: 180%;
   background:
-    radial-gradient(ellipse 500px 300px at 70% 10%, rgba(255,107,26,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 300px at 70% 10%, rgba(var(--gr-rgb),0.07) 0%, transparent 60%),
     radial-gradient(ellipse 400px 300px at 20% 80%, rgba(255,140,66,0.05) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
@@ -3441,7 +3514,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px 12px;
-  background: linear-gradient(180deg, rgba(255,107,26,0.06) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(var(--gr-rgb),0.06) 0%, transparent 100%);
   border-bottom: 1px solid var(--gr-border);
 }
 .grenier-logo {
@@ -3459,7 +3532,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 }
 .grenier-tagline {
   font-size: 11px;
-  color: rgba(255,107,26,0.6);
+  color: rgba(var(--gr-rgb),0.6);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -3537,7 +3610,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-empty {
   text-align: center;
   padding: 60px 20px;
-  color: rgba(255,107,26,0.4);
+  color: rgba(var(--gr-rgb),0.4);
 }
 .grenier-empty-icon { font-size: 48px; margin-bottom: 12px; }
 .grenier-empty-text { font-size: 14px; line-height: 1.5; }
@@ -3566,7 +3639,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-deck-card:hover {
   transform: translateY(-2px);
   border-color: var(--gr-border-bright);
-  box-shadow: 0 8px 24px rgba(255,107,26,0.12);
+  box-shadow: 0 8px 24px rgba(var(--gr-rgb),0.12);
 }
 .grenier-deck-card.deck-selected {
   border-color: var(--deck-accent, var(--gr-orange));
@@ -3581,7 +3654,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 }
 .grenier-deck-meta {
   font-size: 11px;
-  color: rgba(255,107,26,0.6);
+  color: rgba(var(--gr-rgb),0.6);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3591,7 +3664,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(255,107,26,0.15);
+  background: rgba(var(--gr-rgb),0.15);
   border-radius: 100px;
   padding: 2px 8px;
   font-size: 11px;
@@ -3604,7 +3677,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 /* ── mode réorganisation des paquets ──────────────────────── */
 .gr-reorder-toggle { margin-left: 8px; }
 .gr-reorder-toggle.active {
-  background: rgba(255,107,26,0.15);
+  background: rgba(var(--gr-rgb),0.15);
   border-color: var(--gr-orange);
   color: var(--gr-orange);
 }
@@ -3633,7 +3706,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   width: 100%;
   margin-top: 16px;
   padding: 14px;
-  background: rgba(255,107,26,0.12);
+  background: rgba(var(--gr-rgb),0.12);
   border: 1.5px solid var(--gr-orange);
   border-radius: var(--radius-sm);
   color: var(--gr-orange);
@@ -3641,7 +3714,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   font-size: 15px;
   cursor: pointer;
 }
-.gr-reorder-done:hover { background: rgba(255,107,26,0.22); }
+.gr-reorder-done:hover { background: rgba(var(--gr-rgb),0.22); }
 .grenier-decks-list .grenier-deck-card {
   display: flex;
   align-items: center;
@@ -3673,7 +3746,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 40px rgba(255,107,26,0.25);
+  box-shadow: 0 4px 20px var(--gr-orange-glow), 0 0 40px rgba(var(--gr-rgb),0.25);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .grenier-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px var(--gr-orange-glow); }
@@ -3954,7 +4027,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   padding: 20px 20px 16px;
   position: relative;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(255,107,26,0.1);
+  box-shadow: 0 8px 32px rgba(var(--gr-rgb),0.1);
 }
 .grenier-card::before {
   content: '';
@@ -4031,7 +4104,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 }
 @keyframes grPulse {
   0%,100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent), 0 0 0 0 color-mix(in srgb, var(--card-accent, var(--gr-orange)) 40%, transparent); }
-  50% { box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent), 0 0 0 14px rgba(255,107,26,0); }
+  50% { box-shadow: 0 4px 20px color-mix(in srgb, var(--card-accent, var(--gr-orange)) 50%, transparent), 0 0 0 14px rgba(var(--gr-rgb),0); }
 }
 .grenier-record-btn svg { width: 28px; height: 28px; }
 .grenier-record-label { font-size: 12px; color: var(--card-accent, var(--gr-orange2)); margin-top: 6px; opacity: 0.8; }
@@ -4193,7 +4266,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .grenier-rating-label {
   text-align: center;
   font-size: 11px;
-  color: rgba(255,107,26,0.5);
+  color: rgba(var(--gr-rgb),0.5);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 10px;
@@ -4244,7 +4317,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   white-space: nowrap;
 }
 .grenier-rhymes-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
-.grenier-rhymes-btn .gr-star { color: #FFB347; }
+.grenier-rhymes-btn .gr-star { color: var(--gr-amber); }
 .grenier-rhymes-btn:hover { background: color-mix(in srgb, var(--card-accent, var(--gr-orange)) 18%, transparent); border-color: var(--card-accent, var(--gr-orange)); }
 .grenier-rhymes-btn.loading { opacity: 0.6; cursor: wait; }
 
@@ -4344,7 +4417,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 /* ── Labo tile orange override ──────────────────────────────── */
 .labo-tile-grenier {
   --cat-color: #2A0E00;
-  --cat-accent: #FF6B1A;
+  --cat-accent: var(--gr-orange);
 }
 
   </style>
@@ -5742,6 +5815,7 @@ const KO_VOICES = [
     speechSynthVoice: null,
     launchScreen: 'home',
     defType: 'simple',        // dernier choix simple / complexe, retenu
+    grenierTheme: 2,          // palette du Grenier (1-5), voir GRENIER_THEMES
     defSimpleModel: '',
     defSimplePrompt: '',
     defComplexModel: '',
@@ -5905,6 +5979,7 @@ const KO_VOICES = [
     this._grDeduplicateCards();
     this._syncReconcile();
     this.applyTheme();
+    this._grApplyTheme();
     if (this.settings.launchScreen === 'labo') this.renderLabo();
     else if (this.settings.launchScreen === 'word-focus') { this._wfFromBilan = false; this.currentScreen = 'word-focus'; this.renderWordFocus(); }
     else if (this.settings.launchScreen === 'grenier') { this.currentScreen = 'grenier'; this.renderGrenier(); }
@@ -6435,6 +6510,11 @@ const KO_VOICES = [
         </button>
         <button class="back-btn" onclick="${this._wfFromBilan ? 'App._wfGoBackToBilan()' : 'App.goBack()'}" title="Retour">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
         </button>
         <div class="lang-flags">${this.flagsHTML()}</div>
         <div class="screen-title" style="color:#14B8A6">Mot en focus</div>
@@ -12886,6 +12966,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   // ── renderGrenier (Home) ──────────────────────────────────────
   renderGrenier() {
     if (!this._grenier) this.loadGrenier();
+    this._grApplyTheme();
     this.currentScreen = 'grenier';
     // Remove any stale grenier-study entries from history so back works cleanly
     this.navHistory = this.navHistory.filter(e => e.screen !== 'grenier-study');
@@ -12966,15 +13047,6 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     document.getElementById('main').innerHTML = `
       <div class="grenier-screen">
         <div class="grenier-header">
-          <div style="display:flex;align-items:center;gap:10px">
-            <button class="grenier-icon-btn" onclick="App.goBack()" title="Retour" style="flex-shrink:0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <div>
-              <div class="grenier-title">Le Grenier</div>
-              <div class="grenier-tagline">Répétition espacée</div>
-            </div>
-          </div>
           <div class="grenier-header-actions">
             <button class="grenier-icon-btn" onclick="App.navigate('labo')" title="Le Labo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12982,11 +13054,18 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                 <line x1="9" y1="3" x2="15" y2="3"/>
               </svg>
             </button>
+            <button class="grenier-icon-btn" onclick="App.goBack()" title="Retour">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
             <button class="grenier-icon-btn" onclick="App.navigate('settings')" title="Paramètres">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </button>
+          </div>
+          <div class="grenier-titlebox" onclick="App._grCycleTheme()" title="Toucher pour changer le thème">
+            <div class="grenier-title">Le Grenier</div>
+            <div class="grenier-tagline">Répétition espacée</div>
           </div>
         </div>
         <div class="grenier-toolbar">
@@ -13024,6 +13103,35 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       <button class="grenier-fab" id="grFab" onclick="App._grToggleFab()">+</button>
     `;
     this._grSetupLongPress();
+  },
+
+  // ── thèmes du Grenier ─────────────────────────────────────────────────
+  // Fonctionnalité discrète : toucher le titre fait défiler les palettes.
+  // Le 2 est le défaut, pour que rien ne change tant qu'on n'y touche pas.
+  GRENIER_THEMES: [
+    { n: 1, nom: 'Lagune' },
+    { n: 2, nom: 'Braise' },
+    { n: 3, nom: 'Néon' },
+    { n: 4, nom: 'Fuchsia' },
+    { n: 5, nom: 'Givre' },
+  ],
+
+  _grApplyTheme() {
+    const n = Number(this.settings?.grenierTheme) || 2;
+    const el = document.documentElement;
+    // Le thème 2 est celui de :root : pas d'attribut, donc rien à surcharger.
+    if (n === 2) el.removeAttribute('data-gr-theme');
+    else el.setAttribute('data-gr-theme', String(n));
+  },
+
+  _grCycleTheme() {
+    const n = Number(this.settings?.grenierTheme) || 2;
+    const suivant = (n % this.GRENIER_THEMES.length) + 1;   // 5 → 1
+    this.settings.grenierTheme = suivant;
+    this.saveSettings();
+    this._grApplyTheme();
+    const nom = this.GRENIER_THEMES.find(t => t.n === suivant)?.nom || '';
+    this.showToast(`Thème ${suivant} — ${nom}`);
   },
 
   // ── réorganisation des paquets ────────────────────────────────────────
