@@ -3420,6 +3420,125 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   --gr-border-bright: rgba(var(--gr-rgb), 0.45);
 }
 
+/* ── Entraînement ciblé ──────────────────────────────────────── */
+.ph-container { padding: 0 20px 90px; display: flex; flex-direction: column; gap: 12px; }
+.ph-intro { font-size: 12px; color: var(--text3); line-height: 1.5; }
+.ph-list { display: flex; flex-direction: column; gap: 6px; }
+.ph-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ph-row:hover { border-color: var(--border-bright); background: var(--surface2); }
+.ph-sym {
+  font-family: var(--font-display); font-size: 17px; color: #14B8A6;
+  min-width: 42px; flex-shrink: 0;
+}
+.ph-sym.gros { font-size: 26px; min-width: 52px; }
+.ph-label { flex: 1; font-size: 14px; color: var(--text); min-width: 0; }
+.ph-chip {
+  font-size: 11px; padding: 2px 7px; border-radius: 20px;
+  font-family: var(--font-display); flex-shrink: 0;
+}
+.ph-chip-faible { background: rgba(239,68,68,0.15); color: #F87171; }
+.ph-chip-moyen  { background: rgba(245,158,11,0.15); color: #FBBF24; }
+.ph-chip-bon    { background: rgba(34,197,94,0.15); color: #4ADE80; }
+.ph-chip-neutre { background: rgba(255,255,255,0.05); color: var(--text3); }
+.ph-count { font-size: 11px; color: var(--text2); flex-shrink: 0; min-width: 54px; text-align: right; }
+.ph-count.vide { color: var(--text3); opacity: 0.5; }
+.ph-detail {
+  background: rgba(20,184,166,0.06);
+  border: 1px solid rgba(20,184,166,0.3);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ph-detail-head { display: flex; align-items: center; gap: 12px; }
+.ph-close { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; flex-shrink: 0; }
+.ph-close:hover { color: var(--text); }
+.ph-words { display: flex; flex-wrap: wrap; gap: 6px; max-height: 190px; overflow-y: auto; }
+.ph-word {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ph-word:hover { border-color: #14B8A6; }
+.ph-word-ipa { font-family: var(--font-display); font-size: 10px; color: #14B8A6; opacity: 0.75; }
+.ph-start {
+  width: 100%; padding: 13px;
+  background: rgba(20,184,166,0.14);
+  border: 1.5px solid #14B8A6;
+  border-radius: var(--radius-sm);
+  color: #14B8A6;
+  font-family: var(--font-display); font-size: 14px;
+  cursor: pointer;
+}
+.ph-start:hover { background: rgba(20,184,166,0.24); }
+
+/* ── Mains libres ────────────────────────────────────────────── */
+.hf-container {
+  padding: 30px 24px 90px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+}
+.hf-mot {
+  font-family: var(--font-display);
+  font-size: 34px; font-weight: 700;
+  color: var(--text); text-align: center;
+  min-height: 46px; line-height: 1.2;
+  word-break: break-word;
+}
+.hf-etat { font-size: 13px; color: var(--text3); font-family: var(--font-display); }
+.hf-play {
+  width: 108px; height: 108px; border-radius: 50%;
+  background: rgba(20,184,166,0.14);
+  border: 2px solid #14B8A6;
+  color: #14B8A6;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; margin-top: 8px;
+  transition: all 0.15s;
+}
+.hf-play svg { width: 46px; height: 46px; }
+.hf-play:hover:not(:disabled) { background: rgba(20,184,166,0.26); }
+.hf-play:active:not(:disabled) { transform: scale(0.95); }
+.hf-play:disabled { opacity: 0.3; cursor: default; }
+.hf-hint { font-size: 13px; color: var(--text2); text-align: center; }
+.hf-stop {
+  margin-top: 6px; padding: 11px 26px;
+  background: transparent;
+  border: 1.5px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-family: var(--font-body); font-size: 14px;
+  cursor: pointer;
+}
+.hf-stop:hover { color: var(--text); border-color: var(--text3); }
+.hf-reglages {
+  width: 100%; max-width: 340px; margin-top: 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.hf-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--text);
+  cursor: pointer;
+}
+.hf-opt input[type=checkbox] { width: 18px; height: 18px; accent-color: #14B8A6; }
+
 /* ── Thèmes du Grenier (le titre les fait défiler) ───────────── */
 
 /* 1 — « Lagune » : la palette de Mot en Focus */
@@ -5988,6 +6107,14 @@ const KO_VOICES = [
     this._setupLongPress();
     this._syncStartAuto();
     this._installWire();
+    // Une session mains libres ne doit pas continuer à parler dans le vide.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && this._hfSession && !this._hfSession.pause) {
+        this._hfSession.pause = true;
+        clearTimeout(this._hfTimer);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }
+    });
   },
 
   // Un .html ouvert depuis les Téléchargements d'Android devient une page
@@ -6334,6 +6461,8 @@ const KO_VOICES = [
           break;
         case 'repertoire': this.renderRepertoire(); break;
         case 'grenier': this.renderGrenier(); break;
+        case 'phoneme-focus': this.renderPhonemeFocus(); break;
+        case 'hands-free': this.renderHandsFree(); break;
         case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
         case 'grenier-study':
           // If a session is already active for this deck, just re-render current card
@@ -6433,6 +6562,18 @@ const KO_VOICES = [
           <div class="cat-icon">📖</div>
           <div class="cat-label">Le Répertoire</div>
           <div class="cat-desc">Vos mots &amp; expressions sauvegardés</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile" style="--cat-color:#002A28;--cat-accent:#14B8A6" onclick="App.navigate('hands-free')">
+          <div class="cat-icon">🎧</div>
+          <div class="cat-label">Mains libres</div>
+          <div class="cat-desc">Réviser sans regarder l'écran</div>
+          <div class="cat-glow"></div>
+        </button>
+        <button class="category-tile labo-tile" style="--cat-color:#002A28;--cat-accent:#14B8A6" onclick="App.navigate('phoneme-focus')">
+          <div class="cat-icon">🎯</div>
+          <div class="cat-label">Entraînement ciblé</div>
+          <div class="cat-desc">Tes mots, sur tes sons faibles</div>
           <div class="cat-glow"></div>
         </button>
         <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
@@ -13118,6 +13259,360 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
       <button class="grenier-fab" id="grFab" onclick="App._grToggleFab()">+</button>
     `;
     this._grSetupLongPress();
+  },
+
+  // ══════════════════════════════════════════════════════════════════════
+  // INDEX PHONÉTIQUE — le pont entre les sons enseignés et TES mots
+  //
+  // Les cartes portent déjà leur transcription API. En la découpant en
+  // phonèmes, on répond enfin à « quels de MES mots contiennent le son que
+  // je rate ? » — ce que ni le Bilan ni le Grenier ne savaient faire seuls.
+  // ══════════════════════════════════════════════════════════════════════
+
+  PH_INV: [
+    'sjɔ̃','jɛ̃','ɑ̃','ɛ̃','ɔ̃','œ̃','ɥi','ij','aj','ɛj',
+    'a','ɑ','e','ɛ','i','o','ɔ','u','y','ø','œ','ə',
+    'j','w','ɥ',
+    'p','b','t','d','k','g','f','v','s','z','ʃ','ʒ','m','n','ɲ','ŋ','l','ʁ','r',
+  ],
+
+  // Trié du plus long au plus court : sans cet ordre, /ɑ̃/ se lirait /ɑ/
+  // suivi d'un signe, et toutes les nasales seraient confondues avec leur
+  // voyelle orale. On trie ici plutôt que de compter sur l'ordre de la liste.
+  _phInv() {
+    if (!this._phInvTri) this._phInvTri = [...this.PH_INV].sort((a, b) => b.length - a.length);
+    return this._phInvTri;
+  },
+
+  _phTokenize(ipa) {
+    const s = String(ipa || '').replace(/[\/\[\]()ˈˌː.·\s\-‿]/g, '');
+    const inv = this._phInv();
+    const out = [];
+    let i = 0;
+    while (i < s.length) {
+      let trouve = null;
+      for (const p of inv) { if (s.startsWith(p, i)) { trouve = p; break; } }
+      if (trouve) { out.push(trouve); i += trouve.length; }
+      else i++;                       // signe inconnu : ignoré
+    }
+    return out;
+  },
+
+  // Les sons enseignés utilisables. Un phonème dont le champ ipa se découpe
+  // en EXACTEMENT un jeton est un vrai son ; les entrées de prosodie, de
+  // liaison et les muets s'écartent ainsi d'elles-mêmes, sans liste noire.
+  _phSounds() {
+    if (this._phSoundsCache) return this._phSoundsCache;
+    const out = [];
+    for (const [id, p] of Object.entries(APP_DATA.phonemes || {})) {
+      const t = this._phTokenize(p.ipa);
+      if (t.length !== 1) continue;
+      out.push({ id, sym: t[0], label: p.label || id, cat: p.category || '' });
+    }
+    this._phSoundsCache = out;
+    return out;
+  },
+
+  // Tes cartes, découpées. Recalculé à la demande : quelques centaines de
+  // mots de huit signes, c'est instantané et jamais périmé.
+  _phIndex() {
+    const out = [];
+    for (const c of (this._grenier?.cards || [])) {
+      if (c.deleted || !c.word) continue;
+      const seq = this._phTokenize(c.ipa);
+      if (!seq.length) continue;
+      out.push({ id: c.id, mot: c.word, ipa: c.ipa || '', seq, ens: new Set(seq) });
+    }
+    return out;
+  },
+
+  // Moyenne de tes dix derniers essais sur ce son ; null si jamais pratiqué.
+  _phWeakness(id) {
+    const arr = this.scores?.[id];
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+  },
+
+  // Les sons, du plus faible au plus sûr. Jamais pratiqué vient après les
+  // sons faibles mais avant les sons acquis : c'est une invitation, pas une
+  // lacune avérée.
+  _phSoundsRanked() {
+    const idx = this._phIndex();
+    return this._phSounds().map(s => {
+      const mots = idx.filter(c => c.ens.has(s.sym));
+      return { ...s, score: this._phWeakness(s.id), mots };
+    }).sort((a, b) => {
+      const ra = a.score == null ? 1000 : a.score;
+      const rb = b.score == null ? 1000 : b.score;
+      if (ra !== rb) return ra - rb;
+      return b.mots.length - a.mots.length;
+    });
+  },
+
+  _phSelected: null,
+
+  renderPhonemeFocus() {
+    const rangs = this._phSoundsRanked();
+    const total = this._phIndex().length;
+    const sel = this._phSelected ? rangs.find(s => s.id === this._phSelected) : null;
+
+    const puce = (s) => {
+      if (s.score == null) return `<span class="ph-chip ph-chip-neutre">jamais évalué</span>`;
+      const c = s.score >= 80 ? 'ph-chip-bon' : s.score >= 60 ? 'ph-chip-moyen' : 'ph-chip-faible';
+      return `<span class="ph-chip ${c}">${s.score}%</span>`;
+    };
+
+    const liste = rangs.map(s => `
+      <button class="ph-row" onclick="App._phSelect('${s.id}')">
+        <span class="ph-sym">${s.sym}</span>
+        <span class="ph-label">${s.label}</span>
+        ${puce(s)}
+        <span class="ph-count ${s.mots.length ? '' : 'vide'}">${s.mots.length} mot${s.mots.length !== 1 ? 's' : ''}</span>
+      </button>`).join('');
+
+    const detail = !sel ? '' : `
+      <div class="ph-detail">
+        <div class="ph-detail-head">
+          <span class="ph-sym gros">${sel.sym}</span>
+          <div style="flex:1">
+            <div style="font-weight:700;color:var(--text)">${sel.label}</div>
+            <div style="font-size:12px;color:var(--text3)">${sel.mots.length} de tes mots contiennent ce son</div>
+          </div>
+          <button class="ph-close" onclick="App._phSelect(null)" title="Fermer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        ${sel.mots.length ? `
+          <div class="ph-words">${sel.mots.slice(0, 40).map(m => `
+            <button class="ph-word" onclick="App.navigate('word-focus',{word:'${m.mot.replace(/'/g,"\\'")}'})">
+              ${m.mot}<span class="ph-word-ipa">${m.ipa}</span>
+            </button>`).join('')}
+            ${sel.mots.length > 40 ? `<div style="font-size:11px;color:var(--text3);padding:4px 2px">…et ${sel.mots.length - 40} autres</div>` : ''}
+          </div>
+          <button class="ph-start" onclick="App._phStartSession('${sel.id}')">
+            Réviser ces ${sel.mots.length} mot${sel.mots.length !== 1 ? 's' : ''}
+          </button>` : `
+          <div style="font-size:13px;color:var(--text3);font-style:italic;padding:10px 2px">
+            Aucun mot de ta collection ne contient ce son. Ajoute-en depuis Mot en Focus.
+          </div>`}
+      </div>`;
+
+    document.getElementById('main').innerHTML = `
+      <div class="screen-header">
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#14B8A6"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
+        </button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div class="screen-title" style="color:#14B8A6">Entraînement ciblé</div>
+      </div>
+      <div class="ph-container">
+        <div class="ph-intro">
+          Tes sons du plus faible au plus sûr, et combien de <b>tes</b> mots
+          contiennent chacun. ${total} carte${total !== 1 ? 's' : ''} de ta
+          collection ont une transcription exploitable.
+        </div>
+        ${detail}
+        <div class="ph-list">${liste}</div>
+      </div>`;
+  },
+
+  _phSelect(id) {
+    this._phSelected = (id === 'null' || !id) ? null : id;
+    this.renderPhonemeFocus();
+  },
+
+  // Révision bâtie sur TES mots contenant ce son. On réutilise tel quel le
+  // moteur du Grenier au moyen d'un paquet virtuel : toutes ses recherches de
+  // paquet retombent déjà sur une valeur par défaut, donc rien à y modifier,
+  // et les cartes gardent leur vrai paquet pour la planification.
+  _phStartSession(soundId) {
+    const s = this._phSoundsRanked().find(x => x.id === soundId);
+    if (!s || !s.mots.length) return;
+    const ids = new Set(s.mots.map(m => m.id));
+    const cartes = (this._grenier.cards || []).filter(c => ids.has(c.id) && !c.deleted);
+    if (!cartes.length) { this.showToast('Aucune carte à réviser'); return; }
+    this._grenierStudySession = {
+      deckId: '__phoneme__' + soundId,
+      queue: [...cartes].sort(() => Math.random() - 0.5),
+      idx: 0,
+      stats: { again: 0, hard: 0, good: 0, easy: 0 },
+    };
+    this._grenierCardRecording = false;
+    this._grenierCardAudioBlob = null;
+    this._grenierCardSettingsOpen = false;
+    this.navHistory.push({ screen: 'grenier-study', params: { deckId: this._grenierStudySession.deckId } });
+    this.currentScreen = 'grenier-study';
+    this._grRenderStudyCard();
+  },
+
+  // ══════════════════════════════════════════════════════════════════════
+  // MAINS LIBRES — réviser sans écran, en voiture ou à la vaisselle
+  //
+  // L'appli prononce le mot, laisse un silence pour que tu répètes, lit la
+  // définition si tu veux, puis enchaîne. Aucun toucher.
+  //
+  // Un écran éteint met les minuteurs en sommeil sur mobile : la boucle
+  // s'arrêterait au bout de quelques secondes. On demande donc à garder
+  // l'écran allumé — c'est la seule façon fiable de tenir la durée.
+  // ══════════════════════════════════════════════════════════════════════
+  _hfSession: null,
+  _hfTimer: null,
+  _hfWakeLock: null,
+
+  _hfCards() {
+    const maintenant = Date.now();
+    return (this._grenier?.cards || [])
+      .filter(c => !c.deleted && c.word && (!c.nextDue || c.nextDue <= maintenant));
+  },
+
+  renderHandsFree() {
+    const dues = this._hfCards();
+    const s = this._hfSession;
+    const pause = this.settings.hfPause ?? 3;
+    const lireDef = this.settings.hfDef !== false;
+
+    document.getElementById('main').innerHTML = `
+      <div class="screen-header">
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#14B8A6"><path d="M9 3h6v10l3.5 6a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5L9 13V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>
+        </button>
+        <button class="back-btn" onclick="App._hfStop();App.goBack()" title="Retour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div class="screen-title" style="color:#14B8A6">Mains libres</div>
+      </div>
+      <div class="hf-container">
+        <div class="hf-mot" id="hfMot">${s ? (s.queue[s.idx]?.word || '') : (dues.length ? '—' : '')}</div>
+        <div class="hf-etat" id="hfEtat">${
+          s ? `${s.idx + 1} / ${s.queue.length}`
+            : dues.length ? `${dues.length} carte${dues.length !== 1 ? 's' : ''} à réviser`
+                          : 'Aucune carte à réviser pour l\'instant'}</div>
+
+        <button class="hf-play" id="hfPlay" onclick="App._hfToggle()" ${dues.length ? '' : 'disabled'}>
+          ${s && !s.pause
+            ? `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`
+            : `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20"/></svg>`}
+        </button>
+        <div class="hf-hint" id="hfHint">${s ? (s.pause ? 'En pause' : 'Répète après la voix…') : 'Pose le téléphone et appuie sur ▶'}</div>
+
+        ${s ? `<button class="hf-stop" onclick="App._hfStop()">Arrêter</button>` : `
+        <div class="hf-reglages">
+          <label class="hf-opt">
+            <span>Silence pour répéter</span>
+            <select class="settings-select" onchange="App._hfSetPause(this.value)">
+              ${[2,3,4,5,7].map(v => `<option value="${v}" ${pause === v ? 'selected' : ''}>${v} s</option>`).join('')}
+            </select>
+          </label>
+          <label class="hf-opt">
+            <span>Lire aussi la définition</span>
+            <input type="checkbox" ${lireDef ? 'checked' : ''} onchange="App._hfSetDef(this.checked)">
+          </label>
+        </div>`}
+      </div>`;
+  },
+
+  _hfSetPause(v) { this.settings.hfPause = Number(v) || 3; this.saveSettings(); },
+  _hfSetDef(on)  { this.settings.hfDef = !!on; this.saveSettings(); },
+
+  async _hfToggle() {
+    if (!this._hfSession) {
+      const dues = this._hfCards();
+      if (!dues.length) { this.showToast('Aucune carte à réviser'); return; }
+      this._hfSession = { queue: [...dues].sort(() => Math.random() - 0.5), idx: 0, pause: false };
+      await this._hfWake(true);
+      this.renderHandsFree();
+      this._hfEtape();
+      return;
+    }
+    const s = this._hfSession;
+    s.pause = !s.pause;
+    if (s.pause) {
+      clearTimeout(this._hfTimer);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      await this._hfWake(false);
+    } else {
+      await this._hfWake(true);
+      this._hfEtape();
+    }
+    this.renderHandsFree();
+  },
+
+  async _hfStop() {
+    clearTimeout(this._hfTimer);
+    this._hfTimer = null;
+    this._hfSession = null;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    await this._hfWake(false);
+    if (this.currentScreen === 'hands-free') this.renderHandsFree();
+  },
+
+  // L'écran doit rester allumé, sinon les minuteurs sont bridés et la boucle
+  // s'arrête. Non supporté partout : on continue sans, en le disant.
+  async _hfWake(on) {
+    try {
+      if (on) {
+        if (!this._hfWakeLock && navigator.wakeLock) {
+          this._hfWakeLock = await navigator.wakeLock.request('screen');
+          this._hfWakeLock.addEventListener?.('release', () => { this._hfWakeLock = null; });
+        }
+      } else if (this._hfWakeLock) {
+        await this._hfWakeLock.release();
+        this._hfWakeLock = null;
+      }
+    } catch (e) { /* refusé ou absent : la boucle marche quand même écran allumé */ }
+  },
+
+  _hfDit(texte) {
+    return new Promise(res => {
+      if (!texte) return res();
+      this.speakText(texte, false);
+      // On ne sait pas quand la voix a fini : on estime d'après la longueur,
+      // avec un plancher. Mieux vaut un blanc qu'un chevauchement.
+      const ms = Math.min(9000, 900 + texte.length * 75);
+      this._hfTimer = setTimeout(res, ms);
+    });
+  },
+
+  async _hfEtape() {
+    const s = this._hfSession;
+    if (!s || s.pause) return;
+    if (s.idx >= s.queue.length) { this.showToast('Session terminée ✓'); this._hfStop(); return; }
+    const carte = s.queue[s.idx];
+
+    const mot = document.getElementById('hfMot');
+    if (mot) mot.textContent = carte.word || '';
+    const etat = document.getElementById('hfEtat');
+    if (etat) etat.textContent = `${s.idx + 1} / ${s.queue.length}`;
+
+    await this._hfDit(carte.word);
+    if (!this._hfSession || this._hfSession.pause) return;
+
+    // le silence pendant lequel tu répètes
+    const attente = (this.settings.hfPause ?? 3) * 1000;
+    await new Promise(res => { this._hfTimer = setTimeout(res, attente); });
+    if (!this._hfSession || this._hfSession.pause) return;
+
+    if (this.settings.hfDef !== false && carte.definition) {
+      // la définition peut contenir du HTML : on ne lit que le texte
+      const tmp = document.createElement('div');
+      tmp.innerHTML = carte.definition;
+      const txt = (tmp.textContent || '').trim().slice(0, 220);
+      if (txt) {
+        await this._hfDit(txt);
+        if (!this._hfSession || this._hfSession.pause) return;
+      }
+    }
+
+    s.idx++;
+    this._hfEtape();
   },
 
   // ── thèmes du Grenier ─────────────────────────────────────────────────
