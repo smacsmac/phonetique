@@ -3486,6 +3486,44 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 }
 .ph-start:hover { background: rgba(20,184,166,0.24); }
 
+/* ── Paires minimales ────────────────────────────────────────── */
+.ph-tabs { display: flex; gap: 8px; }
+.ph-tab {
+  flex: 1; padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text3);
+  font-family: var(--font-display); font-size: 13px;
+  cursor: pointer; transition: all 0.15s;
+}
+.ph-tab.active { border-color: #14B8A6; color: #14B8A6; background: rgba(20,184,166,0.10); }
+.ph-groupe {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ph-groupe-tete { display: flex; align-items: center; gap: 8px; }
+.ph-contraste {
+  font-family: var(--font-display); font-size: 17px; color: #14B8A6;
+  background: rgba(20,184,166,0.10);
+  border-radius: 6px; padding: 1px 8px;
+}
+.ph-vs { color: var(--text3); font-size: 13px; }
+.ph-paires { display: flex; flex-wrap: wrap; gap: 6px; }
+.ph-paire {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 11px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text); font-size: 13px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.ph-paire:hover { border-color: #14B8A6; }
+
 /* ── Mains libres ────────────────────────────────────────────── */
 .hf-container {
   padding: 30px 24px 90px;
@@ -13349,6 +13387,77 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     });
   },
 
+  // ── paires minimales dans TA collection ───────────────────────────────
+  // Deux mots qui ne diffèrent que d'un seul phonème. Plutôt que de comparer
+  // tous les mots deux à deux, on range chaque mot dans un casier par
+  // position masquée : « p*asɔ̃ ». Deux mots qui tombent dans le même casier
+  // ne diffèrent forcément qu'à cette position — linéaire au lieu de
+  // quadratique, et la propriété est garantie par construction.
+  _phPairGroups() {
+    const idx = this._phIndex();
+    const casiers = new Map();
+    for (const c of idx) {
+      if (c.seq.length < 2) continue;       // un seul son : trop de bruit
+      for (let i = 0; i < c.seq.length; i++) {
+        const cle = i + '|' + c.seq.map((p, j) => (j === i ? '*' : p)).join(' ');
+        if (!casiers.has(cle)) casiers.set(cle, []);
+        casiers.get(cle).push({ c, i });
+      }
+    }
+
+    // Un casier très peuplé coûte le carré de sa taille. Avec du vocabulaire
+    // réel ça n'arrive pas, mais une collection artificielle (mots générés,
+    // conjugaisons en série) produirait des centaines de milliers de paires
+    // pour n'en afficher que deux cents. On s'arrête net plutôt que de figer
+    // l'écran, en le disant.
+    const MAX = 3000;
+    let tronque = false;
+    const groupes = new Map();
+    const vus = new Set();
+    boucle:
+    for (const lot of casiers.values()) {
+      if (lot.length < 2) continue;
+      for (let x = 0; x < lot.length; x++) {
+        for (let y = x + 1; y < lot.length; y++) {
+          if (vus.size >= MAX) { tronque = true; break boucle; }
+          const A = lot[x], B = lot[y];
+          const pa = A.c.seq[A.i], pb = B.c.seq[B.i];
+          if (pa === pb) continue;                                   // homophones
+          if (A.c.mot.toLowerCase() === B.c.mot.toLowerCase()) continue;
+          const paire = [A.c.id, B.c.id].sort().join('~');
+          if (vus.has(paire)) continue;
+          vus.add(paire);
+          const k = [pa, pb].sort().join('↔');
+          if (!groupes.has(k)) groupes.set(k, { k, pa: k.split('↔')[0], pb: k.split('↔')[1], paires: [] });
+          groupes.get(k).paires.push({ a: A.c, b: B.c, pos: A.i });
+        }
+      }
+    }
+
+    // Les contrastes qui touchent un de tes sons faibles passent devant :
+    // c'est là que l'exercice sert vraiment à quelque chose.
+    const sons = this._phSounds();
+    const faiblesse = sym => {
+      const ids = sons.filter(s => s.sym === sym).map(s => this._phWeakness(s.id)).filter(v => v != null);
+      return ids.length ? Math.min(...ids) : null;
+    };
+    const res = [...groupes.values()].map(g => {
+      const fa = faiblesse(g.pa), fb = faiblesse(g.pb);
+      const f = [fa, fb].filter(v => v != null);
+      return { ...g, faible: f.length ? Math.min(...f) : null };
+    });
+    res.tronque = tronque;
+    return res.sort((a, b) => {
+      const ra = a.faible == null ? 1000 : a.faible;
+      const rb = b.faible == null ? 1000 : b.faible;
+      if (ra !== rb) return ra - rb;
+      return b.paires.length - a.paires.length;
+    });
+  },
+
+  _phTab: 'sons',
+  _phSetTab(t) { this._phTab = t; this._phSelected = null; this.renderPhonemeFocus(); },
+
   _phSelected: null,
 
   renderPhonemeFocus() {
@@ -13411,14 +13520,56 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         <div class="screen-title" style="color:#14B8A6">Entraînement ciblé</div>
       </div>
       <div class="ph-container">
-        <div class="ph-intro">
-          Tes sons du plus faible au plus sûr, et combien de <b>tes</b> mots
-          contiennent chacun. ${total} carte${total !== 1 ? 's' : ''} de ta
-          collection ont une transcription exploitable.
+        <div class="ph-tabs">
+          <button class="ph-tab ${this._phTab !== 'paires' ? 'active' : ''}" onclick="App._phSetTab('sons')">Tes sons</button>
+          <button class="ph-tab ${this._phTab === 'paires' ? 'active' : ''}" onclick="App._phSetTab('paires')">Paires minimales</button>
         </div>
-        ${detail}
-        <div class="ph-list">${liste}</div>
+        ${this._phTab === 'paires' ? this._phPairsHTML() : `
+          <div class="ph-intro">
+            Tes sons du plus faible au plus sûr, et combien de <b>tes</b> mots
+            contiennent chacun. ${total} carte${total !== 1 ? 's' : ''} de ta
+            collection ont une transcription exploitable.
+          </div>
+          ${detail}
+          <div class="ph-list">${liste}</div>`}
       </div>`;
+  },
+
+  _phPairsHTML() {
+    const groupes = this._phPairGroups();
+    const nb = groupes.reduce((n, g) => n + g.paires.length, 0);
+    if (!groupes.length) {
+      return `<div class="ph-intro">
+        Aucune paire minimale pour l'instant. Il en faut deux mots qui ne
+        diffèrent que d'un seul son — <i>poisson / poison</i>, <i>dessus /
+        dessous</i>. Plus ta collection grandit, plus il en apparaît.
+      </div>`;
+    }
+    const esc = s => String(s).replace(/'/g, "\\'");
+    return `
+      <div class="ph-intro">
+        ${nb} paire${nb !== 1 ? 's' : ''} trouvée${nb !== 1 ? 's' : ''} dans ta
+        collection : des mots qui ne diffèrent que d'un son. Touche-en une pour
+        les comparer. Les contrastes touchant tes sons faibles sont en premier.
+        ${groupes.tronque ? '<br><span style="color:#FBBF24">Recherche écourtée : ta collection en contient beaucoup trop pour toutes les lister.</span>' : ''}
+      </div>
+      ${groupes.slice(0, 14).map(g => `
+        <div class="ph-groupe">
+          <div class="ph-groupe-tete">
+            <span class="ph-contraste">${g.pa}</span>
+            <span class="ph-vs">↔</span>
+            <span class="ph-contraste">${g.pb}</span>
+            ${g.faible != null ? `<span class="ph-chip ${g.faible >= 80 ? 'ph-chip-bon' : g.faible >= 60 ? 'ph-chip-moyen' : 'ph-chip-faible'}">${g.faible}%</span>` : ''}
+            <span class="ph-count">${g.paires.length} paire${g.paires.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="ph-paires">
+            ${g.paires.slice(0, 12).map(p => `
+              <button class="ph-paire" onclick="App.navigate('word-focus',{word:'${esc(p.a.mot)}',compareWord:'${esc(p.b.mot)}'})">
+                <span>${p.a.mot}</span><span class="ph-vs">/</span><span>${p.b.mot}</span>
+              </button>`).join('')}
+            ${g.paires.length > 12 ? `<div style="font-size:11px;color:var(--text3);padding:4px 2px">…et ${g.paires.length - 12} autres</div>` : ''}
+          </div>
+        </div>`).join('')}`;
   },
 
   _phSelect(id) {
