@@ -39,6 +39,23 @@ Phonétique sur le PC, à côté de `index.html` :
 Puis, dans l'appli : **Le Labo › Le Liseur › Depuis le serveur**. C'est tout.
 À la semaine suivante, tu remplaces les deux fichiers et tu réappuies.
 
+### Le faire en un double-clic
+
+`phonetique-kindle.cmd`, posé **dans le dossier de Phonétique**, fait la copie
+tout seul : branche la liseuse, double-clique, ouvre Le Liseur.
+
+Il ne contient aucun chemin en dur. Il copie vers **son propre dossier**, donc
+tu peux renommer ou déplacer le dossier sans y toucher — et l'accent de
+`Phonétique` ne risque pas de casser le script selon l'encodage.
+
+Il **cherche la liseuse** au lieu de supposer `D:` : la lettre change selon ce
+qui est branché. Il scanne `D:` à `Z:` en quête de `system\vocabulary\vocab.db`.
+
+Enfin, il **archive l'ancien `vocab.db`** dans `kindle-archives\` avant de
+l'écraser, et seulement si son contenu a changé. Comme la liseuse élague, ces
+copies datées sont ce qui te rendra un jour des phrases perdues : réimporte-les
+par **Fichiers…**, elles s'additionnent.
+
 Le nom exact importe peu : `MyClippings.txt`, `My_Clippings.txt` ou une copie
 renommée `vocab-2026.db` sont reconnus. Un sous-dossier `kindle\` marche aussi.
 Pour ranger les fichiers ailleurs, pose `PHON_KINDLE` dans le lanceur.
