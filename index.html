@@ -4582,6 +4582,147 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   --cat-accent: var(--gr-orange);
 }
 
+/* ── LE LISEUR ─────────────────────────────────────────────── */
+.kd-body { padding: 10px 12px 96px; max-width: 760px; margin: 0 auto; }
+
+.kd-import-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.kd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 10px; cursor: pointer;
+  background: var(--surface, rgba(255,255,255,0.05));
+  border: 1px solid rgba(139,92,246,0.35); color: var(--text, #e8e8e8);
+  font-size: 12.5px; font-family: inherit; transition: all 0.15s;
+}
+.kd-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.kd-btn:hover:not(:disabled) { border-color: #8B5CF6; background: rgba(139,92,246,0.14); }
+.kd-btn:disabled { opacity: 0.45; cursor: default; }
+.kd-btn-primary { background: rgba(139,92,246,0.18); border-color: #8B5CF6; color: #C4B5FD; }
+.kd-btn-ghost { border-color: rgba(139,92,246,0.22); padding: 6px 10px; }
+
+.kd-note { font-size: 11.5px; color: var(--text3, #888); padding: 4px 2px 8px; line-height: 1.5; }
+
+.kd-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; }
+.kd-select {
+  padding: 7px 10px; border-radius: 9px; font-size: 12px; font-family: inherit;
+  background: var(--surface, rgba(255,255,255,0.05));
+  border: 1px solid rgba(139,92,246,0.3); color: var(--text, #e8e8e8);
+}
+.kd-count { font-size: 11.5px; color: #A78BFA; margin-left: auto; }
+.kd-chip {
+  padding: 6px 11px; border-radius: 999px; font-size: 11.5px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(139,92,246,0.3);
+  color: var(--text2, #bbb); font-family: inherit; transition: all 0.15s;
+}
+.kd-chip.on { background: rgba(139,92,246,0.2); border-color: #8B5CF6; color: #C4B5FD; }
+
+/* — liste des livres — */
+.kd-books { display: flex; flex-direction: column; gap: 8px; }
+.kd-book {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 13px 14px; border-radius: 13px; cursor: pointer; font-family: inherit;
+  background: var(--surface, rgba(255,255,255,0.04));
+  border: 1px solid rgba(139,92,246,0.22); transition: all 0.15s;
+}
+.kd-book:hover { border-color: #8B5CF6; transform: translateX(2px); }
+.kd-book-main { flex: 1; min-width: 0; }
+.kd-book-title {
+  font-size: 14px; font-weight: 600; color: var(--text, #e8e8e8); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.kd-book-author { font-size: 11.5px; color: var(--text2, #aaa); margin-top: 2px; }
+.kd-book-meta { font-size: 10.5px; color: var(--text3, #777); margin-top: 3px; }
+.kd-book-badge {
+  flex-shrink: 0; min-width: 34px; height: 26px; padding: 0 8px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(139,92,246,0.2); color: #C4B5FD;
+  font-size: 12.5px; font-weight: 700;
+}
+.kd-book-badge.kd-done { background: rgba(52,211,153,0.16); color: #34D399; }
+
+/* — en-tête d'un livre — */
+.kd-bookbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.kd-bookbar-title {
+  font-size: 14px; font-weight: 600; color: var(--text, #e8e8e8);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.kd-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.kd-tab {
+  flex: 1; padding: 9px 8px; border-radius: 10px; cursor: pointer; font-family: inherit;
+  background: transparent; border: 1px solid rgba(139,92,246,0.25);
+  color: var(--text2, #aaa); font-size: 12px; transition: all 0.15s;
+}
+.kd-tab b { font-weight: 700; opacity: 0.75; margin-left: 3px; }
+.kd-tab.on { background: rgba(139,92,246,0.18); border-color: #8B5CF6; color: #C4B5FD; }
+
+/* — liste des mots — */
+.kd-words { display: flex; flex-direction: column; gap: 6px; }
+.kd-word {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 11px; border-radius: 11px;
+  background: var(--surface, rgba(255,255,255,0.04));
+  border: 1px solid rgba(139,92,246,0.16);
+}
+.kd-word-done { opacity: 0.5; }
+.kd-check {
+  flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; border-radius: 6px;
+  cursor: pointer; background: transparent; padding: 0;
+  border: 1.5px solid rgba(139,92,246,0.5); color: #fff;
+  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+}
+.kd-check svg { width: 13px; height: 13px; }
+.kd-check.on { background: #8B5CF6; border-color: #8B5CF6; }
+.kd-check:disabled { opacity: 0.3; cursor: default; }
+.kd-word-main { flex: 1; min-width: 0; cursor: pointer; }
+.kd-word-head { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.kd-word-w { font-size: 14.5px; font-weight: 600; color: var(--text, #e8e8e8); }
+.kd-word-stem { font-size: 11px; color: #A78BFA; }
+.kd-word-tag {
+  font-size: 9.5px; padding: 1px 6px; border-radius: 999px;
+  background: rgba(139,92,246,0.14); color: #A78BFA; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.kd-tag-done { background: rgba(52,211,153,0.15); color: #34D399; }
+.kd-word-page { font-size: 10px; color: var(--text3, #777); margin-left: auto; }
+.kd-word-ctx { font-size: 12px; color: var(--text2, #aaa); line-height: 1.5; margin-top: 3px; }
+.kd-hit { color: #C4B5FD; font-weight: 700; }
+.kd-nocontext { color: var(--text3, #777); font-size: 11px; }
+.kd-x {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+  background: transparent; border: 1px solid transparent;
+  color: var(--text3, #777); font-size: 14px; line-height: 1; transition: all 0.15s;
+}
+.kd-x:hover { border-color: rgba(248,113,113,0.5); color: #F87171; }
+
+/* — barre d'envoi — */
+.kd-actionbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 16px calc(11px + env(safe-area-inset-bottom, 0px));
+  background: rgba(20,12,35,0.96); backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(139,92,246,0.35);
+  font-size: 12.5px; color: #C4B5FD;
+}
+
+/* — écran vide — */
+.kd-empty { text-align: center; padding: 26px 16px; color: var(--text2, #aaa); }
+.kd-empty-icon { font-size: 40px; margin-bottom: 8px; }
+.kd-empty-title { font-size: 16px; font-weight: 600; color: var(--text, #e8e8e8); margin-bottom: 10px; }
+.kd-empty p { font-size: 12.5px; line-height: 1.6; margin: 8px 0; }
+.kd-empty ul { text-align: left; display: inline-block; font-size: 12.5px; line-height: 1.9; margin: 2px 0; }
+.kd-empty code {
+  background: rgba(139,92,246,0.14); padding: 1px 5px; border-radius: 4px;
+  font-size: 11.5px; color: #C4B5FD;
+}
+.kd-modal-note { font-size: 11px; color: var(--text3, #888); margin: 8px 0 2px; line-height: 1.5; }
+
+/* La carte du Grenier affiche la phrase du livre au-dessus de sa définition. */
+.gr-card-context {
+  font-size: 11.5px; font-style: italic; line-height: 1.5;
+  color: var(--text2, #aaa); padding: 7px 9px; margin-bottom: 8px;
+  border-left: 2px solid rgba(139,92,246,0.5); border-radius: 0 7px 7px 0;
+  background: rgba(139,92,246,0.07);
+}
+
   </style>
 </head>
 <body>
@@ -6134,6 +6275,7 @@ const KO_VOICES = [
     this.loadLookupHistory();
     this.loadGrenier();
     this.loadSyncConfig();
+    this.loadLiseur();
     // Photographier l'état de départ AVANT toute sauvegarde, sinon la
     // première écriture marquerait toutes les données comme « modifiées
     // maintenant » et cet appareil écraserait les autres.
@@ -6499,12 +6641,13 @@ const KO_VOICES = [
             // Re-enter deep mode after render, restoring the previous query
             setTimeout(() => this._wfRestoreDeepMode(params.query || ''), 50);
           } else {
-            this.renderWordFocus(params?.word || '', params?.compareWord || '');
+            this.renderWordFocus(params?.word || '', params?.compareWord || '', params?.context || '');
           }
           break;
         case 'repertoire': this.renderRepertoire(); break;
         case 'grenier': this.renderGrenier(); break;
         case 'phoneme-focus': this.renderPhonemeFocus(); break;
+        case 'liseur': this.renderLiseur(); break;
         case 'hands-free': this.renderHandsFree(); break;
         case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
         case 'grenier-study':
@@ -6619,6 +6762,12 @@ const KO_VOICES = [
           <div class="cat-desc">Tes mots, sur tes sons faibles</div>
           <div class="cat-glow"></div>
         </button>
+        <button class="category-tile labo-tile" style="--cat-color:#1A1030;--cat-accent:#8B5CF6" onclick="App.navigate('liseur')">
+          <div class="cat-icon">📕</div>
+          <div class="cat-label">Le Liseur</div>
+          <div class="cat-desc">Les mots surlignés sur ta liseuse</div>
+          <div class="cat-glow"></div>
+        </button>
         <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
           style="--cat-color:#003330;--cat-accent:#2DD4BF"
           onclick="${hasKey ? "App.navigate('bilan')" : 'App.showNoKeyMsg()'}">
@@ -6664,7 +6813,7 @@ const KO_VOICES = [
   _wfCurrentIpa: '',
   _wfCurrentGender: '',
 
-  renderWordFocus(preloadWord = '', compareWord = '') {
+  renderWordFocus(preloadWord = '', compareWord = '', preloadContext = '') {
     document.getElementById('main')?.classList.add('main-flex');
     this.currentScreen = 'word-focus';
     this._wfCompareWord = compareWord || '';
@@ -6826,6 +6975,18 @@ const KO_VOICES = [
     }
     // Update flip dot now that DOM exists
     setTimeout(() => this._wfUpdateFlipDot(), 0);
+    // Une phrase venue du Liseur : on ouvre le champ de contexte et on l'y
+    // pose, sans voler le focus (sinon le clavier s'ouvre sur le téléphone).
+    if (preloadContext) {
+      this._wfLastContext = preloadContext;
+      setTimeout(() => {
+        if (!this._wfContextOpen) this._wfToggleContext();
+        setTimeout(() => {
+          const el = document.getElementById('wfContextInput');
+          if (el) { el.value = preloadContext; el.blur(); }
+        }, 120);
+      }, 140);
+    }
   },
 
   async wfLoadWord() {
@@ -7660,7 +7821,7 @@ const KO_VOICES = [
     // « deleted » fait partie du contenu : sans ça, supprimer une carte ne
     // changerait aucun champ suivi, l'horodatage resterait vieux, et la
     // suppression perdrait contre une simple relecture faite ailleurs.
-    card:   { uContent: ['word','ipa','definition','gender','tags','color','deleted'],
+    card:   { uContent: ['word','ipa','definition','context','gender','tags','color','deleted'],
               uReview:  ['interval','ease','reps','lastReviewed','nextDue'],
               uPlace:   ['deckId'] },
     // « ord » est un rangement, pas un contenu : réordonner sur un appareil
@@ -7915,7 +8076,10 @@ const KO_VOICES = [
       localStorage.setItem('phonetique_settings_u', String(this._syncSettingsU));
     }
 
-    // 7. purge des vieilles pierres tombales
+    // 7. Liseur : union des livres, des mots surlignés et des décisions de tri
+    if (remote.liseur) this._kdSyncMerge(remote.liseur);
+
+    // 8. purge des vieilles pierres tombales
     const cutoff = Date.now() - this._SYNC_TOMB_MAXAGE;
     for (const [id, ts] of Object.entries(tombs)) if (ts < cutoff) delete tombs[id];
     this._syncDeleted = tombs;
@@ -7936,6 +8100,7 @@ const KO_VOICES = [
       passageScores: this.passageScores,
       aiPassages:    this.aiPassages,
       lookupHistory: this._lookupHistory,
+      liseur:        this._kdSyncPayload(),
       bilan: {
         latest:       this.bilanScores,
         best:         this.bilanBestScores,
@@ -8300,6 +8465,14 @@ const KO_VOICES = [
       if (data.passageScores) this.passageScores = data.passageScores;
       if (data.aiPassages) this.aiPassages = data.aiPassages;
       if (Array.isArray(data.lookupHistory)) this._lookupHistory = data.lookupHistory;
+      if (data.liseur) {
+        this._kdLib = {
+          books: data.liseur.books || [], words: data.liseur.words || [],
+          dismissed: data.liseur.dismissed || {}, sent: data.liseur.sent || {},
+          sources: {}, at: data.liseur.at || 0,
+        };
+        this.saveLiseur();
+      }
       if (data.bilan) {
         this.bilanScores = data.bilan.latest || {};
         this.bilanBestScores = data.bilan.best || {};
@@ -15195,6 +15368,7 @@ Réponds UNIQUEMENT avec ce JSON :
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
           Verso — Définition de « ${card.word} »
         </div>
+        ${card.context ? `<div class="gr-card-context">${this._kdEsc(card.context)}</div>` : ''}
         <!-- Aa font-size toggle -->
         <div class="gr-fs-wrap" id="grFsWrap">
           <button class="gr-fs-btn gr-fs-minus gr-fs-hidden" onclick="App._grSetCardFontSize('${safeId}', App._grCurrentFs-1)" title="Réduire">−</button>
@@ -15629,7 +15803,7 @@ Réponds UNIQUEMENT avec ce JSON :
       id: cardId, deckId, word, ipa: ipa || '',
       interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
       showListen: true, showRecord: true, showRhymes: true,
-      color: null, definition: existingDef, tags, createdAt: Date.now()
+      color: null, definition: existingDef, context: context || '', tags, createdAt: Date.now()
     });
     // Also add to corresponding repertoire folder if one is linked
     const deck = this._grenier.decks.find(d => d.id === deckId);
@@ -15734,7 +15908,7 @@ Réponds UNIQUEMENT avec ce JSON :
       id: cardId, deckId, word, ipa,
       interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
       showListen: true, showRecord: true, showRhymes: true,
-      color: null, definition: existingDef, createdAt: Date.now()
+      color: null, definition: existingDef, context: context || '', createdAt: Date.now()
     });
     this.saveGrenier();
     this.showToast(`Paquet "${name}" créé et "${word}" ajouté ✓`);
@@ -15873,7 +16047,8 @@ Réponds UNIQUEMENT avec ce JSON :
           const inp = document.getElementById('grCtxInput');
           if (inp) {
             if (!inp.value) {
-              const mofCtx = this._wfLastContext || '';
+              const c = this._grenier?.cards.find(x => x.id === cardId);
+              const mofCtx = (c && c.context) || this._wfLastContext || '';
               if (mofCtx) inp.value = mofCtx;
             }
             inp.focus();
@@ -16167,6 +16342,914 @@ Réponds UNIQUEMENT avec ce JSON :
     }
     if (resultEl) resultEl.style.display = 'none';
     this.showToast('Phrase ajoutée à la définition ✓');
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  //  LE LISEUR — les mots surlignés sur la liseuse
+  // ══════════════════════════════════════════════════════════════
+  //
+  // Deux fichiers, deux rôles. « My Clippings.txt » dit ce que tu as
+  // surligné — un geste délibéré. « vocab.db » dit tout ce que tu as
+  // simplement cherché — un réflexe — mais il porte le lemme et, surtout,
+  // la phrase du livre. On croise les deux : l'intention vient du premier,
+  // la matière du second.
+  //
+  // La liseuse élague vocab.db (les entrées anciennes disparaissent), donc
+  // chaque import s'ajoute au précédent au lieu de le remplacer.
+
+  _kdLib: null,          // { books, words, dismissed, sent, sources, at }
+  _kdBookId: null,
+  _kdView: 'hl',         // 'hl' = surlignés · 'all' = tous les mots cherchés
+  _kdShowDone: false,    // afficher aussi les mots déjà traités
+  _kdSel: null,          // Set des identifiants cochés
+  _kdSort: 'recent',     // 'recent' | 'alpha' | 'count'
+  _kdYear: '',
+  _kdBusy: false,
+
+  LISEUR_ACCENT: '#8B5CF6',
+
+  _kdEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+  _kdAttr(s) { return this._kdEsc(s).replace(/\n/g, ' '); },
+
+  loadLiseur() {
+    this._kdLib = { books: [], words: [], dismissed: {}, sent: {}, sources: {}, at: 0 };
+    try {
+      const raw = localStorage.getItem('phonetique_liseur');
+      if (raw) Object.assign(this._kdLib, JSON.parse(raw));
+    } catch (e) {}
+    for (const k of ['books', 'words']) if (!Array.isArray(this._kdLib[k])) this._kdLib[k] = [];
+    for (const k of ['dismissed', 'sent', 'sources']) if (!this._kdLib[k] || typeof this._kdLib[k] !== 'object') this._kdLib[k] = {};
+  },
+
+  saveLiseur() {
+    if (!this._kdLib) return;
+    this._kdLib.at = Date.now();
+    try {
+      localStorage.setItem('phonetique_liseur', JSON.stringify(this._kdLib));
+    } catch (e) {
+      this.showToast('Stockage plein — impossible d\'enregistrer la bibliothèque');
+    }
+  },
+
+  // ── Lecteur SQLite, en lecture seule ──────────────────────────
+  // vocab.db est un SQLite ordinaire. On n'a besoin que de parcourir trois
+  // tables, donc on lit le format de fichier directement plutôt que
+  // d'embarquer une bibliothèque.
+  _kdReadSqlite(buffer) {
+    const dv = new DataView(buffer);
+    const u8 = new Uint8Array(buffer);
+    if (String.fromCharCode.apply(null, u8.subarray(0, 15)) !== 'SQLite format 3')
+      throw new Error("Ce fichier n'est pas une base SQLite (vocab.db attendu).");
+
+    let pageSize = dv.getUint16(16);
+    if (pageSize === 1) pageSize = 65536;
+    const usable = pageSize - u8[20];
+    const nPages = dv.getUint32(28) || Math.floor(buffer.byteLength / pageSize);
+    const enc = dv.getUint32(56) || 1;
+    const dec = new TextDecoder(enc === 2 ? 'utf-16le' : enc === 3 ? 'utf-16be' : 'utf-8');
+    const pageAt = (n) => (n - 1) * pageSize;
+
+    function varint(arr, off) {
+      let v = 0n;
+      for (let i = 0; i < 8; i++) {
+        const b = arr[off + i];
+        if (b & 0x80) v = (v << 7n) | BigInt(b & 0x7f);
+        else return [Number(BigInt.asIntN(64, (v << 7n) | BigInt(b))), i + 1];
+      }
+      return [Number(BigInt.asIntN(64, (v << 8n) | BigInt(arr[off + 8]))), 9];
+    }
+
+    // Une charge utile trop grosse pour une page déborde sur une chaîne de
+    // pages, chacune préfixée du numéro de la suivante.
+    function payload(off, total, local) {
+      if (total <= local) return u8.subarray(off, off + total);
+      const out = new Uint8Array(total);
+      out.set(u8.subarray(off, off + local));
+      let got = local, next = dv.getUint32(off + local), guard = 0;
+      while (next && got < total && guard++ < nPages + 8) {
+        const base = pageAt(next);
+        const take = Math.min(usable - 4, total - got);
+        out.set(u8.subarray(base + 4, base + 4 + take), got);
+        got += take;
+        next = dv.getUint32(base);
+      }
+      if (got < total) throw new Error('Chaîne de débordement interrompue.');
+      return out;
+    }
+
+    function localSize(total) {
+      const maxLocal = usable - 35;
+      if (total <= maxLocal) return total;
+      const minLocal = Math.floor(((usable - 12) * 32) / 255) - 23;
+      const k = minLocal + ((total - minLocal) % (usable - 4));
+      return k <= maxLocal ? k : minLocal;
+    }
+
+    function int48(rdv, d) {
+      const hi = rdv.getUint16(d), lo = rdv.getUint32(d + 2);
+      const v = hi * 4294967296 + lo;
+      return (hi & 0x8000) ? v - 281474976710656 : v;
+    }
+
+    function record(rec) {
+      const rdv = new DataView(rec.buffer, rec.byteOffset, rec.byteLength);
+      let [hdr, n] = varint(rec, 0);
+      let p = n; const types = [];
+      while (p < hdr) { const [t, k] = varint(rec, p); types.push(t); p += k; }
+      let d = hdr; const vals = [];
+      for (const t of types) {
+        if (t === 0) vals.push(null);
+        else if (t === 1) { vals.push(rdv.getInt8(d)); d += 1; }
+        else if (t === 2) { vals.push(rdv.getInt16(d)); d += 2; }
+        else if (t === 3) { vals.push((((rec[d] << 16) | (rec[d+1] << 8) | rec[d+2]) << 8) >> 8); d += 3; }
+        else if (t === 4) { vals.push(rdv.getInt32(d)); d += 4; }
+        else if (t === 5) { vals.push(int48(rdv, d)); d += 6; }
+        else if (t === 6) { vals.push(Number(rdv.getBigInt64(d))); d += 8; }
+        else if (t === 7) { vals.push(rdv.getFloat64(d)); d += 8; }
+        else if (t === 8) vals.push(0);
+        else if (t === 9) vals.push(1);
+        else if (t >= 12 && t % 2 === 0) { const L = (t - 12) / 2; vals.push(rec.subarray(d, d + L)); d += L; }
+        else if (t >= 13) { const L = (t - 13) / 2; vals.push(dec.decode(rec.subarray(d, d + L))); d += L; }
+        else vals.push(null);
+      }
+      return vals;
+    }
+
+    // On ne descend que par les pointeurs de fils : les pages libres et les
+    // cartes de pointeurs (auto-vacuum) ne sont jamais touchées.
+    function walk(root, out, seen) {
+      if (!root || root > nPages || seen.has(root)) return;
+      seen.add(root);
+      const base = pageAt(root), hdr = root === 1 ? 100 : 0;
+      const type = u8[base + hdr];
+      const nCells = dv.getUint16(base + hdr + 3);
+      const cells = base + hdr + ((type === 0x05 || type === 0x02) ? 12 : 8);
+      if (type === 0x0d) {
+        for (let i = 0; i < nCells; i++) {
+          const off = base + dv.getUint16(cells + i * 2);
+          const [size, a] = varint(u8, off);
+          const [, b] = varint(u8, off + a);
+          out.push(record(payload(off + a + b, size, localSize(size))));
+        }
+      } else if (type === 0x05) {
+        for (let i = 0; i < nCells; i++) walk(dv.getUint32(base + dv.getUint16(cells + i * 2)), out, seen);
+        walk(dv.getUint32(base + hdr + 8), out, seen);
+      }
+    }
+
+    function columnsOf(sql) {
+      const open = sql.indexOf('(');
+      if (open < 0) return [];
+      let depth = 0, cur = '', parts = [];
+      for (let i = open; i < sql.length; i++) {
+        const ch = sql[i];
+        if (ch === '(') { depth++; if (depth === 1) continue; }
+        else if (ch === ')') { depth--; if (depth === 0) break; }
+        if (depth === 1 && ch === ',') { parts.push(cur); cur = ''; continue; }
+        cur += ch;
+      }
+      parts.push(cur);
+      return parts.map(s => { const m = s.trim().match(/^[`"\[]?([A-Za-z_][\w$]*)/); return m ? m[1] : null; })
+                  .filter(Boolean);
+    }
+
+    const master = [];
+    walk(1, master, new Set());
+    const tables = {};
+    for (const row of master) {
+      const [type, name, , root, sql] = row;
+      if (type === 'table' && root && typeof sql === 'string') tables[name] = { root, cols: columnsOf(sql) };
+    }
+    return {
+      rows(name) {
+        const t = tables[name];
+        if (!t) return [];
+        const raw = [];
+        walk(t.root, raw, new Set());
+        return raw.map(vals => {
+          const o = {};
+          t.cols.forEach((c, i) => { o[c] = vals[i] === undefined ? null : vals[i]; });
+          return o;
+        });
+      },
+    };
+  },
+
+  // ── Analyse de « My Clippings.txt » ───────────────────────────
+  _KD_MOIS: {
+    january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8,
+    september:9, october:10, november:11, december:12,
+    janvier:1, fevrier:2, mars:3, avril:4, mai:5, juin:6, juillet:7, aout:8,
+    septembre:9, octobre:10, novembre:11, decembre:12,
+  },
+
+  _kdFlat(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''); },
+
+  // « Ajouté le vendredi 24 mai 2024 22:27:57 » — l'ordre des éléments
+  // change selon la langue de la liseuse, donc on les extrait un par un.
+  _kdParseDate(meta) {
+    const part = meta.split(/Added on|Ajout[ée] le/i)[1];
+    if (!part) return 0;
+    let rest = this._kdFlat(part).toLowerCase();
+    let h = 0, mi = 0, se = 0;
+    rest = rest.replace(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/, (_, a, b, c, ap) => {
+      h = +a; mi = +b; se = +(c || 0);
+      if (ap === 'pm' && h < 12) h += 12;
+      if (ap === 'am' && h === 12) h = 0;
+      return ' ';
+    });
+    let an = 0;
+    rest = rest.replace(/\b(\d{4})\b/, (_, y) => { an = +y; return ' '; });
+    if (!an) return 0;
+    let mois = 0;
+    for (const nom in this._KD_MOIS) {
+      if (rest.indexOf(nom) >= 0) { mois = this._KD_MOIS[nom]; rest = rest.replace(nom, ' '); break; }
+    }
+    if (!mois) return 0;
+    const j = rest.match(/\b(\d{1,2})\b/);
+    return j ? new Date(an, mois - 1, +j[1], h, mi, se).getTime() : 0;
+  },
+
+  // « Titre (collection) (Auteur) » — l'auteur est le dernier groupe équilibré.
+  _kdSplitTitle(line) {
+    const s = String(line || '').trim();
+    if (!s.endsWith(')')) return { title: s, author: '' };
+    let depth = 0, start = -1;
+    for (let i = s.length - 1; i >= 0; i--) {
+      if (s[i] === ')') depth++;
+      else if (s[i] === '(') { depth--; if (depth === 0) { start = i; break; } }
+    }
+    if (start <= 0) return { title: s, author: '' };
+    return { title: s.slice(0, start).trim(), author: s.slice(start + 1, -1).trim() };
+  },
+
+  _kdCountWords(s) { return (String(s || '').match(/[A-Za-zÀ-ÿŒœ'’‑-]+/g) || []).length; },
+
+  _kdParseClippings(text) {
+    const t = String(text).replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const out = [];
+    for (const bloc of t.split(/^={5,}\n?/m)) {
+      if (!bloc.trim()) continue;
+      const lines = bloc.split('\n');
+      if (lines.length < 2) continue;
+      const { title, author } = this._kdSplitTitle(lines[0]);
+      if (!title) continue;
+      const meta = lines[1].trim();
+      let kind = null;
+      if (/Your Highlight|Votre surlignement/i.test(meta)) kind = 'highlight';
+      else if (/Your Note|Votre note/i.test(meta)) kind = 'note';
+      else if (/Your Bookmark|Votre signet/i.test(meta)) kind = 'bookmark';
+      else continue;
+      const body = lines.slice(2).join('\n').trim();
+      const page = meta.match(/(?:on page|sur la page)\s+([\w.]+)/i);
+      out.push({
+        title, author, kind, body,
+        page: page ? page[1] : '',
+        at: this._kdParseDate(meta),
+        n: this._kdCountWords(body),
+      });
+    }
+    return out;
+  },
+
+  // ── Croisement ────────────────────────────────────────────────
+  _kdNorm(s) {
+    return String(s || '').normalize('NFC')
+      .replace(/^[^A-Za-zÀ-ÿŒœ'’]+/, '').replace(/[^A-Za-zÀ-ÿŒœ'’]+$/, '').trim();
+  },
+
+  // Le Kindle range « objectif », pas « l'objectif » : il faut essayer le mot
+  // sans son élision, et avec les deux sortes d'apostrophe.
+  _kdVariants(w) {
+    const base = this._kdNorm(w);
+    const v = new Set([base, base.toLowerCase()]);
+    const droit = base.replace(/’/g, "'"), courbe = base.replace(/'/g, '’');
+    v.add(droit); v.add(droit.toLowerCase()); v.add(courbe); v.add(courbe.toLowerCase());
+    const el = base.match(/^(?:qu|[ldjnmtsc])['’](.+)$/i);
+    if (el) { v.add(el[1]); v.add(el[1].toLowerCase()); }
+    v.delete('');
+    return Array.from(v);
+  },
+
+  _kdBookKey(title, author) {
+    return this._kdFlat(`${title || ''} ${author || ''}`).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  },
+
+  /**
+   * Fusionne des extraits et des vocab.db dans la bibliothèque existante.
+   * Rien n'est supprimé : les imports successifs s'additionnent.
+   */
+  _kdMerge(clips, vocabs) {
+    const lib = this._kdLib;
+    const bookByKey = new Map(), wordsOf = new Map(), anyWord = new Map();
+
+    for (const v of vocabs) {
+      const wById = new Map();
+      for (const w of v.rows('WORDS')) wById.set(w.id, w);
+      for (const b of v.rows('BOOK_INFO')) {
+        const rec = { id: b.id, title: b.title || '', author: b.authors || '', lang: b.lang || '' };
+        bookByKey.set(this._kdBookKey(rec.title, rec.author), rec);
+        if (!bookByKey.has(this._kdBookKey(rec.title, ''))) bookByKey.set(this._kdBookKey(rec.title, ''), rec);
+      }
+      for (const l of v.rows('LOOKUPS')) {
+        const w = wById.get(l.word_key);
+        if (!w || !w.word) continue;
+        const e = {
+          word: w.word, stem: w.stem || '', lang: w.lang || '',
+          context: l.usage || '', at: l.timestamp || w.timestamp || 0, bookId: l.book_key,
+        };
+        if (!wordsOf.has(l.book_key)) wordsOf.set(l.book_key, new Map());
+        const m = wordsOf.get(l.book_key), prev = m.get(w.word);
+        if (!prev || e.context.length > prev.context.length) m.set(w.word, e);
+        const pa = anyWord.get(w.word);
+        if (!pa || e.context.length > pa.context.length) anyWord.set(w.word, e);
+      }
+    }
+
+    const books = new Map(lib.books.map(b => [b.id, Object.assign({}, b)]));
+    const words = new Map(lib.words.map(w => [w.i, Object.assign({}, w)]));
+    let added = 0, hlSeen = 0, matched = 0;
+
+    const touchBook = (id, title, author, lang, at) => {
+      if (!books.has(id)) books.set(id, { id, title, author, lang: lang || '', at: 0 });
+      const b = books.get(id);
+      if (title && !b.title) b.title = title;
+      if (author && !b.author) b.author = author;
+      if (lang && !b.lang) b.lang = lang;
+      if (at > (b.at || 0)) b.at = at;
+      return b;
+    };
+
+    // 1. Tout ce qui a été cherché — la matière, avec les phrases du livre.
+    for (const [bid, m] of wordsOf) {
+      const vb = Array.from(bookByKey.values()).find(x => x.id === bid);
+      touchBook(bid, vb ? vb.title : '', vb ? vb.author : '', vb ? vb.lang : '', 0);
+      for (const e of m.values()) {
+        const id = bid + '|' + e.word.toLowerCase();
+        const prev = words.get(id);
+        if (!prev) {
+          words.set(id, { i: id, b: bid, w: e.word, s: e.stem === e.word ? '' : e.stem,
+                          c: e.context, t: e.at, g: e.lang });
+          added++;
+        } else {
+          if (e.context.length > (prev.c || '').length) prev.c = e.context;
+          if (!prev.t) prev.t = e.at;
+          if (!prev.s && e.stem && e.stem !== e.word) prev.s = e.stem;
+        }
+      }
+    }
+
+    // 2. Les surlignements — l'intention. Ils marquent les mots déjà présents
+    //    et créent ceux que vocab.db ne connaît pas (ou plus).
+    for (const c of clips) {
+      if (c.kind !== 'highlight' || !c.body) continue;
+      if (c.n < 1 || c.n > 3) continue;   // au-delà, c'est un passage, pas du vocabulaire
+      hlSeen++;
+      const key = this._kdBookKey(c.title, c.author);
+      const vb = bookByKey.get(key) || bookByKey.get(this._kdBookKey(c.title, ''));
+      const bid = vb ? vb.id : 'x:' + key;
+      touchBook(bid, (vb && vb.title) || c.title, (vb && vb.author) || c.author, vb ? vb.lang : '', c.at);
+
+      let hit = null;
+      const local = wordsOf.get(bid);
+      const cands = this._kdVariants(c.body);
+      if (local) for (const k of cands) if (local.has(k)) { hit = local.get(k); break; }
+      if (!hit) for (const k of cands) if (anyWord.has(k)) { hit = anyWord.get(k); break; }
+      if (hit) matched++;
+
+      const surface = this._kdNorm(c.body);
+      if (!surface) continue;
+      const id = bid + '|' + (hit ? hit.word : surface).toLowerCase();
+      let rec = words.get(id);
+      if (!rec) {
+        rec = { i: id, b: bid, w: hit ? hit.word : surface, s: '', c: '', t: 0, g: '' };
+        words.set(id, rec);
+        added++;
+      }
+      rec.h = 1;
+      if (c.page && !rec.p) rec.p = c.page;
+      if (c.at && c.at > (rec.t || 0)) rec.t = c.at;
+      if (hit) {
+        if (hit.context.length > (rec.c || '').length) rec.c = hit.context;
+        if (hit.stem && hit.stem !== hit.word) rec.s = hit.stem;
+        if (hit.lang && !rec.g) rec.g = hit.lang;
+      }
+    }
+
+    // La date d'un livre est celle de son dernier mot connu.
+    for (const w of words.values()) {
+      const b = books.get(w.b);
+      if (b && w.t > (b.at || 0)) b.at = w.t;
+    }
+
+    lib.books = Array.from(books.values());
+    lib.words = Array.from(words.values());
+    this.saveLiseur();
+    return { added, hlSeen, matched, books: lib.books.length, total: lib.words.length };
+  },
+
+  // ── Import ────────────────────────────────────────────────────
+  async _kdImportFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    this._kdBusy = true;
+    this._kdRefresh();
+    try {
+      let clips = [], vocabs = [], names = [];
+      for (const f of files) {
+        const low = (f.name || '').toLowerCase();
+        if (low.endsWith('.db') || low.endsWith('.sqlite')) {
+          vocabs.push(this._kdReadSqlite(await f.arrayBuffer()));
+          names.push(f.name);
+        } else if (low.endsWith('.txt')) {
+          clips = clips.concat(this._kdParseClippings(await f.text()));
+          names.push(f.name);
+        }
+      }
+      if (!clips.length && !vocabs.length) {
+        this.showToast('Aucun fichier reconnu — attendus : My Clippings.txt et vocab.db');
+        return;
+      }
+      const r = this._kdMerge(clips, vocabs);
+      this._kdLib.sources.last = { at: Date.now(), names, via: 'fichier' };
+      this.saveLiseur();
+      this._kdReport(r);
+    } catch (e) {
+      this.showToast('Lecture impossible : ' + (e.message || e));
+    } finally {
+      this._kdBusy = false;
+      this._kdRefresh();
+    }
+  },
+
+  _kdReport(r) {
+    const n = r.added;
+    this.showToast(n ? `${n} nouveau${n > 1 ? 'x' : ''} mot${n > 1 ? 's' : ''} · ${r.books} livres` : 'Rien de nouveau');
+  },
+
+  // Le serveur de synchro sert déjà le dossier de l'appli : s'il y trouve les
+  // deux fichiers, l'appli les prend toute seule. Déposer les fichiers dans ce
+  // dossier suffit alors à mettre la bibliothèque à jour.
+  async _kdFetchFromServer(silent) {
+    const base = (this._syncCfg && this._syncCfg.url) || '';
+    if (!base) { if (!silent) this.showToast('Aucun serveur configuré (Paramètres › Synchro)'); return false; }
+    try {
+      const man = await fetch(base.replace(/\/$/, '') + '/kindle', { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      if (!man || !man.files || !man.files.length) {
+        if (!silent) this.showToast('Aucun fichier Kindle dans le dossier du serveur');
+        return false;
+      }
+      // Rien n'a bougé depuis le dernier import : on ne refait pas le travail.
+      const sig = man.files.map(f => `${f.name}:${f.size}:${f.mtime}`).join('|');
+      if (sig === this._kdLib.sources.serverSig) { if (!silent) this.showToast('Déjà à jour'); return false; }
+
+      this._kdBusy = true; this._kdRefresh();
+      let clips = [], vocabs = [], names = [];
+      for (const f of man.files) {
+        const url = base.replace(/\/$/, '') + '/kindle/' + encodeURIComponent(f.name);
+        if (f.kind === 'vocab') {
+          vocabs.push(this._kdReadSqlite(await fetch(url, { cache: 'no-store' }).then(r => r.arrayBuffer())));
+        } else {
+          clips = clips.concat(this._kdParseClippings(await fetch(url, { cache: 'no-store' }).then(r => r.text())));
+        }
+        names.push(f.name);
+      }
+      const r = this._kdMerge(clips, vocabs);
+      this._kdLib.sources.serverSig = sig;
+      this._kdLib.sources.last = { at: Date.now(), names, via: 'serveur' };
+      this.saveLiseur();
+      this._kdReport(r);
+      return true;
+    } catch (e) {
+      if (!silent) this.showToast('Serveur injoignable');
+      return false;
+    } finally {
+      this._kdBusy = false;
+      this._kdRefresh();
+    }
+  },
+
+  // ── Sélection de ce qui s'affiche ─────────────────────────────
+  _kdWordsOf(bookId) {
+    const lib = this._kdLib;
+    let list = lib.words.filter(w => w.b === bookId);
+    if (this._kdView === 'hl') list = list.filter(w => w.h);
+    if (!this._kdShowDone) list = list.filter(w => !lib.sent[w.i] && !lib.dismissed[w.i]);
+    return list.sort((a, b) => (a.t || 0) - (b.t || 0) || String(a.w).localeCompare(String(b.w), 'fr'));
+  },
+
+  _kdRemaining(bookId) {
+    const lib = this._kdLib;
+    return lib.words.filter(w => w.b === bookId && w.h && !lib.sent[w.i] && !lib.dismissed[w.i]).length;
+  },
+
+  _kdYears() {
+    const s = new Set();
+    for (const b of this._kdLib.books) if (b.at) s.add(new Date(b.at).getFullYear());
+    return Array.from(s).sort((a, b) => b - a);
+  },
+
+  _kdSortedBooks() {
+    const lib = this._kdLib;
+    let list = lib.books.filter(b => lib.words.some(w => w.b === b.id && w.h));
+    if (this._kdYear) list = list.filter(b => b.at && String(new Date(b.at).getFullYear()) === this._kdYear);
+    const rest = this._kdRemaining.bind(this);
+    if (this._kdSort === 'alpha') list.sort((a, b) => String(a.title).localeCompare(String(b.title), 'fr'));
+    else if (this._kdSort === 'count') list.sort((a, b) => rest(b.id) - rest(a.id));
+    else list.sort((a, b) => (b.at || 0) - (a.at || 0));
+    return list;
+  },
+
+  _kdRefresh() {
+    if (this.currentScreen !== 'liseur') return;
+    this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
+  },
+
+  // ── Synchro ───────────────────────────────────────────────────
+  // Seuls les mots surlignés voyagent : ce sont eux qu'on trie, et ils pèsent
+  // cinq fois moins que l'archive complète. Tous les mots simplement cherchés
+  // se reconstruisent en réimportant les fichiers, qui vivent sur le PC.
+  _kdSyncPayload() {
+    const lib = this._kdLib;
+    if (!lib) return null;
+    return {
+      books: lib.books,
+      words: lib.words.filter(w => w.h),
+      dismissed: lib.dismissed,
+      sent: lib.sent,
+      at: lib.at || 0,
+    };
+  },
+
+  _kdSyncMerge(remote) {
+    if (!remote || typeof remote !== 'object') return;
+    if (!this._kdLib) this.loadLiseur();
+    const lib = this._kdLib;
+
+    const books = new Map(lib.books.map(b => [b.id, b]));
+    for (const b of (remote.books || [])) {
+      const cur = books.get(b.id);
+      if (!cur) books.set(b.id, b);
+      else if ((b.at || 0) > (cur.at || 0)) cur.at = b.at;
+    }
+    lib.books = Array.from(books.values());
+
+    const words = new Map(lib.words.map(w => [w.i, w]));
+    for (const w of (remote.words || [])) {
+      const cur = words.get(w.i);
+      if (!cur) { words.set(w.i, w); continue; }
+      cur.h = cur.h || w.h;
+      if ((w.c || '').length > (cur.c || '').length) cur.c = w.c;
+      if (!cur.s && w.s) cur.s = w.s;
+      if (!cur.p && w.p) cur.p = w.p;
+      if ((w.t || 0) > (cur.t || 0)) cur.t = w.t;
+    }
+    lib.words = Array.from(words.values());
+
+    // Écarter ou envoyer un mot est une décision : elle se propage, et le
+    // premier appareil à l'avoir prise fait foi.
+    for (const k of ['dismissed', 'sent']) {
+      for (const [id, ts] of Object.entries(remote[k] || {})) {
+        if (!lib[k][id] || ts < lib[k][id]) lib[k][id] = ts;
+      }
+    }
+    this.saveLiseur();
+  },
+
+  // ── Écran : la bibliothèque ───────────────────────────────────
+  renderLiseur() {
+    if (!this._kdLib) this.loadLiseur();
+    this._kdSel = this._kdSel || new Set();
+    document.getElementById('main').innerHTML = `
+      <div class="screen-header">
+        <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px"><span class="logo-ph" style="color:#8B5CF6">Ph</span><span class="logo-onetique" style="color:#A78BFA">o</span></button>
+        <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <div class="screen-title">Le Liseur</div>
+      </div>
+      <div id="kdBody" class="kd-body"></div>
+      <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite" style="display:none"
+             onchange="App._kdImportFiles(this.files); this.value='';">
+    `;
+    this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
+    // Si le serveur expose les fichiers, on se met à jour sans rien demander.
+    if (!this._kdBusy) setTimeout(() => this._kdFetchFromServer(true), 300);
+  },
+
+  _kdImportBar() {
+    const last = this._kdLib.sources.last;
+    return `
+      <div class="kd-import-row">
+        <button class="kd-btn kd-btn-primary" onclick="App._kdFetchFromServer(false)" ${this._kdBusy ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Depuis le serveur
+        </button>
+        <button class="kd-btn" onclick="document.getElementById('kdFileInput').click()" ${this._kdBusy ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Fichiers…
+        </button>
+      </div>
+      ${this._kdBusy ? `<div class="kd-note">Lecture en cours…</div>` : last ? `
+        <div class="kd-note">Dernier import : ${this._kdEsc(last.names.join(', '))} — ${last.via}, ${this._kdWhen(last.at)}</div>` : ''}
+    `;
+  },
+
+  _kdWhen(ts) {
+    if (!ts) return '';
+    const d = new Date(ts), j = Math.floor((Date.now() - ts) / 86400000);
+    if (j === 0) return "aujourd'hui";
+    if (j === 1) return 'hier';
+    if (j < 30) return `il y a ${j} jours`;
+    return d.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' });
+  },
+
+  _kdRenderBooks() {
+    const body = document.getElementById('kdBody');
+    if (!body) return;
+    const lib = this._kdLib;
+
+    if (!lib.words.length) {
+      body.innerHTML = `
+        ${this._kdImportBar()}
+        <div class="kd-empty">
+          <div class="kd-empty-icon">📕</div>
+          <div class="kd-empty-title">Tes mots surlignés, ici</div>
+          <p>Branche ta liseuse en USB et dépose deux fichiers dans le dossier de Phonétique sur le PC :</p>
+          <ul>
+            <li><code>My Clippings.txt</code> — dans <code>documents\\</code></li>
+            <li><code>vocab.db</code> — dans <code>system\\vocabulary\\</code> (dossier masqué)</li>
+          </ul>
+          <p>Le premier dit ce que tu as <b>surligné</b>, le second porte la <b>phrase du livre</b>.
+             Ensuite « Depuis le serveur » suffit, chaque semaine.</p>
+        </div>`;
+      return;
+    }
+
+    const books = this._kdSortedBooks();
+    const years = this._kdYears();
+    const totalRest = books.reduce((n, b) => n + this._kdRemaining(b.id), 0);
+
+    body.innerHTML = `
+      ${this._kdImportBar()}
+      <div class="kd-filters">
+        <select class="kd-select" onchange="App._kdSort=this.value; App._kdRenderBooks()">
+          <option value="recent" ${this._kdSort === 'recent' ? 'selected' : ''}>Plus récents</option>
+          <option value="count"  ${this._kdSort === 'count'  ? 'selected' : ''}>Plus de mots</option>
+          <option value="alpha"  ${this._kdSort === 'alpha'  ? 'selected' : ''}>Par titre</option>
+        </select>
+        <select class="kd-select" onchange="App._kdYear=this.value; App._kdRenderBooks()">
+          <option value="">Toutes les années</option>
+          ${years.map(y => `<option value="${y}" ${this._kdYear === String(y) ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+        <span class="kd-count">${totalRest} mot${totalRest > 1 ? 's' : ''} à trier</span>
+      </div>
+      <div class="kd-books">
+        ${books.length ? books.map(b => {
+          const rest = this._kdRemaining(b.id);
+          const all = lib.words.filter(w => w.b === b.id).length;
+          return `
+          <button class="kd-book" onclick="App._kdOpenBook('${this._kdAttr(b.id)}')">
+            <div class="kd-book-main">
+              <div class="kd-book-title">${this._kdEsc(b.title)}</div>
+              ${b.author ? `<div class="kd-book-author">${this._kdEsc(b.author)}</div>` : ''}
+              <div class="kd-book-meta">${b.at ? this._kdWhen(b.at) : ''}${all ? ` · ${all} mots cherchés` : ''}</div>
+            </div>
+            <div class="kd-book-badge ${rest ? '' : 'kd-done'}">${rest ? rest : '✓'}</div>
+          </button>`;
+        }).join('') : `<div class="kd-note">Aucun livre pour ce filtre.</div>`}
+      </div>
+    `;
+  },
+
+  _kdOpenBook(id) {
+    this._kdBookId = id;
+    this._kdSel = new Set();
+    this._kdRenderBook();
+  },
+
+  _kdBackToBooks() {
+    this._kdBookId = null;
+    this._kdSel = new Set();
+    this._kdRenderBooks();
+  },
+
+  _kdRenderBook() {
+    const body = document.getElementById('kdBody');
+    if (!body) return;
+    const lib = this._kdLib;
+    const book = lib.books.find(b => b.id === this._kdBookId);
+    if (!book) return this._kdBackToBooks();
+
+    const list = this._kdWordsOf(book.id);
+    const nHl = lib.words.filter(w => w.b === book.id && w.h).length;
+    const nAll = lib.words.filter(w => w.b === book.id).length;
+    const sel = this._kdSel;
+
+    body.innerHTML = `
+      <div class="kd-bookbar">
+        <button class="kd-btn kd-btn-ghost" onclick="App._kdBackToBooks()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Livres
+        </button>
+        <div class="kd-bookbar-title">${this._kdEsc(book.title)}</div>
+      </div>
+      <div class="kd-tabs">
+        <button class="kd-tab ${this._kdView === 'hl' ? 'on' : ''}" onclick="App._kdSetView('hl')">Surlignés <b>${nHl}</b></button>
+        <button class="kd-tab ${this._kdView === 'all' ? 'on' : ''}" onclick="App._kdSetView('all')">Tous les mots <b>${nAll}</b></button>
+      </div>
+      <div class="kd-filters">
+        <button class="kd-chip ${this._kdShowDone ? 'on' : ''}" onclick="App._kdToggleDone()">
+          ${this._kdShowDone ? '✓ ' : ''}Afficher les mots traités
+        </button>
+        ${list.length ? `<button class="kd-chip" onclick="App._kdSelectAll()">${sel.size >= list.length ? 'Tout décocher' : 'Tout cocher'}</button>` : ''}
+      </div>
+      <div class="kd-words">
+        ${list.length ? list.map(w => this._kdWordRow(w)).join('') : `
+          <div class="kd-note">${this._kdView === 'hl'
+            ? 'Aucun mot surligné en attente dans ce livre.'
+            : 'Aucun mot pour ce livre.'}</div>`}
+      </div>
+      <div class="kd-actionbar" id="kdActionBar" style="${sel.size ? '' : 'display:none'}">
+        <span id="kdSelCount">${sel.size} sélectionné${sel.size > 1 ? 's' : ''}</span>
+        <button class="kd-btn kd-btn-primary" onclick="App._kdSend()">Envoyer au Grenier</button>
+      </div>
+    `;
+  },
+
+  _kdSetView(v) { this._kdView = v; this._kdSel = new Set(); this._kdRenderBook(); },
+  _kdToggleDone() { this._kdShowDone = !this._kdShowDone; this._kdSel = new Set(); this._kdRenderBook(); },
+
+  _kdWordRow(w) {
+    const lib = this._kdLib;
+    const done = lib.sent[w.i] ? 'envoyé' : lib.dismissed[w.i] ? 'écarté' : '';
+    const on = this._kdSel.has(w.i);
+    const ctx = w.c ? this._kdHighlightWord(w.c, w.w) : '<i class="kd-nocontext">pas de phrase dans vocab.db</i>';
+    return `
+      <div class="kd-word ${done ? 'kd-word-done' : ''}">
+        <button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${done ? 'disabled' : ''}>
+          ${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </button>
+        <div class="kd-word-main" onclick="App._kdOpenWord('${this._kdAttr(w.i)}')">
+          <div class="kd-word-head">
+            <span class="kd-word-w">${this._kdEsc(w.w)}</span>
+            ${w.s && w.s !== w.w ? `<span class="kd-word-stem">→ ${this._kdEsc(w.s)}</span>` : ''}
+            ${!w.h ? '<span class="kd-word-tag">cherché</span>' : ''}
+            ${done ? `<span class="kd-word-tag kd-tag-done">${done}</span>` : ''}
+            ${w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>` : ''}
+          </div>
+          <div class="kd-word-ctx">${ctx}</div>
+        </div>
+        ${done
+          ? `<button class="kd-x" onclick="App._kdRestore('${this._kdAttr(w.i)}')" title="Remettre en attente">↺</button>`
+          : `<button class="kd-x" onclick="App._kdDismiss('${this._kdAttr(w.i)}')" title="Écarter ce mot">✕</button>`}
+      </div>`;
+  },
+
+  // Met le mot en évidence dans sa phrase : c'est ce qu'on cherche des yeux.
+  _kdHighlightWord(ctx, word) {
+    const safe = this._kdEsc(ctx);
+    const w = this._kdEsc(word);
+    if (!w) return safe;
+    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      return safe.replace(new RegExp(esc, 'gi'), m => `<b class="kd-hit">${m}</b>`);
+    } catch (e) { return safe; }
+  },
+
+  _kdToggleSel(id) {
+    this._kdSel.has(id) ? this._kdSel.delete(id) : this._kdSel.add(id);
+    this._kdRenderBook();
+  },
+
+  _kdSelectAll() {
+    const list = this._kdWordsOf(this._kdBookId).filter(w => !this._kdLib.sent[w.i] && !this._kdLib.dismissed[w.i]);
+    this._kdSel = this._kdSel.size >= list.length ? new Set() : new Set(list.map(w => w.i));
+    this._kdRenderBook();
+  },
+
+  _kdDismiss(id) {
+    this._kdLib.dismissed[id] = Date.now();
+    this._kdSel.delete(id);
+    this.saveLiseur();
+    this._kdRenderBook();
+  },
+
+  _kdRestore(id) {
+    delete this._kdLib.dismissed[id];
+    delete this._kdLib.sent[id];
+    this.saveLiseur();
+    this._kdRenderBook();
+  },
+
+  // Un mot seul part dans Mot en Focus, sa phrase déjà en place.
+  _kdOpenWord(id) {
+    const w = this._kdLib.words.find(x => x.i === id);
+    if (!w) return;
+    this._wfFromBilan = false;
+    this._kdPendingContext = w.c || '';
+    this.navigate('word-focus', { word: w.w, context: w.c || '' });
+  },
+
+  // ── Envoi en masse vers le Grenier ────────────────────────────
+  _kdSend() {
+    const ids = Array.from(this._kdSel);
+    if (!ids.length) return;
+    const book = this._kdLib.books.find(b => b.id === this._kdBookId);
+    const decks = this._grenier.decks.filter(d => !d.deleted);
+    const suggested = this._kdDeckName(book);
+    document.querySelector('.grenier-modal-bg')?.remove();
+    const bg = document.createElement('div');
+    bg.className = 'grenier-modal-bg';
+    bg.innerHTML = `
+      <div class="grenier-modal" onclick="event.stopPropagation()">
+        <div class="grenier-modal-title">Envoyer ${ids.length} mot${ids.length > 1 ? 's' : ''} au Grenier</div>
+        <div class="grenier-modal-label">Paquet de destination</div>
+        <select class="grenier-modal-input" id="kdDeckSelect">
+          <option value="__new__">Nouveau paquet — « ${this._kdEsc(suggested)} »</option>
+          ${decks.map(d => `<option value="${this._kdAttr(d.id)}">${this._kdEsc(d.name)}</option>`).join('')}
+        </select>
+        <div class="kd-modal-note">Chaque carte garde la phrase du livre comme contexte.</div>
+        <div class="grenier-modal-actions">
+          <button class="grenier-btn-secondary" onclick="App._kdCloseSend()">Annuler</button>
+          <button class="grenier-btn-primary" onclick="App._kdConfirmSend()">Envoyer</button>
+        </div>
+      </div>`;
+    bg.addEventListener('pointerdown', e => { if (e.target === bg) this._kdCloseSend(); });
+    document.body.appendChild(bg);
+  },
+
+  _kdCloseSend() { document.querySelector('.grenier-modal-bg')?.remove(); },
+
+  // Un titre de livre fait un nom de paquet trop long : on coupe avant les
+  // sous-titres, qui n'apportent rien dans une liste de paquets.
+  _kdDeckName(book) {
+    let t = (book && book.title) || 'Liseur';
+    t = t.split(/\s*[:(]/)[0].trim() || t;
+    return t.length > 38 ? t.slice(0, 36).trim() + '…' : t;
+  },
+
+  _kdConfirmSend() {
+    const sel = document.getElementById('kdDeckSelect');
+    const choice = sel ? sel.value : '__new__';
+    const book = this._kdLib.books.find(b => b.id === this._kdBookId);
+    const ids = Array.from(this._kdSel);
+    if (!ids.length) return this._kdCloseSend();
+
+    let deckId = choice;
+    if (choice === '__new__') {
+      const name = this._kdDeckName(book);
+      const existing = this._grenier.decks.find(d => d.name === name && !d.deleted);
+      if (existing) {
+        deckId = existing.id;
+      } else {
+        deckId = this._gid();
+        this._grenier.decks.push({
+          id: deckId, name, color: this.GRENIER_COLORS[Math.floor(Math.random() * this.GRENIER_COLORS.length)],
+          _emoji: '📕', createdAt: Date.now(),
+        });
+        if (!this._repertoire.folders.find(f => f.name === name)) {
+          this._repertoire.folders.push({ id: 'folder_' + Date.now(), name, emoji: '📕', createdAt: Date.now() });
+        }
+      }
+    }
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    const folder = deck ? this._repertoire.folders.find(f => f.name === deck.name) : null;
+    const tag = book ? this._kdDeckName(book) : '';
+
+    let added = 0, already = 0;
+    for (const id of ids) {
+      const w = this._kdLib.words.find(x => x.i === id);
+      if (!w) continue;
+      const mot = String(w.w || '').trim();
+      if (!mot) continue;
+      const dup = this._grenier.cards.some(c => c.deckId === deckId && !c.deleted
+        && String(c.word || '').toLowerCase() === mot.toLowerCase());
+      if (dup) { already++; this._kdLib.sent[id] = Date.now(); continue; }
+      this._grenier.cards.push({
+        id: this._gid(), deckId, word: mot, ipa: '',
+        interval: 1, ease: 2.5, reps: 0, nextDue: Date.now(),
+        showListen: true, showRecord: true, showRhymes: true,
+        color: null, definition: '', context: w.c || '',
+        tags: tag ? [tag] : [], createdAt: Date.now(),
+      });
+      if (folder && !this.repIsWordSaved(mot)) this.repAddWord(mot, '', folder.id, 'liseur');
+      this._kdLib.sent[id] = Date.now();
+      added++;
+    }
+
+    this.saveRepertoire();
+    this.saveGrenier();
+    this.saveLiseur();
+    this._kdSel = new Set();
+    this._kdCloseSend();
+    this._kdRenderBook();
+    this.showToast(added
+      ? `${added} carte${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''}${already ? ` · ${already} déjà présente${already > 1 ? 's' : ''}` : ''} ✓`
+      : 'Ces mots étaient déjà dans le paquet');
   },
 
 };

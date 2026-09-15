@@ -36,6 +36,7 @@ Tous facultatifs, à poser dans `phonetique-sync.cmd` :
 | `PHON_HOST` | l'adresse ou le nom mis en avant, et ajouté au certificat |
 | `PHON_DISPLAY` | `standalone` (défaut) ou `fullscreen` une fois installée |
 | `PHON_IMAGES` | où ranger les images sauvegardées |
+| `PHON_KINDLE` | où chercher `My Clippings.txt` et `vocab.db` (défaut : le dossier de l'appli) |
 | `PHON_APP` / `PHON_DATA` | chemins du `.html` servi et du json partagé |
 
 ## Sur chaque appareil
@@ -137,6 +138,15 @@ autre appareil (clé USB, dossier partagé, nuage) et le **fusionne** au lieu
 d'écraser — contrairement à l'import classique. Puis **exporter l'état
 fusionné** pour le rapporter.
 
+## Les fichiers de la liseuse
+
+Dépose `My Clippings.txt` et `vocab.db` à côté de `index.html` : le serveur les
+recense sur `/kindle`, et **Le Labo › Le Liseur › Depuis le serveur** met tes
+mots surlignés à jour sans rien téléverser depuis le téléphone.
+
+Le serveur ne publie que les fichiers qu'il a lui-même recensés, jamais un
+chemin venu du réseau. Voir [LISEUR.md](LISEUR.md).
+
 ## Les images
 
 Les images générées par l'appli **ne sont pas dans un dossier** : elles vivent
@@ -232,6 +242,7 @@ jamais un fichier à moitié écrit.
 | Avertissement de certificat sur `https://smac:8791` | le nom n'est pas encore dans le certificat : mets `PHON_HOST=smac` et relance |
 | « ⚠ image introuvable » sur des cartes | l'image appartient à une autre adresse — voir « Récupérer des images d'une ancienne adresse » |
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
+| Le Liseur ne trouve aucun fichier | `My Clippings.txt` et `vocab.db` ne sont pas dans le dossier servi — voir `PHON_KINDLE` |
 | `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
 
 ## Sauvegardes

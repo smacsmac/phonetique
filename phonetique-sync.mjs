@@ -33,6 +33,10 @@ const BACKUPS    = join(dirname(DATA), 'phonetique-copies');
 // l'adresse d'où l'appli est ouverte, et que rien ne sauvegarde. Ici, elles
 // deviennent de vrais fichiers que tu peux voir, copier et archiver.
 const IMGDIR     = resolve(process.env.PHON_IMAGES || join(dirname(DATA), 'phonetique-images'));
+// Les deux fichiers d'une liseuse Kindle. Par défaut on les cherche dans le
+// dossier de l'appli : y déposer « My Clippings.txt » et « vocab.db » suffit
+// alors à mettre Le Liseur à jour, sans rien téléverser depuis le téléphone.
+const KINDLEDIR  = resolve(process.env.PHON_KINDLE || dirname(APP));
 const MAX_BODY   = 64 * 1024 * 1024;
 const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
@@ -214,6 +218,32 @@ self.addEventListener('fetch', e => {
 });
 `;
 
+// Reconnaît les deux fichiers quel que soit le nom exact donné par Windows
+// (« My Clippings.txt », « MyClippings.txt », une copie renommée…), dans le
+// dossier de l'appli ou dans un sous-dossier « kindle ».
+async function kindleFiles(){
+  const out = [];
+  for(const dir of [KINDLEDIR, join(KINDLEDIR, 'kindle')]){
+    let noms;
+    try{ noms = await readdir(dir); }catch{ continue; }
+    for(const name of noms){
+      const low = name.toLowerCase();
+      const kind = /^my[ _-]?clippings.*\.txt$/.test(low) ? 'clippings'
+                 : /vocab.*\.db$/.test(low)               ? 'vocab' : null;
+      if(!kind) continue;
+      try{
+        const st = await stat(join(dir, name));
+        if(!st.isFile()) continue;
+        out.push({ name, kind, dir, size: st.size, mtime: Math.round(st.mtimeMs) });
+      }catch{}
+    }
+  }
+  // Un même nom dans les deux dossiers : le sous-dossier « kindle » gagne.
+  const vus = new Map();
+  for(const f of out) vus.set(f.name, f);
+  return [...vus.values()];
+}
+
 function send(res, code, body, type='application/json; charset=utf-8', extra={}){
   res.writeHead(code, {
     'Content-Type': type,
@@ -327,6 +357,26 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
+  // ── les fichiers de la liseuse ──
+  // On recense, on ne devine pas : l'appli ne peut demander qu'un nom trouvé
+  // ici, donc aucun chemin venu du réseau n'atteint le disque.
+  if(path === '/kindle' && req.method === 'GET'){
+    // On ne publie pas le chemin de chaque fichier : l'appli n'en a pas besoin,
+    // et le dossier où ils sont rangés ne regarde pas le réseau.
+    const files = (await kindleFiles()).map(({ name, kind, size, mtime }) => ({ name, kind, size, mtime }));
+    return send(res, 200, JSON.stringify({ dossier: KINDLEDIR, files }));
+  }
+  if(path.startsWith('/kindle/') && req.method === 'GET'){
+    const want = decodeURIComponent(path.slice('/kindle/'.length));
+    const hit = (await kindleFiles()).find(f => f.name === want);
+    if(!hit) return send(res, 404, '{"error":"fichier inconnu"}');
+    try{
+      const buf = await readFile(join(hit.dir, hit.name));
+      return send(res, 200, buf, hit.kind === 'vocab'
+        ? 'application/octet-stream' : 'text/plain; charset=utf-8');
+    }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
   }
 
   // ── les images ──

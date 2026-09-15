@@ -1,0 +1,128 @@
+# Le Liseur — tes mots surlignés sur la liseuse
+
+Tu surlignes un mot en lisant. Il arrive dans Phonétique avec **la phrase du
+livre** où tu l'as rencontré, prête à devenir le contexte d'une carte.
+
+```
+Kindle ──┬── documents/My Clippings.txt      ce que tu as SURLIGNÉ  (intention)
+         └── system/vocabulary/vocab.db      ce que tu as CHERCHÉ   (matière)
+                      │
+                      ▼
+              Le Liseur  ──►  Mot en Focus  ──►  Le Grenier
+```
+
+## Pourquoi deux fichiers
+
+Chercher un mot est un réflexe : tu le fais des milliers de fois, pour tout et
+n'importe quoi — y compris `que`, `autant`, `dessus`. Surligner est un choix.
+
+`My Clippings.txt` porte donc l'**intention**, mais il ne contient que le mot
+nu. `vocab.db` porte la **matière** — le lemme, la langue, le livre, et la
+phrase exacte du texte — mais sans distinguer ce qui compte.
+
+Le Liseur croise les deux. Sur une bibliothèque réelle, 97 % des mots
+surlignés en français retrouvent ainsi leur phrase.
+
+> Le croisement rattrape l'élision : tu surlignes « l'objectif », le Kindle a
+> rangé « objectif ». Les deux sortes d'apostrophe (`'` et `’`) sont traitées.
+
+## Mettre les fichiers à disposition
+
+Branche la liseuse en USB et copie les deux fichiers dans le dossier de
+Phonétique sur le PC, à côté de `index.html` :
+
+| fichier | où le trouver sur la liseuse |
+|---|---|
+| `My Clippings.txt` | `documents\` |
+| `vocab.db` | `system\vocabulary\` — **dossier masqué**, à afficher dans l'Explorateur |
+
+Puis, dans l'appli : **Le Labo › Le Liseur › Depuis le serveur**. C'est tout.
+À la semaine suivante, tu remplaces les deux fichiers et tu réappuies.
+
+Le nom exact importe peu : `MyClippings.txt`, `My_Clippings.txt` ou une copie
+renommée `vocab-2026.db` sont reconnus. Un sous-dossier `kindle\` marche aussi.
+Pour ranger les fichiers ailleurs, pose `PHON_KINDLE` dans le lanceur.
+
+**Sans serveur** — le bouton **Fichiers…** ouvre un sélecteur ordinaire. Utile
+sur le Chromebook, ou quand le PC est éteint.
+
+## Les imports s'additionnent
+
+La liseuse **élague** `vocab.db` : les entrées anciennes finissent par
+disparaître. Un import ne remplace donc jamais le précédent, il s'y ajoute.
+Garder les vieux exports quelque part et les réimporter un jour rend les
+phrases perdues.
+
+## Trier
+
+Le Liseur montre d'abord tes **livres**, le plus récemment lu en haut. Tu peux
+trier par nombre de mots ou par titre, et ne garder qu'une année.
+
+Dans un livre, deux onglets :
+
+- **Surlignés** — ce que tu as choisi. C'est la vue par défaut.
+- **Tous les mots** — tout ce que tu as cherché dans ce livre, phrase comprise.
+  Des centaines de mots : à ouvrir quand tu veux miner un livre à fond.
+
+Trois gestes :
+
+| geste | effet |
+|---|---|
+| toucher le mot | l'ouvre dans **Mot en Focus**, sa phrase déjà en place |
+| cocher | prépare un envoi groupé |
+| **✕** | écarte le mot — il ne reviendra plus |
+
+Le **✕** est ce qui rend l'outil tenable. `My Clippings.txt` ne s'efface
+jamais : il grossit. Sans mémoire des refus, chaque import te represente tout,
+pour toujours. Avec elle, le deuxième import ne montre que le nouveau.
+
+Rien ne disparaît vraiment : **Afficher les mots traités** remet les mots
+écartés et envoyés sous les yeux, avec un **↺** pour les remettre en attente.
+
+## Envoyer au Grenier
+
+Coche, puis **Envoyer au Grenier**. Le paquet proposé porte le nom du livre
+(créé au besoin, avec son dossier miroir dans Le Répertoire) ; tu peux viser un
+paquet existant à la place.
+
+Chaque carte reçoit :
+
+- le mot ;
+- **la phrase du livre**, en contexte — visible au verso, et reprise par la
+  génération de définition et d'image ;
+- le titre du livre en étiquette.
+
+Les définitions ne sont pas générées en masse : tu les fais carte par carte,
+quand tu y viens.
+
+Un mot déjà présent dans le paquet n'est pas dupliqué — il est simplement
+marqué comme traité.
+
+## Ce qui se synchronise
+
+Seuls les **mots surlignés** voyagent entre appareils, avec les livres et tes
+décisions de tri (écarté / envoyé) : environ 130 Ko. L'archive complète des
+mots cherchés reste locale — elle pèse cinq fois plus et se reconstruit en
+réimportant les fichiers, qui vivent sur le PC.
+
+Écarter un mot sur le téléphone l'écarte donc partout.
+
+## Si ça ne marche pas
+
+| symptôme | cause probable |
+|---|---|
+| « Aucun fichier Kindle dans le dossier du serveur » | les fichiers ne sont pas à côté de `index.html`, ou `vocab.db` est resté dans le dossier masqué de la liseuse |
+| « Déjà à jour » alors que tu viens de copier | Windows a gardé la date de l'ancien fichier : recopie-le, ou passe par **Fichiers…** |
+| Des mots sans phrase | `vocab.db` a été élagué depuis : réimporte un export plus ancien si tu en as gardé un |
+| Un livre anglais dans la liste | normal s'il porte des surlignements ; le filtre par année l'écarte |
+| Rien ne se passe au bouton « Depuis le serveur » | l'appli n'est pas ouverte depuis le serveur — vois Paramètres › Synchro |
+
+## Ce que le Liseur ne fait pas
+
+Il ne lit pas les **notes** ni les **signets**, ni les passages de plus de
+trois mots : ce sont des repères de lecture, pas du vocabulaire.
+
+Il ne devine pas non plus ce qui mérite une carte. Les mots que tu as cherchés
+plusieurs fois sont surtout des mots **ambigus** (`que`, `faut`, `dessus`), pas
+des mots difficiles — un classement automatique par ce critère trierait mal.
+Le surlignement, lui, dit ce que tu veux vraiment. C'est toi qui tries.
