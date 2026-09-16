@@ -3,7 +3,7 @@ REM ---------------------------------------------------------------------
 REM  Phonetique - recuperer les mots surlignes du Kindle
 REM
 REM  POSE CE FICHIER DANS LE DOSSIER DE PHONETIQUE, a cote d'index.html.
-REM  Il copie les deux fichiers de la liseuse ICI, dans son propre dossier
+REM  Il copie les fichiers de la liseuse ICI, dans son propre dossier
 REM  (%~dp0) : rien n'est ecrit en dur, donc tu peux renommer ou deplacer
 REM  le dossier sans toucher au script.
 REM
@@ -22,6 +22,7 @@ title Phonetique - mots du Kindle
 cd /d "%~dp0"
 set "DEST=%CD%"
 set "ARCHIVES=%DEST%\kindle-archives"
+set "COUV=%DEST%\kindle-couvertures"
 
 echo.
 echo   ================================================
@@ -107,9 +108,31 @@ if exist "%SRC_TXT%" (
   echo   ABSENT   documents\My Clippings.txt sur la liseuse
 )
 
+REM --- Couvertures --------------------------------------------------
+REM  La liseuse garde la vraie couverture de chaque livre, nommee d'apres
+REM  son identifiant : thumbnail_<ASIN>_EBOK_portrait.jpg pour un livre
+REM  achete, thumbnail_<guid>_PDOC_portrait.jpg pour un livre charge a la
+REM  main. L'appli fait le rapprochement toute seule.
+REM  xcopy /d ne recopie que ce qui a change : le 2e lancement est rapide.
+
+set "SRC_TH=%KINDLE%\system\thumbnails"
+if exist "%SRC_TH%" (
+  if not exist "%COUV%" mkdir "%COUV%" >nul 2>&1
+  xcopy "%SRC_TH%\*.jpg" "%COUV%\" /d /y /q >nul 2>&1
+  set /a NBC=0
+  for %%F in ("%COUV%\*.jpg") do set /a NBC+=1
+  if !NBC! GTR 0 (
+    echo   Copie    !NBC! couverture^(s^)
+  ) else (
+    echo   Aucune couverture trouvee dans system\thumbnails
+  )
+) else (
+  echo   ABSENT   system\thumbnails sur la liseuse ^(pas de couvertures^)
+)
+
 echo.
 if !FAITS!==0 (
-  echo   Rien n'a ete copie.
+  echo   Aucun fichier de mots n'a ete copie.
   goto fin
 )
 

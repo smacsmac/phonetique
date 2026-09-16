@@ -37,6 +37,7 @@ Tous facultatifs, à poser dans `phonetique-sync.cmd` :
 | `PHON_DISPLAY` | `standalone` (défaut) ou `fullscreen` une fois installée |
 | `PHON_IMAGES` | où ranger les images sauvegardées |
 | `PHON_KINDLE` | où chercher `My Clippings.txt` et `vocab.db` (défaut : le dossier de l'appli) |
+| `PHON_COUVERTURES` | où chercher les vignettes de couverture (défaut : `kindle-couvertures/`) |
 | `PHON_APP` / `PHON_DATA` | chemins du `.html` servi et du json partagé |
 
 ## Sur chaque appareil

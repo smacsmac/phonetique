@@ -4715,6 +4715,26 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 }
 .kd-modal-note { font-size: 11px; color: var(--text3, #888); margin: 8px 0 2px; line-height: 1.5; }
 
+/* — couvertures — */
+.kd-cover {
+  flex-shrink: 0; width: 42px; height: 63px; border-radius: 4px;
+  object-fit: cover; background: rgba(139,92,246,0.12);
+  box-shadow: 0 2px 7px rgba(0,0,0,0.38);
+  border: 1px solid rgba(255,255,255,0.09);
+}
+/* Pastille de repli : même encombrement, pour que la liste reste alignée. */
+.kd-cover-vide {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(150deg,
+    hsl(calc(var(--t) * 1deg) 42% 32%), hsl(calc(var(--t) * 1deg + 26deg) 38% 20%));
+}
+.kd-cover-vide span {
+  font-size: 15px; font-weight: 700; letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.86);
+}
+.kd-bookbar .kd-cover { width: 28px; height: 42px; }
+@media (max-width: 380px) { .kd-cover { width: 36px; height: 54px; } }
+
 /* La carte du Grenier affiche la phrase du livre au-dessus de sa définition. */
 .gr-card-context {
   font-size: 11.5px; font-style: italic; line-height: 1.5;
@@ -16651,7 +16671,8 @@ Réponds UNIQUEMENT avec ce JSON :
       const wById = new Map();
       for (const w of v.rows('WORDS')) wById.set(w.id, w);
       for (const b of v.rows('BOOK_INFO')) {
-        const rec = { id: b.id, title: b.title || '', author: b.authors || '', lang: b.lang || '' };
+        const rec = { id: b.id, title: b.title || '', author: b.authors || '',
+                      lang: b.lang || '', asin: b.asin || b.guid || '' };
         bookByKey.set(this._kdBookKey(rec.title, rec.author), rec);
         if (!bookByKey.has(this._kdBookKey(rec.title, ''))) bookByKey.set(this._kdBookKey(rec.title, ''), rec);
       }
@@ -16674,12 +16695,15 @@ Réponds UNIQUEMENT avec ce JSON :
     const words = new Map(lib.words.map(w => [w.i, Object.assign({}, w)]));
     let added = 0, hlSeen = 0, matched = 0;
 
-    const touchBook = (id, title, author, lang, at) => {
+    const touchBook = (id, title, author, lang, at, asin) => {
       if (!books.has(id)) books.set(id, { id, title, author, lang: lang || '', at: 0 });
       const b = books.get(id);
       if (title && !b.title) b.title = title;
       if (author && !b.author) b.author = author;
       if (lang && !b.lang) b.lang = lang;
+      // L'ASIN (ou le GUID d'un livre chargé à la main) nomme la vignette de
+      // couverture que la liseuse garde dans system/thumbnails.
+      if (asin && !b.asin) b.asin = asin;
       if (at > (b.at || 0)) b.at = at;
       return b;
     };
@@ -16687,7 +16711,7 @@ Réponds UNIQUEMENT avec ce JSON :
     // 1. Tout ce qui a été cherché — la matière, avec les phrases du livre.
     for (const [bid, m] of wordsOf) {
       const vb = Array.from(bookByKey.values()).find(x => x.id === bid);
-      touchBook(bid, vb ? vb.title : '', vb ? vb.author : '', vb ? vb.lang : '', 0);
+      touchBook(bid, vb ? vb.title : '', vb ? vb.author : '', vb ? vb.lang : '', 0, vb ? vb.asin : '');
       for (const e of m.values()) {
         const id = bid + '|' + e.word.toLowerCase();
         const prev = words.get(id);
@@ -16712,7 +16736,8 @@ Réponds UNIQUEMENT avec ce JSON :
       const key = this._kdBookKey(c.title, c.author);
       const vb = bookByKey.get(key) || bookByKey.get(this._kdBookKey(c.title, ''));
       const bid = vb ? vb.id : 'x:' + key;
-      touchBook(bid, (vb && vb.title) || c.title, (vb && vb.author) || c.author, vb ? vb.lang : '', c.at);
+      touchBook(bid, (vb && vb.title) || c.title, (vb && vb.author) || c.author,
+                vb ? vb.lang : '', c.at, vb ? vb.asin : '');
 
       let hit = null;
       const local = wordsOf.get(bid);
@@ -16759,7 +16784,7 @@ Réponds UNIQUEMENT avec ce JSON :
     this._kdBusy = true;
     this._kdRefresh();
     try {
-      let clips = [], vocabs = [], names = [];
+      let clips = [], vocabs = [], names = [], vignettes = [];
       for (const f of files) {
         const low = (f.name || '').toLowerCase();
         if (low.endsWith('.db') || low.endsWith('.sqlite')) {
@@ -16768,13 +16793,20 @@ Réponds UNIQUEMENT avec ce JSON :
         } else if (low.endsWith('.txt')) {
           clips = clips.concat(this._kdParseClippings(await f.text()));
           names.push(f.name);
+        } else if (/\.(jpe?g|png)$/.test(low)) {
+          vignettes.push(f);
         }
       }
-      if (!clips.length && !vocabs.length) {
+      if (!clips.length && !vocabs.length && !vignettes.length) {
         this.showToast('Aucun fichier reconnu — attendus : My Clippings.txt et vocab.db');
         return;
       }
       const r = this._kdMerge(clips, vocabs);
+      if (vignettes.length) {
+        const parNom = new Map(vignettes.map(f => [f.name, f]));
+        const n = await this._kdFetchCovers([...parNom.keys()], (nom) => parNom.get(nom), true);
+        if (n) names.push(`${n} couverture${n > 1 ? 's' : ''}`);
+      }
       this._kdLib.sources.last = { at: Date.now(), names, via: 'fichier' };
       this.saveLiseur();
       this._kdReport(r);
@@ -16819,6 +16851,7 @@ Réponds UNIQUEMENT avec ce JSON :
         names.push(f.name);
       }
       const r = this._kdMerge(clips, vocabs);
+      await this._kdFetchCoversFromServer(true);
       this._kdLib.sources.serverSig = sig;
       this._kdLib.sources.last = { at: Date.now(), names, via: 'serveur' };
       this.saveLiseur();
@@ -16893,8 +16926,11 @@ Réponds UNIQUEMENT avec ce JSON :
     const books = new Map(lib.books.map(b => [b.id, b]));
     for (const b of (remote.books || [])) {
       const cur = books.get(b.id);
-      if (!cur) books.set(b.id, b);
-      else if ((b.at || 0) > (cur.at || 0)) cur.at = b.at;
+      if (!cur) { books.set(b.id, b); continue; }
+      if ((b.at || 0) > (cur.at || 0)) cur.at = b.at;
+      if (b.asin && !cur.asin) cur.asin = b.asin;
+      // Une couverture reçue évite à cet appareil d'avoir les fichiers.
+      if (b.cover && !cur.cover) cur.cover = b.cover;
     }
     lib.books = Array.from(books.values());
 
@@ -16920,6 +16956,102 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveLiseur();
   },
 
+  // ── Couvertures ───────────────────────────────────────────────
+  // La liseuse garde déjà la vraie couverture de chaque livre dans
+  // system/thumbnails, nommée d'après son identifiant :
+  //   thumbnail_B0CB1V3PW7_EBOK_portrait.jpg      acheté chez Amazon
+  //   thumbnail_<guid>_PDOC_portrait.jpg          chargé à la main
+  // Rien à chercher en ligne, et c'est bien l'exemplaire que tu as lu.
+
+  // Extrait l'identifiant du nom de fichier, sans se fier au reste : les
+  // firmwares ajoutent parfois un suffixe après « portrait ».
+  _kdThumbId(name) {
+    const m = String(name || '').match(/^thumbnail_(.+?)_(?:EBOK|PDOC|KOLL|[A-Z]{4})[_.]/i);
+    return m ? m[1] : '';
+  },
+
+  // Une vignette de liseuse pèse ~20 Ko. Réduite à la taille réellement
+  // affichée, elle tombe à ~3 Ko — assez léger pour voyager avec la synchro
+  // et arriver sur le téléphone sans que les fichiers y soient.
+  async _kdShrinkCover(blob) {
+    const bmp = await createImageBitmap(blob);
+    const W = 96;
+    const H = Math.max(1, Math.round(W * bmp.height / bmp.width)) || 144;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    cv.getContext('2d').drawImage(bmp, 0, 0, W, H);
+    if (bmp.close) bmp.close();
+    return cv.toDataURL('image/jpeg', 0.72);
+  },
+
+  // N'habille que les livres visibles dans Le Liseur : inutile de garder la
+  // couverture d'un livre dont aucun mot n'est surligné.
+  _kdBooksNeedingCover() {
+    const lib = this._kdLib;
+    return lib.books.filter(b => b.asin && !b.cover
+      && lib.words.some(w => w.b === b.id && w.h));
+  },
+
+  async _kdFetchCovers(names, fetchOne, silent) {
+    const want = this._kdBooksNeedingCover();
+    if (!want.length) return 0;
+    const parId = new Map();
+    for (const n of names) {
+      const id = this._kdThumbId(n);
+      if (id) parId.set(id.toLowerCase(), n);
+    }
+    let pris = 0;
+    for (const b of want) {
+      const cle = String(b.asin).toLowerCase();
+      let nom = parId.get(cle);
+      // Un firmware qui nomme autrement : on se rabat sur « le fichier qui
+      // contient l'identifiant ».
+      if (!nom) nom = names.find(n => n.toLowerCase().includes(cle));
+      if (!nom) continue;
+      try {
+        const blob = await fetchOne(nom);
+        if (!blob || !blob.size) continue;
+        b.cover = await this._kdShrinkCover(blob);
+        pris++;
+      } catch (e) { /* une couverture manquante n'est jamais bloquante */ }
+    }
+    if (pris) { this.saveLiseur(); this._kdRefresh(); }
+    if (!silent && !pris) this.showToast('Aucune couverture reconnue');
+    return pris;
+  },
+
+  async _kdFetchCoversFromServer(silent) {
+    const base = (this._syncCfg && this._syncCfg.url) || '';
+    if (!base) return 0;
+    if (!this._kdBooksNeedingCover().length) return 0;
+    const root = base.replace(/\/$/, '');
+    try {
+      const man = await fetch(root + '/kindle/couvertures', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null);
+      if (!man || !man.files || !man.files.length) return 0;
+      return await this._kdFetchCovers(
+        man.files.map(f => f.name),
+        (nom) => fetch(root + '/kindle/couvertures/' + encodeURIComponent(nom),
+                       { cache: 'no-store' }).then(r => r.ok ? r.blob() : null),
+        silent);
+    } catch (e) { return 0; }
+  },
+
+  // Sans couverture, une pastille tirée du titre : même place, même taille,
+  // donc la liste garde son alignement au lieu de trembler.
+  _kdCoverHTML(book) {
+    if (book.cover) {
+      return `<img class="kd-cover" src="${book.cover}" alt="" loading="lazy">`;
+    }
+    const t = String(book.title || '?').replace(/^(le|la|les|l'|un|une|the|a)\s+/i, '');
+    const mots = t.split(/[\s:–—-]+/).filter(Boolean);
+    const ini = ((mots[0] || '?')[0] + (mots[1] ? mots[1][0] : '')).toUpperCase();
+    let h = 0;
+    for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+    return `<div class="kd-cover kd-cover-vide" style="--t:${h % 360}">
+      <span>${this._kdEsc(ini)}</span></div>`;
+  },
+
   // ── Écran : la bibliothèque ───────────────────────────────────
   renderLiseur() {
     if (!this._kdLib) this.loadLiseur();
@@ -16932,12 +17064,15 @@ Réponds UNIQUEMENT avec ce JSON :
         <div class="screen-title">Le Liseur</div>
       </div>
       <div id="kdBody" class="kd-body"></div>
-      <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite" style="display:none"
+      <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite,.jpg,.jpeg,.png" style="display:none"
              onchange="App._kdImportFiles(this.files); this.value='';">
     `;
     this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
     // Si le serveur expose les fichiers, on se met à jour sans rien demander.
-    if (!this._kdBusy) setTimeout(() => this._kdFetchFromServer(true), 300);
+    if (!this._kdBusy) setTimeout(async () => {
+      await this._kdFetchFromServer(true);
+      await this._kdFetchCoversFromServer(true);
+    }, 300);
   },
 
   _kdImportBar() {
@@ -17013,6 +17148,7 @@ Réponds UNIQUEMENT avec ce JSON :
           const all = lib.words.filter(w => w.b === b.id).length;
           return `
           <button class="kd-book" onclick="App._kdOpenBook('${this._kdAttr(b.id)}')">
+            ${this._kdCoverHTML(b)}
             <div class="kd-book-main">
               <div class="kd-book-title">${this._kdEsc(b.title)}</div>
               ${b.author ? `<div class="kd-book-author">${this._kdEsc(b.author)}</div>` : ''}
@@ -17055,6 +17191,7 @@ Réponds UNIQUEMENT avec ce JSON :
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Livres
         </button>
+        ${this._kdCoverHTML(book)}
         <div class="kd-bookbar-title">${this._kdEsc(book.title)}</div>
       </div>
       <div class="kd-tabs">

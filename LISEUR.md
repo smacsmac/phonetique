@@ -60,6 +60,35 @@ Le nom exact importe peu : `MyClippings.txt`, `My_Clippings.txt` ou une copie
 renommée `vocab-2026.db` sont reconnus. Un sous-dossier `kindle\` marche aussi.
 Pour ranger les fichiers ailleurs, pose `PHON_KINDLE` dans le lanceur.
 
+## Les couvertures
+
+Chaque livre s'affiche avec sa couverture, à gauche de son titre.
+
+Elle ne vient pas d'Internet : **la liseuse la garde déjà**, dans
+`system\thumbnails\`, nommée d'après l'identifiant du livre —
+`thumbnail_B0CB1V3PW7_EBOK_portrait.jpg` pour un livre acheté,
+`thumbnail_<guid>_PDOC_portrait.jpg` pour un livre chargé à la main. Et
+`vocab.db` porte ce même identifiant pour chaque livre : le rapprochement est
+exact, pas une recherche approximative par titre. C'est donc bien la couverture
+de ton exemplaire.
+
+`phonetique-kindle.cmd` les copie dans `kindle-couvertures\` (`xcopy /d` : seuls
+les nouveaux fichiers passent, les lancements suivants sont rapides). Le serveur
+les expose, l'appli prend celles qui lui manquent et s'arrête là.
+
+Une vignette de liseuse pèse ~20 Ko. L'appli la **réduit à la taille affichée**,
+soit ~3 Ko, avant de la garder : assez léger pour voyager avec la synchro, donc
+le téléphone voit les couvertures **sans avoir les fichiers**.
+
+Seuls les livres visibles dans Le Liseur sont habillés — inutile de garder la
+couverture d'un livre dont aucun mot n'est surligné.
+
+Un livre sans couverture reçoit une **pastille** portant ses initiales, dans une
+couleur tirée de son titre. Elle occupe exactement la même place, pour que la
+liste garde son alignement.
+
+Pour ranger les vignettes ailleurs, pose `PHON_COUVERTURES` dans le lanceur.
+
 **Sans serveur** — le bouton **Fichiers…** ouvre un sélecteur ordinaire. Utile
 sur le Chromebook, ou quand le PC est éteint.
 
@@ -133,6 +162,7 @@ réimportant les fichiers, qui vivent sur le PC.
 | Des mots sans phrase | `vocab.db` a été élagué depuis : réimporte un export plus ancien si tu en as gardé un |
 | Un livre anglais dans la liste | normal s'il porte des surlignements ; le filtre par année l'écarte |
 | Rien ne se passe au bouton « Depuis le serveur » | l'appli n'est pas ouverte depuis le serveur — vois Paramètres › Synchro |
+| Une pastille au lieu d'une couverture | la vignette n'a pas été copiée, ou la liseuse n'en avait pas pour ce livre |
 
 ## Ce que le Liseur ne fait pas
 

@@ -37,6 +37,8 @@ const IMGDIR     = resolve(process.env.PHON_IMAGES || join(dirname(DATA), 'phone
 // dossier de l'appli : y déposer « My Clippings.txt » et « vocab.db » suffit
 // alors à mettre Le Liseur à jour, sans rien téléverser depuis le téléphone.
 const KINDLEDIR  = resolve(process.env.PHON_KINDLE || dirname(APP));
+// Les vignettes de couverture que la liseuse garde dans system/thumbnails.
+const COVERDIR   = resolve(process.env.PHON_COUVERTURES || join(KINDLEDIR, 'kindle-couvertures'));
 const MAX_BODY   = 64 * 1024 * 1024;
 const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
@@ -244,6 +246,20 @@ async function kindleFiles(){
   return [...vus.values()];
 }
 
+async function coverFiles(){
+  const out = [];
+  let noms;
+  try{ noms = await readdir(COVERDIR); }catch{ return out; }
+  for(const name of noms){
+    if(!/\.(jpe?g|png)$/i.test(name)) continue;
+    try{
+      const st = await stat(join(COVERDIR, name));
+      if(st.isFile()) out.push({ name, size: st.size });
+    }catch{}
+  }
+  return out;
+}
+
 function send(res, code, body, type='application/json; charset=utf-8', extra={}){
   res.writeHead(code, {
     'Content-Type': type,
@@ -368,6 +384,23 @@ const server = http.createServer(async (req, res) => {
     const files = (await kindleFiles()).map(({ name, kind, size, mtime }) => ({ name, kind, size, mtime }));
     return send(res, 200, JSON.stringify({ dossier: KINDLEDIR, files }));
   }
+  // Les couvertures, recensées de la même facon : seuls les noms trouvés
+  // sur le disque peuvent être demandés.
+  if(path === '/kindle/couvertures' && req.method === 'GET'){
+    const files = (await coverFiles()).map(({ name, size }) => ({ name, size }));
+    return send(res, 200, JSON.stringify({ dossier: COVERDIR, files }));
+  }
+  if(path.startsWith('/kindle/couvertures/') && req.method === 'GET'){
+    const want = decodeURIComponent(path.slice('/kindle/couvertures/'.length));
+    const hit = (await coverFiles()).find(f => f.name === want);
+    if(!hit) return send(res, 404, '{"error":"vignette inconnue"}');
+    try{
+      const buf = await readFile(join(COVERDIR, hit.name));
+      return send(res, 200, buf, hit.name.toLowerCase().endsWith('.png')
+        ? 'image/png' : 'image/jpeg');
+    }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+  }
+
   if(path.startsWith('/kindle/') && req.method === 'GET'){
     const want = decodeURIComponent(path.slice('/kindle/'.length));
     const hit = (await kindleFiles()).find(f => f.name === want);
