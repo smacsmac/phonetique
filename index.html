@@ -4619,11 +4619,28 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .kd-books { display: flex; flex-direction: column; gap: 8px; }
 .kd-book {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-  padding: 13px 14px; border-radius: 13px; cursor: pointer; font-family: inherit;
+  padding: 12px 13px; border-radius: 13px; font-family: inherit;
   background: var(--surface, rgba(255,255,255,0.04));
   border: 1px solid rgba(139,92,246,0.22); transition: all 0.15s;
 }
-.kd-book:hover { border-color: #8B5CF6; transform: translateX(2px); }
+.kd-book:hover { border-color: #8B5CF6; }
+/* La couverture ouvre les notes, le reste ouvre les mots : deux boutons
+   côte à côte plutôt qu'un bouton dans un bouton, que le HTML interdit. */
+.kd-cover-btn {
+  padding: 0; border: 0; background: none; cursor: pointer; line-height: 0;
+  border-radius: 5px; transition: transform 0.15s;
+  position: relative;
+}
+.kd-cover-btn:hover { transform: scale(1.04); }
+.kd-cover-btn .kd-note-dot {
+  position: absolute; right: -4px; top: -4px; width: 13px; height: 13px;
+  border-radius: 50%; background: #34D399; border: 2px solid var(--bg, #05060F);
+}
+.kd-book-open {
+  flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 4px 0; border: 0; background: none; cursor: pointer;
+  text-align: left; font-family: inherit;
+}
 .kd-book-main { flex: 1; min-width: 0; }
 .kd-book-title {
   font-size: 14px; font-weight: 600; color: var(--text, #e8e8e8); line-height: 1.3;
@@ -4717,7 +4734,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 
 /* — couvertures — */
 .kd-cover {
-  flex-shrink: 0; width: 42px; height: 63px; border-radius: 4px;
+  flex-shrink: 0; width: 63px; height: 94px; border-radius: 5px;
   object-fit: cover; background: rgba(139,92,246,0.12);
   box-shadow: 0 2px 7px rgba(0,0,0,0.38);
   border: 1px solid rgba(255,255,255,0.09);
@@ -4729,11 +4746,63 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
     hsl(calc(var(--t) * 1deg) 42% 32%), hsl(calc(var(--t) * 1deg + 26deg) 38% 20%));
 }
 .kd-cover-vide span {
-  font-size: 15px; font-weight: 700; letter-spacing: 0.5px;
+  font-size: 21px; font-weight: 700; letter-spacing: 0.5px;
   color: rgba(255,255,255,0.86);
 }
 .kd-bookbar .kd-cover { width: 28px; height: 42px; }
-@media (max-width: 380px) { .kd-cover { width: 36px; height: 54px; } }
+@media (max-width: 380px) { .kd-cover { width: 54px; height: 81px; } }
+
+/* — la page de notes d'un livre — */
+.kd-note-head {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 12px 2px 16px;
+}
+.kd-note-head .kd-cover { width: 92px; height: 138px; }
+.kd-note-meta { flex: 1; min-width: 0; }
+.kd-note-titre {
+  font-size: 16px; font-weight: 600; line-height: 1.3;
+  color: var(--text, #e8e8e8); margin-bottom: 3px;
+}
+.kd-note-auteur { font-size: 12.5px; color: #A78BFA; margin-bottom: 9px; }
+.kd-note-faits { display: flex; flex-direction: column; gap: 3px; }
+.kd-note-fait {
+  font-size: 11.5px; color: var(--text2, #aaa);
+  display: flex; gap: 6px; align-items: baseline;
+}
+.kd-note-fait b { color: var(--text, #e8e8e8); font-weight: 600; }
+.kd-annee {
+  width: 68px; padding: 2px 6px; border-radius: 6px; font-family: inherit;
+  font-size: 11.5px; color: var(--text, #e8e8e8);
+  background: rgba(139,92,246,0.10); border: 1px solid rgba(139,92,246,0.3);
+}
+.kd-annee::placeholder { color: var(--text3, #777); }
+
+/* La feuille : fond crème et trame réglée. La hauteur de ligne du texte doit
+   valoir EXACTEMENT la période de la trame, sinon l'écriture dérive ligne
+   après ligne. Les deux valent 30px, ici et dans .kd-note-text. */
+.kd-note-sheet {
+  position: relative; border-radius: 12px; overflow: hidden;
+  background-color: #F5EFE0;
+  background-image: repeating-linear-gradient(to bottom,
+    transparent 0px, transparent 29px, rgba(60,50,35,0.17) 29px, rgba(60,50,35,0.17) 30px);
+  background-position: 0 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.30);
+  min-height: 560px; cursor: text;
+  padding: 14px 0 26px;
+}
+.kd-note-text {
+  display: block; width: 100%; box-sizing: border-box;
+  margin: 0; padding: 0 16px; border: 0; outline: none; resize: none;
+  background: transparent; overflow: hidden;
+  font-family: inherit; font-size: 15px; line-height: 30px;
+  color: #23201A; caret-color: #8B5CF6;
+}
+.kd-note-text::placeholder { color: rgba(60,50,35,0.34); }
+.kd-note-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 2px 4px; font-size: 11px; color: var(--text3, #888);
+}
+.kd-note-bar .kd-note-etat { margin-left: auto; }
 
 /* La carte du Grenier affiche la phrase du livre au-dessus de sa définition. */
 .gr-card-context {
@@ -8489,7 +8558,7 @@ const KO_VOICES = [
         this._kdLib = {
           books: data.liseur.books || [], words: data.liseur.words || [],
           dismissed: data.liseur.dismissed || {}, sent: data.liseur.sent || {},
-          sources: {}, at: data.liseur.at || 0,
+          notes: data.liseur.notes || {}, sources: {}, at: data.liseur.at || 0,
         };
         this.saveLiseur();
       }
@@ -16402,7 +16471,8 @@ Réponds UNIQUEMENT avec ce JSON :
       if (raw) Object.assign(this._kdLib, JSON.parse(raw));
     } catch (e) {}
     for (const k of ['books', 'words']) if (!Array.isArray(this._kdLib[k])) this._kdLib[k] = [];
-    for (const k of ['dismissed', 'sent', 'sources']) if (!this._kdLib[k] || typeof this._kdLib[k] !== 'object') this._kdLib[k] = {};
+    for (const k of ['dismissed', 'sent', 'sources', 'notes'])
+      if (!this._kdLib[k] || typeof this._kdLib[k] !== 'object') this._kdLib[k] = {};
   },
 
   saveLiseur() {
@@ -16910,6 +16980,12 @@ Réponds UNIQUEMENT avec ce JSON :
 
   _kdRefresh() {
     if (this.currentScreen !== 'liseur') return;
+    // Jamais pendant qu'on écrit : un rendu arracherait le champ sous les
+    // doigts, avec le curseur et la frappe en cours.
+    if (this._kdNoteId) {
+      if (document.activeElement && document.activeElement.id === 'kdNoteText') return;
+      return this._kdRenderNote();
+    }
     this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
   },
 
@@ -16925,6 +17001,7 @@ Réponds UNIQUEMENT avec ce JSON :
       words: lib.words.filter(w => w.h),
       dismissed: lib.dismissed,
       sent: lib.sent,
+      notes: lib.notes,
       at: lib.at || 0,
     };
   },
@@ -16956,6 +17033,15 @@ Réponds UNIQUEMENT avec ce JSON :
       if ((w.t || 0) > (cur.t || 0)) cur.t = w.t;
     }
     lib.words = Array.from(words.values());
+
+    // Les notes de lecture sont de l'écriture : la version la plus récemment
+    // modifiée gagne, entière. Elles se rédigent sur un appareil à la fois,
+    // donc fusionner deux textes ferait plus de dégâts que de bien.
+    if (!lib.notes) lib.notes = {};
+    for (const [id, n] of Object.entries(remote.notes || {})) {
+      const cur = lib.notes[id];
+      if (!cur || (n.at || 0) > (cur.at || 0)) lib.notes[id] = n;
+    }
 
     // Écarter ou envoyer un mot est une décision : elle se propage, et le
     // premier appareil à l'avoir prise fait foi.
@@ -17091,6 +17177,158 @@ Réponds UNIQUEMENT avec ce JSON :
       <span>${this._kdEsc(ini)}</span></div>`;
   },
 
+  // ══ Le carnet d'un livre ══════════════════════════════════════
+  // Une page par livre, pour résumer ce qu'on y a lu. La couverture de la
+  // liste y mène ; le reste de la ligne mène toujours aux mots.
+
+  _kdNoteId: null,
+  _kdNoteTimer: null,
+  KD_LIGNE: 30,          // doit valoir la période de la trame de .kd-note-sheet
+
+  _kdNote(bookId) {
+    const n = this._kdLib.notes && this._kdLib.notes[bookId];
+    return n || { t: '', y: '', at: 0 };
+  },
+
+  _kdOpenNote(bookId) {
+    this._kdNoteId = bookId;
+    this._kdRenderNote();
+  },
+
+  _kdCloseNote() {
+    this._kdNoteSave(true);
+    this._kdNoteId = null;
+    this._kdRenderBooks();
+  },
+
+  // Ce que les fichiers du Kindle savent réellement du livre. La date de
+  // parution n'y est pas — elle se saisit à la main plutôt que d'être devinée.
+  _kdBookFacts(book) {
+    const lib = this._kdLib;
+    const mots = lib.words.filter(w => w.b === book.id);
+    const surl = mots.filter(w => w.h);
+    const dates = mots.map(w => w.t).filter(Boolean).sort((a, b) => a - b);
+    const envoyes = surl.filter(w => lib.sent[w.i]).length;
+    const LANGUES = { fr: 'français', en: 'anglais', es: 'espagnol', de: 'allemand',
+                      it: 'italien', pt: 'portugais', ko: 'coréen', ja: 'japonais' };
+    const jour = (t) => new Date(t).toLocaleDateString('fr-CA',
+      { day: 'numeric', month: 'long', year: 'numeric' });
+    const faits = [];
+    if (book.lang) faits.push(['Langue', LANGUES[book.lang] || book.lang]);
+    if (dates.length) {
+      const a = dates[0], b = dates[dates.length - 1];
+      // Comparer les JOURS, pas les horodatages : deux mots cherchés à dix
+      // minutes d'écart donneraient sinon « lu du 15 septembre au 15 septembre ».
+      const memeJour = new Date(a).toDateString() === new Date(b).toDateString();
+      faits.push(memeJour ? ['Lu le', jour(a)] : ['Lu du', `${jour(a)} au ${jour(b)}`]);
+    }
+    faits.push(['Mots surlignés', String(surl.length)]);
+    if (mots.length > surl.length) faits.push(['Mots cherchés', String(mots.length)]);
+    if (envoyes) faits.push(['Partis au Grenier', String(envoyes)]);
+    return faits;
+  },
+
+  _kdRenderNote() {
+    const body = document.getElementById('kdBody');
+    if (!body) return;
+    const book = this._kdLib.books.find(b => b.id === this._kdNoteId);
+    if (!book) { this._kdNoteId = null; return this._kdRenderBooks(); }
+    const note = this._kdNote(book.id);
+
+    body.innerHTML = `
+      <div class="kd-bookbar">
+        <button class="kd-btn kd-btn-ghost" onclick="App._kdCloseNote()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Livres
+        </button>
+        <button class="kd-btn kd-btn-ghost" onclick="App._kdNoteSave(true); App._kdOpenBook('${this._kdAttr(book.id)}')">
+          Ses mots
+        </button>
+      </div>
+
+      <div class="kd-note-head">
+        ${this._kdCoverHTML(book)}
+        <div class="kd-note-meta">
+          <div class="kd-note-titre">${this._kdEsc(book.title)}</div>
+          ${book.author ? `<div class="kd-note-auteur">${this._kdEsc(book.author)}</div>` : ''}
+          <div class="kd-note-faits">
+            ${this._kdBookFacts(book).map(([k, v]) =>
+              `<div class="kd-note-fait">${this._kdEsc(k)} <b>${this._kdEsc(v)}</b></div>`).join('')}
+            <div class="kd-note-fait">Parution
+              <input class="kd-annee" id="kdAnnee" type="text" inputmode="numeric"
+                     maxlength="9" placeholder="année…" value="${this._kdAttr(note.y || '')}"
+                     oninput="App._kdNoteSave(false)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kd-note-bar">
+        <span>Tes notes de lecture</span>
+        <span class="kd-note-etat" id="kdNoteEtat">${note.at ? 'modifié ' + this._kdWhen(note.at) : ''}</span>
+      </div>
+
+      <div class="kd-note-sheet" id="kdSheet" onclick="App._kdSheetClick(event)">
+        <textarea class="kd-note-text" id="kdNoteText" spellcheck="true" rows="1"
+          placeholder="Ce que tu retiens de ce livre…"
+          oninput="App._kdNoteGrow(this); App._kdNoteSave(false)"
+          onblur="App._kdNoteSave(true)">${this._kdEsc(note.t)}</textarea>
+      </div>
+    `;
+    const ta = document.getElementById('kdNoteText');
+    if (ta) this._kdNoteGrow(ta);
+  },
+
+  // La zone de saisie épouse exactement son contenu : ce qui reste de la
+  // feuille en dessous est donc, à coup sûr, « après la fin du texte ».
+  // rows="1" dans le HTML est indispensable : sans lui un textarea vaut deux
+  // lignes d'office, et une note vide en réserverait deux au lieu d'une.
+  _kdNoteGrow(ta) {
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  },
+
+  // Toucher une ligne vide plus bas doit y poser le curseur — comme sur un
+  // vrai carnet. On complète donc par autant de retours à la ligne qu'il faut.
+  _kdSheetClick(ev) {
+    const ta = document.getElementById('kdNoteText');
+    if (!ta || ev.target === ta) return;   // dans le texte : le navigateur gère
+    const bas = ta.getBoundingClientRect().bottom;
+    if (ev.clientY > bas) {
+      const saut = Math.floor((ev.clientY - bas) / this.KD_LIGNE) + 1;
+      if (saut > 0) {
+        ta.value += '\n'.repeat(saut);
+        this._kdNoteGrow(ta);
+        this._kdNoteSave(false);
+      }
+    }
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  },
+
+  _kdNoteSave(tout_de_suite) {
+    const ta = document.getElementById('kdNoteText');
+    const an = document.getElementById('kdAnnee');
+    if (!ta || !this._kdNoteId) return;
+    const ecrire = () => {
+      const lib = this._kdLib;
+      if (!lib.notes) lib.notes = {};
+      const avant = lib.notes[this._kdNoteId] || { t: '', y: '', at: 0 };
+      const t = ta.value, y = (an ? an.value : avant.y || '').trim();
+      // Rien n'a bougé : ne pas réestampiller, sinon la synchro croirait à une
+      // modification à chaque simple visite de la page.
+      if (t === avant.t && y === avant.y) return;
+      lib.notes[this._kdNoteId] = { t, y, at: Date.now() };
+      this.saveLiseur();
+      const etat = document.getElementById('kdNoteEtat');
+      if (etat) etat.textContent = 'enregistré';
+    };
+    clearTimeout(this._kdNoteTimer);
+    if (tout_de_suite) ecrire();
+    else this._kdNoteTimer = setTimeout(ecrire, 600);
+  },
+
   // ── Écran : la bibliothèque ───────────────────────────────────
   renderLiseur() {
     if (!this._kdLib) this.loadLiseur();
@@ -17106,7 +17344,8 @@ Réponds UNIQUEMENT avec ce JSON :
       <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite,.jpg,.jpeg,.png" style="display:none"
              onchange="App._kdImportFiles(this.files); this.value='';">
     `;
-    this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
+    this._kdNoteId ? this._kdRenderNote()
+      : this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
     // Si le serveur expose les fichiers, on se met à jour sans rien demander.
     if (!this._kdBusy) setTimeout(async () => {
       await this._kdFetchFromServer(true);
@@ -17185,16 +17424,23 @@ Réponds UNIQUEMENT avec ce JSON :
         ${books.length ? books.map(b => {
           const rest = this._kdRemaining(b.id);
           const all = lib.words.filter(w => w.b === b.id).length;
+          const aNote = !!(lib.notes[b.id] && (lib.notes[b.id].t || '').trim());
           return `
-          <button class="kd-book" onclick="App._kdOpenBook('${this._kdAttr(b.id)}')">
-            ${this._kdCoverHTML(b)}
-            <div class="kd-book-main">
-              <div class="kd-book-title">${this._kdEsc(b.title)}</div>
-              ${b.author ? `<div class="kd-book-author">${this._kdEsc(b.author)}</div>` : ''}
-              <div class="kd-book-meta">${b.at ? this._kdWhen(b.at) : ''}${all ? ` · ${all} mots cherchés` : ''}</div>
-            </div>
-            <div class="kd-book-badge ${rest ? '' : 'kd-done'}">${rest ? rest : '✓'}</div>
-          </button>`;
+          <div class="kd-book">
+            <button class="kd-cover-btn" onclick="App._kdOpenNote('${this._kdAttr(b.id)}')"
+                    title="Tes notes sur ce livre">
+              ${this._kdCoverHTML(b)}
+              ${aNote ? '<span class="kd-note-dot" title="Tu as écrit des notes"></span>' : ''}
+            </button>
+            <button class="kd-book-open" onclick="App._kdOpenBook('${this._kdAttr(b.id)}')">
+              <div class="kd-book-main">
+                <div class="kd-book-title">${this._kdEsc(b.title)}</div>
+                ${b.author ? `<div class="kd-book-author">${this._kdEsc(b.author)}</div>` : ''}
+                <div class="kd-book-meta">${b.at ? this._kdWhen(b.at) : ''}${all ? ` · ${all} mots cherchés` : ''}</div>
+              </div>
+              <div class="kd-book-badge ${rest ? '' : 'kd-done'}">${rest ? rest : '✓'}</div>
+            </button>
+          </div>`;
         }).join('') : `<div class="kd-note">Aucun livre pour ce filtre.</div>`}
       </div>
     `;

@@ -125,6 +125,36 @@ pour toujours. Avec elle, le deuxième import ne montre que le nouveau.
 Rien ne disparaît vraiment : **Afficher les mots traités** remet les mots
 écartés et envoyés sous les yeux, avec un **↺** pour les remettre en attente.
 
+## Le carnet d'un livre
+
+Toucher **la couverture** ouvre une page propre à ce livre ; toucher le reste
+de la ligne mène toujours à ses mots.
+
+En haut, ce que les fichiers du Kindle savent réellement : l'auteur, la langue,
+**les dates de ta lecture** (première et dernière rencontre d'un mot), combien
+de mots tu as surlignés, cherchés, et combien sont partis au Grenier.
+
+La **date de parution n'est nulle part** dans les fichiers du Kindle. Plutôt que
+de la deviner, le champ est à toi : tape-la si tu la veux.
+
+Le reste de la page est une feuille réglée, pour résumer ce que tu as lu.
+
+- Le texte se **replie tout seul** sur la ligne suivante, sans que tu aies à
+  faire quoi que ce soit.
+- Toucher **n'importe quelle ligne plus bas** y amène le curseur : la page se
+  complète du nombre de retours à la ligne qu'il faut, comme sur un vrai carnet.
+- L'écriture s'enregistre seule, une demi-seconde après la dernière frappe.
+
+> L'alignement tient à une seule chose : la hauteur de ligne du texte vaut
+> exactement la période de la trame de fond (30 px des deux côtés). Changer
+> l'une sans l'autre ferait dériver l'écriture ligne après ligne.
+
+Un livre annoté porte une **pastille verte** sur sa couverture dans la liste.
+
+Les notes voyagent avec la synchro. Elles se rédigent sur un appareil à la
+fois, donc en cas de conflit **la version modifiée le plus récemment gagne**,
+entière — fusionner deux textes ferait plus de dégâts que de bien.
+
 ## Envoyer au Grenier
 
 Coche, puis **Envoyer au Grenier**. Le paquet proposé porte le nom du livre
