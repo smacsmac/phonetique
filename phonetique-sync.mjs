@@ -182,7 +182,7 @@ const MANIFEST = JSON.stringify({
 // est là), cache en secours quand tu es dehors. Les données ne sont jamais
 // mises en cache : elles doivent venir du serveur ou pas du tout.
 const SERVICE_WORKER = `
-const CACHE = 'phonetique-shell-v2';
+const CACHE = 'phonetique-shell-v3';
 const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -199,7 +199,12 @@ self.addEventListener('fetch', e => {
   // passer sans y toucher. Les mettre en cache n'apporterait rien et les
   // reponses opaques ne s'y stockent pas.
   if(url.origin !== location.origin) return;
-  if(url.pathname === '/donnees' || url.pathname === '/health') return;   // jamais en cache
+  // Jamais en cache. Pour /kindle, ce sont des fichiers volumineux (vocab.db
+  // pese plus d'un megaoctet, et il peut y avoir des centaines de vignettes)
+  // que l'appli digere aussitot et garde sous une autre forme : les cacher
+  // doublerait le stockage sans rien apporter.
+  if(url.pathname === '/donnees' || url.pathname === '/health'
+     || url.pathname === '/kindle' || url.pathname.startsWith('/kindle/')) return;
   const key = (e.request.mode === 'navigate' || url.pathname === '/index.html') ? '/' : e.request;
   e.respondWith(
     fetch(e.request)

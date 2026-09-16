@@ -162,7 +162,8 @@ réimportant les fichiers, qui vivent sur le PC.
 | Des mots sans phrase | `vocab.db` a été élagué depuis : réimporte un export plus ancien si tu en as gardé un |
 | Un livre anglais dans la liste | normal s'il porte des surlignements ; le filtre par année l'écarte |
 | Rien ne se passe au bouton « Depuis le serveur » | l'appli n'est pas ouverte depuis le serveur — vois Paramètres › Synchro |
-| Une pastille au lieu d'une couverture | la vignette n'a pas été copiée, ou la liseuse n'en avait pas pour ce livre |
+| Une pastille au lieu d'une couverture | le bouton **Depuis le serveur** le dit : serveur à relancer, dossier vide, ou livre sans identifiant |
+| « Serveur à relancer » | `phonetique-sync.mjs` a été remplacé mais le serveur tourne encore sur l'ancien code — ferme la fenêtre et relance le lanceur |
 
 ## Ce que le Liseur ne fait pas
 

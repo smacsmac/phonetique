@@ -16773,6 +16773,11 @@ Réponds UNIQUEMENT avec ce JSON :
 
     lib.books = Array.from(books.values());
     lib.words = Array.from(words.values());
+    // Le rattrapage des identifiants est une migration ponctuelle. Un livre
+    // surligné mais absent de vocab.db n'en aura jamais : sans ce drapeau,
+    // la condition resterait vraie et l'appli relirait les fichiers à chaque
+    // ouverture de l'écran.
+    lib.sources.asinDone = true;
     this.saveLiseur();
     return { added, hlSeen, matched, books: lib.books.length, total: lib.words.length };
   },
@@ -16836,8 +16841,14 @@ Réponds UNIQUEMENT avec ce JSON :
         return false;
       }
       // Rien n'a bougé depuis le dernier import : on ne refait pas le travail.
+      // Sauf s'il manque les identifiants de livres, que les anciennes
+      // bibliothèques n'ont pas : là, il faut relire malgré tout.
       const sig = man.files.map(f => `${f.name}:${f.size}:${f.mtime}`).join('|');
-      if (sig === this._kdLib.sources.serverSig) { if (!silent) this.showToast('Déjà à jour'); return false; }
+      const rattrapage = this._kdNeedsBackfill() && !this._kdLib.sources.asinDone;
+      if (sig === this._kdLib.sources.serverSig && !rattrapage) {
+        if (!silent) this.showToast('Déjà à jour');
+        return false;
+      }
 
       this._kdBusy = true; this._kdRefresh();
       let clips = [], vocabs = [], names = [];
@@ -16984,6 +16995,16 @@ Réponds UNIQUEMENT avec ce JSON :
     return cv.toDataURL('image/jpeg', 0.72);
   },
 
+  // Une bibliothèque constituée avant l'arrivée des couvertures n'a pas gardé
+  // l'identifiant des livres. Sans lui, aucune vignette ne peut être
+  // rapprochée — il faut donc relire vocab.db, même si le fichier n'a pas
+  // bougé, sinon le manque ne se comblerait jamais.
+  _kdNeedsBackfill() {
+    const lib = this._kdLib;
+    if (!lib) return false;
+    return lib.books.some(b => !b.asin && lib.words.some(w => w.b === b.id && w.h));
+  },
+
   // N'habille que les livres visibles dans Le Liseur : inutile de garder la
   // couverture d'un livre dont aucun mot n'est surligné.
   _kdBooksNeedingCover() {
@@ -17016,25 +17037,43 @@ Réponds UNIQUEMENT avec ce JSON :
       } catch (e) { /* une couverture manquante n'est jamais bloquante */ }
     }
     if (pris) { this.saveLiseur(); this._kdRefresh(); }
-    if (!silent && !pris) this.showToast('Aucune couverture reconnue');
+    if (!silent) {
+      this.showToast(pris
+        ? `${pris} couverture${pris > 1 ? 's' : ''} ✓`
+        : `Aucun nom de vignette ne correspond (${names.length} vignette(s), ${want.length} livre(s))`);
+    }
     return pris;
   },
 
   async _kdFetchCoversFromServer(silent) {
+    const dire = (m) => { if (!silent) this.showToast(m); return 0; };
     const base = (this._syncCfg && this._syncCfg.url) || '';
-    if (!base) return 0;
-    if (!this._kdBooksNeedingCover().length) return 0;
+    if (!base) return dire('Aucun serveur configuré (Paramètres › Synchro)');
+    if (!this._kdBooksNeedingCover().length) {
+      // Deux raisons très différentes de n'avoir rien à faire : tout est déjà
+      // en place, ou aucun livre ne porte d'identifiant. Il faut le dire.
+      const orphelins = this._kdSortedBooks().filter(b => !b.asin).length;
+      if (orphelins) return dire(`${orphelins} livre(s) sans identifiant — réimporte vocab.db`);
+      return 0;
+    }
     const root = base.replace(/\/$/, '');
+    let rep;
     try {
-      const man = await fetch(root + '/kindle/couvertures', { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null);
-      if (!man || !man.files || !man.files.length) return 0;
-      return await this._kdFetchCovers(
-        man.files.map(f => f.name),
-        (nom) => fetch(root + '/kindle/couvertures/' + encodeURIComponent(nom),
-                       { cache: 'no-store' }).then(r => r.ok ? r.blob() : null),
-        silent);
-    } catch (e) { return 0; }
+      rep = await fetch(root + '/kindle/couvertures', { cache: 'no-store' });
+    } catch (e) { return dire('Serveur injoignable'); }
+    // Un serveur resté sur l'ancienne version ne connaît pas cette route : la
+    // distinction vaut la peine, sinon on cherche le problème du mauvais côté.
+    if (rep.status === 404) return dire('Serveur à relancer — il ne connaît pas encore les couvertures');
+    if (!rep.ok) return dire('Le serveur a refusé la demande (' + rep.status + ')');
+    let man;
+    try { man = await rep.json(); } catch (e) { return dire('Réponse illisible du serveur'); }
+    if (!man || !man.files || !man.files.length)
+      return dire('Aucune vignette dans kindle-couvertures — relance phonetique-kindle.cmd');
+    return await this._kdFetchCovers(
+      man.files.map(f => f.name),
+      (nom) => fetch(root + '/kindle/couvertures/' + encodeURIComponent(nom),
+                     { cache: 'no-store' }).then(r => r.ok ? r.blob() : null),
+      silent);
   },
 
   // Sans couverture, une pastille tirée du titre : même place, même taille,
