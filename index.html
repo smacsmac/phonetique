@@ -6379,6 +6379,7 @@ const KO_VOICES = [
     else this.renderHome();
     this.setupSpeechSynthVoices();
     this._setupLongPress();
+    this._navBrancherRetour();
     this._syncStartAuto();
     this._installWire();
     // Une session mains libres ne doit pas continuer à parler dans le vide.
@@ -6680,6 +6681,56 @@ const KO_VOICES = [
     return `<button class="flag-btn ${v==='fr-CA'?'active':''}" data-lang="fr-CA" onclick="App.setFrVariant('fr-CA')" title="Québec French">${ca}</button><button class="flag-btn ${v==='fr-FR'?'active':''}" data-lang="fr-FR" onclick="App.setFrVariant('fr-FR')" title="Standard French">${fr}</button>`;
   },
 
+  // ── Le bouton Retour d'Android ────────────────────────────────
+  // Installée, l'appli n'a pas de barre d'adresse : le geste Retour tombe
+  // droit sur l'historique du navigateur, qui est vide, et ferme l'appli.
+  // On y pose donc un cran à consommer, et on rejoue exactement ce que fait
+  // le bouton Retour de l'appli.
+  //
+  // Un seul cran à la fois : le poser à nouveau après chaque retour évite
+  // d'avoir à faire coïncider deux historiques, celui de l'appli et celui du
+  // navigateur, que plusieurs écrans manipulent directement.
+
+  _navArme: false,        // un cran est-il posé ?
+  _navDepuisPop: false,   // goBack() a-t-il été déclenché par Android ?
+  _navIgnorePop: false,   // le prochain popstate est de nous, pas de l'usager
+
+  // Les fenêtres modales vivent sur document.body, pas dans #main : naviguer
+  // sans les fermer les laisserait flotter par-dessus le nouvel écran.
+  _NAV_MODALES: '.grenier-modal-bg, .rep-overlay, .annotation-overlay, .grenier-ctx-overlay',
+
+  _navFermerModale() {
+    const m = document.querySelector(this._NAV_MODALES);
+    if (!m) return false;
+    m.remove();
+    return true;
+  },
+
+  _navPeutRevenir() {
+    return this.navHistory.length > 1 || this.currentScreen !== 'home';
+  },
+
+  _navArmer() {
+    if (this._navArme || !this._navPeutRevenir()) return;
+    try { history.pushState({ pho: 1 }, ''); this._navArme = true; } catch (e) {}
+  },
+
+  _navBrancherRetour() {
+    // Une copie ouverte en file:// refuse pushState : l'appli doit continuer
+    // à marcher, simplement sans cette finesse.
+    try { history.replaceState({ pho: 0 }, ''); } catch (e) { return; }
+    window.addEventListener('popstate', () => {
+      if (this._navIgnorePop) { this._navIgnorePop = false; this._navArme = false; return; }
+      this._navArme = false;
+      if (this._navFermerModale()) { this._navArmer(); return; }
+      if (!this._navPeutRevenir()) return;   // à la racine : Android ferme l'appli
+      this._navDepuisPop = true;
+      try { this.goBack(); } finally { this._navDepuisPop = false; }
+      this._navArmer();
+    });
+    this._navArmer();
+  },
+
   goBack() {
     if (this.navHistory.length > 1) {
       this.navHistory.pop();
@@ -6689,12 +6740,19 @@ const KO_VOICES = [
       this.navHistory = [];
       this.navigate('home', {}, true);
     }
+    // Le bouton de l'appli consomme le cran posé pour Android quand il n'y a
+    // plus où revenir : sans ça, une pression de plus serait avalée à vide.
+    if (!this._navDepuisPop && this._navArme && !this._navPeutRevenir()) {
+      this._navIgnorePop = true;
+      try { history.back(); } catch (e) { this._navIgnorePop = false; }
+    }
   },
 
   navigate(screen, params = {}, skipHistory = false) {
     if (!skipHistory) this.navHistory.push({ screen, params });
     if (this.navHistory.length > 20) this.navHistory.shift();
     this.currentScreen = screen;
+    this._navArmer();
     const main = document.getElementById('main');
     main.classList.remove('main-flex');
     main.classList.add('screen-exit');
@@ -8232,8 +8290,13 @@ const KO_VOICES = [
   // connues et on promeut celle qui répond.
   async _syncResolve() {
     const cfg = this._syncCfg;
+    // Le navigateur se sait hors ligne : essayer chaque adresse à tour de rôle
+    // ne ferait qu'attendre pour rien.
+    if (navigator.onLine === false) return null;
     const tried = [];
-    for (const base of [cfg.url, ...(cfg.alts || [])]) {
+    // Chaque adresse injoignable coûte son délai d'attente. On en essaie
+    // quelques-unes, pas la liste entière qu'un PC multi-adressé a pu donner.
+    for (const base of [cfg.url, ...(cfg.alts || [])].slice(0, 4)) {
       if (!base || tried.includes(base)) continue;
       tried.push(base);
       // Une page https ne peut pas appeler du http : inutile d'essayer.
@@ -16901,11 +16964,21 @@ Réponds UNIQUEMENT avec ce JSON :
   // Le serveur de synchro sert déjà le dossier de l'appli : s'il y trouve les
   // deux fichiers, l'appli les prend toute seule. Déposer les fichiers dans ce
   // dossier suffit alors à mettre la bibliothèque à jour.
+  // Même règle que pour le service worker : un PC absent du réseau ne refuse
+  // pas la connexion, il ne répond pas. Sans limite, l'écran resterait sur
+  // « Lecture en cours… » pendant la minute entière du système.
+  _kdFetch(url, opts = {}, ms = 4000) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    return fetch(url, { ...opts, signal: ctl.signal, cache: 'no-store' })
+      .finally(() => clearTimeout(t));
+  },
+
   async _kdFetchFromServer(silent) {
     const base = (this._syncCfg && this._syncCfg.url) || '';
     if (!base) { if (!silent) this.showToast('Aucun serveur configuré (Paramètres › Synchro)'); return false; }
     try {
-      const man = await fetch(base.replace(/\/$/, '') + '/kindle', { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      const man = await this._kdFetch(base.replace(/\/$/, '') + '/kindle').then(r => r.ok ? r.json() : null);
       if (!man || !man.files || !man.files.length) {
         if (!silent) this.showToast('Aucun fichier Kindle dans le dossier du serveur');
         return false;
@@ -16925,9 +16998,9 @@ Réponds UNIQUEMENT avec ce JSON :
       for (const f of man.files) {
         const url = base.replace(/\/$/, '') + '/kindle/' + encodeURIComponent(f.name);
         if (f.kind === 'vocab') {
-          vocabs.push(this._kdReadSqlite(await fetch(url, { cache: 'no-store' }).then(r => r.arrayBuffer())));
+          vocabs.push(this._kdReadSqlite(await this._kdFetch(url, {}, 30000).then(r => r.arrayBuffer())));
         } else {
-          clips = clips.concat(this._kdParseClippings(await fetch(url, { cache: 'no-store' }).then(r => r.text())));
+          clips = clips.concat(this._kdParseClippings(await this._kdFetch(url, {}, 30000).then(r => r.text())));
         }
         names.push(f.name);
       }
@@ -17145,7 +17218,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const root = base.replace(/\/$/, '');
     let rep;
     try {
-      rep = await fetch(root + '/kindle/couvertures', { cache: 'no-store' });
+      rep = await this._kdFetch(root + '/kindle/couvertures');
     } catch (e) { return dire('Serveur injoignable'); }
     // Un serveur resté sur l'ancienne version ne connaît pas cette route : la
     // distinction vaut la peine, sinon on cherche le problème du mauvais côté.
@@ -17157,8 +17230,8 @@ Réponds UNIQUEMENT avec ce JSON :
       return dire('Aucune vignette dans kindle-couvertures — relance phonetique-kindle.cmd');
     return await this._kdFetchCovers(
       man.files.map(f => f.name),
-      (nom) => fetch(root + '/kindle/couvertures/' + encodeURIComponent(nom),
-                     { cache: 'no-store' }).then(r => r.ok ? r.blob() : null),
+      (nom) => this._kdFetch(root + '/kindle/couvertures/' + encodeURIComponent(nom), {}, 8000)
+                   .then(r => r.ok ? r.blob() : null),
       silent);
   },
 

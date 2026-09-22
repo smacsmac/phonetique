@@ -195,6 +195,40 @@ l'arrivée : les images reviennent d'elles-mêmes au fil de l'affichage.
 > du réseau local se heurte parfois au blocage « réseau privé » d'Android.
 > D'où la voie par fichier, qui ne dépend d'aucun réseau.
 
+## Hors du réseau
+
+L'appli s'ouvre et fonctionne sans le PC : les données vivent sur l'appareil,
+la synchro n'est qu'une étape séparée.
+
+Encore faut-il qu'elle n'attende pas le serveur pour s'afficher. Un PC absent
+du réseau ne **refuse** pas la connexion — il ne répond pas. Les paquets
+partent, rien ne revient, et le système attend sa minute entière avant
+d'abandonner. Le service worker s'arrête donc au bout de **trois secondes** et
+sert sa copie.
+
+Ces trois secondes couvrent l'**établissement** de la réponse, pas le
+transfert : `fetch` rend la main dès que les en-têtes arrivent, et le corps
+continue ensuite à son rythme. Un téléchargement lent n'est pas pénalisé ;
+seule une connexion qui ne s'établit jamais l'est. Remplacer `index.html` et
+rouvrir montre donc toujours le neuf du premier coup.
+
+La requête partie continue en arrière-plan et rafraîchit la copie : même
+quand le délai a joué, l'ouverture suivante aura la dernière version.
+
+> ⚠️ Le service worker ne se met à jour qu'au chargement suivant. Après avoir
+> remplacé `phonetique-sync.mjs`, **relance le serveur et ouvre l'appli une
+> fois en étant chez toi** : sans ça, l'ancien service worker reste aux
+> commandes et l'attente sans limite avec lui.
+
+## Le bouton Retour d'Android
+
+Il fait exactement ce que fait le bouton Retour de l'appli : revenir à l'écran
+précédent. Une fenêtre ouverte (nouveau paquet, choix de dossier) se ferme
+d'abord — sinon elle flotterait par-dessus l'écran suivant, vivant hors de la
+zone que l'appli redessine.
+
+Une fois à l'accueil, l'appli lâche prise et Android la ferme comme avant.
+
 ## Comment la fusion décide
 
 Enregistrement par enregistrement, jamais fichier par fichier. Chaque carte
@@ -245,6 +279,8 @@ jamais un fichier à moitié écrit.
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
 | Le Liseur ne trouve aucun fichier | `My Clippings.txt` et `vocab.db` ne sont pas dans le dossier servi — voir `PHON_KINDLE` |
 | `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
+| L'appli met une minute à s'ouvrir hors de chez toi | l'ancien service worker est encore actif : relance le serveur et ouvre l'appli une fois chez toi |
+| Le bouton Retour d'Android ferme l'appli | même cause — l'ancienne version est encore en place |
 
 ## Sauvegardes
 

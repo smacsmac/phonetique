@@ -182,8 +182,14 @@ const MANIFEST = JSON.stringify({
 // est là), cache en secours quand tu es dehors. Les données ne sont jamais
 // mises en cache : elles doivent venir du serveur ou pas du tout.
 const SERVICE_WORKER = `
-const CACHE = 'phonetique-shell-v3';
+const CACHE = 'phonetique-shell-v4';
 const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
+// Delai d'ETABLISSEMENT de la reponse, pas de transfert : fetch() se resout
+// des que les en-tetes arrivent, et le corps continue ensuite a son rythme.
+// Un telechargement lent n'est donc pas penalise ; seule une connexion qui ne
+// s'etablit jamais l'est.
+const ATTENTE = 3000;
+
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -205,23 +211,50 @@ self.addEventListener('fetch', e => {
   // doublerait le stockage sans rien apporter.
   if(url.pathname === '/donnees' || url.pathname === '/health'
      || url.pathname === '/kindle' || url.pathname.startsWith('/kindle/')) return;
+
   const key = (e.request.mode === 'navigate' || url.pathname === '/index.html') ? '/' : e.request;
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        const copy = r.clone();
-        caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {});
-        return r;
-      })
-      .catch(() => caches.match(key).then(r => {
-        if(r) return r;
+
+  e.respondWith((async () => {
+    const copie = await caches.match(key);
+
+    // Le reseau met la copie a jour des qu'il repond, meme si la course
+    // ci-dessous est deja perdue : la prochaine ouverture aura le neuf.
+    const reseau = fetch(e.request).then(r => {
+      if(r && r.ok) caches.open(CACHE).then(c => c.put(key, r.clone())).catch(() => {});
+      return r;
+    });
+    reseau.catch(() => {});   // pas de rejet non gere si la course est perdue
+
+    if(!copie){
+      // Rien en reserve : il faut bien attendre le reseau.
+      try { return await reseau; }
+      catch(err){
         // Ne renvoyer la page d'accueil QUE pour une navigation. La renvoyer
         // a la place d'un script ferait executer du HTML comme du JavaScript
         // ("Unexpected token '<'") au lieu d'un simple echec reseau.
-        if(e.request.mode === 'navigate') return caches.match('/');
+        if(e.request.mode === 'navigate'){
+          const shell = await caches.match('/');
+          if(shell) return shell;
+        }
         return Response.error();
-      }))
-  );
+      }
+    }
+
+    // Le navigateur se sait hors ligne : inutile de tenter quoi que ce soit.
+    if(self.navigator && self.navigator.onLine === false) return copie;
+
+    // On a une copie. On tente le reseau, mais brievement : un PC absent du
+    // reseau ne REFUSE pas la connexion, il ne repond pas. Sans ce delai,
+    // l'appli attendait la minute entiere du systeme avant de se rabattre.
+    try {
+      const r = await Promise.race([
+        reseau,
+        new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), ATTENTE)),
+      ]);
+      if(r && r.ok) return r;
+    } catch(err){ /* trop lent ou injoignable : la copie fera l'affaire */ }
+    return copie;
+  })());
 });
 `;
 
