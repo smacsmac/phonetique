@@ -1,4 +1,4 @@
-# Le Liseur — tes mots surlignés sur la liseuse
+# La Récolte — tes mots surlignés en lisant
 
 Tu surlignes un mot en lisant. Il arrive dans Phonétique avec **la phrase du
 livre** où tu l'as rencontré, prête à devenir le contexte d'une carte.
@@ -8,8 +8,11 @@ Kindle ──┬── documents/My Clippings.txt      ce que tu as SURLIGNÉ  (
          └── system/vocabulary/vocab.db      ce que tu as CHERCHÉ   (matière)
                       │
                       ▼
-              Le Liseur  ──►  Mot en Focus  ──►  Le Grenier
+             La Récolte  ──►  Mot en Focus  ──►  Le Grenier
 ```
+
+> Le nom fait pendant au **Grenier** : on récolte en lisant, on engrange
+> ensuite. C'est exactement le trajet d'un mot dans l'appli.
 
 ## Pourquoi deux fichiers
 
@@ -20,7 +23,7 @@ n'importe quoi — y compris `que`, `autant`, `dessus`. Surligner est un choix.
 nu. `vocab.db` porte la **matière** — le lemme, la langue, le livre, et la
 phrase exacte du texte — mais sans distinguer ce qui compte.
 
-Le Liseur croise les deux. Sur une bibliothèque réelle, 97 % des mots
+La Récolte croise les deux. Sur une bibliothèque réelle, 97 % des mots
 surlignés en français retrouvent ainsi leur phrase.
 
 > Le croisement rattrape l'élision : tu surlignes « l'objectif », le Kindle a
@@ -36,13 +39,13 @@ Phonétique sur le PC, à côté de `index.html` :
 | `My Clippings.txt` | `documents\` |
 | `vocab.db` | `system\vocabulary\` — **dossier masqué**, à afficher dans l'Explorateur |
 
-Puis, dans l'appli : **Le Labo › Le Liseur › Depuis le serveur**. C'est tout.
+Puis, dans l'appli : **Le Labo › La Récolte › Depuis le serveur**. C'est tout.
 À la semaine suivante, tu remplaces les deux fichiers et tu réappuies.
 
 ### Le faire en un double-clic
 
 `phonetique-kindle.cmd`, posé **dans le dossier de Phonétique**, fait la copie
-tout seul : branche la liseuse, double-clique, ouvre Le Liseur.
+tout seul : branche la liseuse, double-clique, ouvre La Récolte.
 
 Il ne contient aucun chemin en dur. Il copie vers **son propre dossier**, donc
 tu peux renommer ou déplacer le dossier sans y toucher — et l'accent de
@@ -80,7 +83,7 @@ Une vignette de liseuse pèse ~20 Ko. L'appli la **réduit à la taille affiché
 soit ~3 Ko, avant de la garder : assez léger pour voyager avec la synchro, donc
 le téléphone voit les couvertures **sans avoir les fichiers**.
 
-Seuls les livres visibles dans Le Liseur sont habillés — inutile de garder la
+Seuls les livres visibles dans La Récolte sont habillés — inutile de garder la
 couverture d'un livre dont aucun mot n'est surligné.
 
 Un livre sans couverture reçoit une **pastille** portant ses initiales, dans une
@@ -101,7 +104,7 @@ phrases perdues.
 
 ## Trier
 
-Le Liseur montre d'abord tes **livres**, le plus récemment lu en haut. Tu peux
+La Récolte montre d'abord tes **livres**, le plus récemment lu en haut. Tu peux
 trier par nombre de mots ou par titre, et ne garder qu'une année.
 
 Dans un livre, deux onglets :
@@ -109,6 +112,10 @@ Dans un livre, deux onglets :
 - **Surlignés** — ce que tu as choisi. C'est la vue par défaut.
 - **Tous les mots** — tout ce que tu as cherché dans ce livre, phrase comprise.
   Des centaines de mots : à ouvrir quand tu veux miner un livre à fond.
+
+Le bouton à droite de **Tout cocher** renverse l'ordre : d'abord l'ordre de
+lecture (les premiers surlignés en haut), puis **les plus récents d'abord**,
+pour reprendre là où tu t'es arrêté. Le choix tient jusqu'à la fin de la séance.
 
 Trois gestes :
 
@@ -124,6 +131,13 @@ pour toujours. Avec elle, le deuxième import ne montre que le nouveau.
 
 Rien ne disparaît vraiment : **Afficher les mots traités** remet les mots
 écartés et envoyés sous les yeux, avec un **↺** pour les remettre en attente.
+
+## Revenir en arrière
+
+Les trois vues — livres, mots d'un livre, carnet — sont des étapes de
+navigation à part entière. Le bouton Retour de l'appli comme le geste d'Android
+remontent donc **d'un cran**, et non de l'écran entier : depuis les mots d'un
+livre, tu reviens à la liste des livres, pas au Labo.
 
 ## Le carnet d'un livre
 
@@ -195,7 +209,7 @@ réimportant les fichiers, qui vivent sur le PC.
 | Une pastille au lieu d'une couverture | le bouton **Depuis le serveur** le dit : serveur à relancer, dossier vide, ou livre sans identifiant |
 | « Serveur à relancer » | `phonetique-sync.mjs` a été remplacé mais le serveur tourne encore sur l'ancien code — ferme la fenêtre et relance le lanceur |
 
-## Ce que le Liseur ne fait pas
+## Ce que La Récolte ne fait pas
 
 Il ne lit pas les **notes** ni les **signets**, ni les passages de plus de
 trois mots : ce sont des repères de lecture, pas du vocabulaire.

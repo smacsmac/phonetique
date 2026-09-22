@@ -142,11 +142,11 @@ fusionné** pour le rapporter.
 ## Les fichiers de la liseuse
 
 Dépose `My Clippings.txt` et `vocab.db` à côté de `index.html` : le serveur les
-recense sur `/kindle`, et **Le Labo › Le Liseur › Depuis le serveur** met tes
+recense sur `/kindle`, et **Le Labo › La Récolte › Depuis le serveur** met tes
 mots surlignés à jour sans rien téléverser depuis le téléphone.
 
 Le serveur ne publie que les fichiers qu'il a lui-même recensés, jamais un
-chemin venu du réseau. Voir [LISEUR.md](LISEUR.md).
+chemin venu du réseau. Voir [RECOLTE.md](RECOLTE.md).
 
 ## Les images
 
@@ -277,7 +277,7 @@ jamais un fichier à moitié écrit.
 | Avertissement de certificat sur `https://smac:8791` | le nom n'est pas encore dans le certificat : mets `PHON_HOST=smac` et relance |
 | « ⚠ image introuvable » sur des cartes | l'image appartient à une autre adresse — voir « Récupérer des images d'une ancienne adresse » |
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
-| Le Liseur ne trouve aucun fichier | `My Clippings.txt` et `vocab.db` ne sont pas dans le dossier servi — voir `PHON_KINDLE` |
+| La Récolte ne trouve aucun fichier | `My Clippings.txt` et `vocab.db` ne sont pas dans le dossier servi — voir `PHON_KINDLE` |
 | `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
 | L'appli met une minute à s'ouvrir hors de chez toi | l'ancien service worker est encore actif : relance le serveur et ouvre l'appli une fois chez toi |
 | Le bouton Retour d'Android ferme l'appli | même cause — l'ancienne version est encore en place |

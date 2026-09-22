@@ -4614,6 +4614,8 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   color: var(--text2, #bbb); font-family: inherit; transition: all 0.15s;
 }
 .kd-chip.on { background: rgba(139,92,246,0.2); border-color: #8B5CF6; color: #C4B5FD; }
+.kd-chip-ordre { display: inline-flex; align-items: center; gap: 5px; }
+.kd-chip-ordre svg { width: 11px; height: 11px; flex-shrink: 0; }
 
 /* — liste des livres — */
 .kd-books { display: flex; flex-direction: column; gap: 8px; }
@@ -6794,7 +6796,14 @@ const KO_VOICES = [
         case 'repertoire': this.renderRepertoire(); break;
         case 'grenier': this.renderGrenier(); break;
         case 'phoneme-focus': this.renderPhonemeFocus(); break;
-        case 'liseur': this.renderLiseur(); break;
+        case 'recolte':
+          // Les trois vues de l'écran (livres, mots d'un livre, carnet) sont
+          // des étapes de navigation à part entière : sans ça, le retour
+          // sautait l'écran entier au lieu de remonter d'un cran.
+          this._kdBookId = params?.bookId || null;
+          this._kdNoteId = params?.noteId || null;
+          this.renderRecolte();
+          break;
         case 'hands-free': this.renderHandsFree(); break;
         case 'grenier-card-create': this.renderGrenierCardCreate(params || {}); break;
         case 'grenier-study':
@@ -6909,10 +6918,10 @@ const KO_VOICES = [
           <div class="cat-desc">Tes mots, sur tes sons faibles</div>
           <div class="cat-glow"></div>
         </button>
-        <button class="category-tile labo-tile" style="--cat-color:#1A1030;--cat-accent:#8B5CF6" onclick="App.navigate('liseur')">
+        <button class="category-tile labo-tile" style="--cat-color:#1A1030;--cat-accent:#8B5CF6" onclick="App.navigate('recolte')">
           <div class="cat-icon">📕</div>
-          <div class="cat-label">Le Liseur</div>
-          <div class="cat-desc">Les mots surlignés sur ta liseuse</div>
+          <div class="cat-label">La Récolte</div>
+          <div class="cat-desc">Les mots surlignés en lisant</div>
           <div class="cat-glow"></div>
         </button>
         <button class="category-tile labo-tile ${hasKey ? '' : 'tile-locked'}"
@@ -7122,7 +7131,7 @@ const KO_VOICES = [
     }
     // Update flip dot now that DOM exists
     setTimeout(() => this._wfUpdateFlipDot(), 0);
-    // Une phrase venue du Liseur : on ouvre le champ de contexte et on l'y
+    // Une phrase venue de La Récolte : on ouvre le champ de contexte et on l'y
     // pose, sans voler le focus (sinon le clavier s'ouvre sur le téléphone).
     if (preloadContext) {
       this._wfLastContext = preloadContext;
@@ -8223,7 +8232,7 @@ const KO_VOICES = [
       localStorage.setItem('phonetique_settings_u', String(this._syncSettingsU));
     }
 
-    // 7. Liseur : union des livres, des mots surlignés et des décisions de tri
+    // 7. La Récolte : union des livres, des mots surlignés et des décisions de tri
     if (remote.liseur) this._kdSyncMerge(remote.liseur);
 
     // 8. purge des vieilles pierres tombales
@@ -16497,7 +16506,7 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   // ══════════════════════════════════════════════════════════════
-  //  LE LISEUR — les mots surlignés sur la liseuse
+  //  LA RÉCOLTE — les mots surlignés en lisant
   // ══════════════════════════════════════════════════════════════
   //
   // Deux fichiers, deux rôles. « My Clippings.txt » dit ce que tu as
@@ -16512,6 +16521,7 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdLib: null,          // { books, words, dismissed, sent, sources, at }
   _kdBookId: null,
   _kdView: 'hl',         // 'hl' = surlignés · 'all' = tous les mots cherchés
+  _kdOrdre: 'anciens',   // 'anciens' = dans l'ordre de lecture · 'recents' = les derniers d'abord
   _kdShowDone: false,    // afficher aussi les mots déjà traités
   _kdSel: null,          // Set des identifiants cochés
   _kdSort: 'recent',     // 'recent' | 'alpha' | 'count'
@@ -17026,7 +17036,9 @@ Réponds UNIQUEMENT avec ce JSON :
     let list = lib.words.filter(w => w.b === bookId);
     if (this._kdView === 'hl') list = list.filter(w => w.h);
     if (!this._kdShowDone) list = list.filter(w => !lib.sent[w.i] && !lib.dismissed[w.i]);
-    return list.sort((a, b) => (a.t || 0) - (b.t || 0) || String(a.w).localeCompare(String(b.w), 'fr'));
+    const sens = this._kdOrdre === 'recents' ? -1 : 1;
+    return list.sort((a, b) => sens * ((a.t || 0) - (b.t || 0))
+                            || sens * String(a.w).localeCompare(String(b.w), 'fr'));
   },
 
   _kdRemaining(bookId) {
@@ -17052,7 +17064,7 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdRefresh() {
-    if (this.currentScreen !== 'liseur') return;
+    if (this.currentScreen !== 'recolte') return;
     // Jamais pendant qu'on écrit : un rendu arracherait le champ sous les
     // doigts, avec le curseur et la frappe en cours.
     if (this._kdNoteId) {
@@ -17164,7 +17176,7 @@ Réponds UNIQUEMENT avec ce JSON :
     return lib.books.some(b => !b.asin && lib.words.some(w => w.b === b.id && w.h));
   },
 
-  // N'habille que les livres visibles dans Le Liseur : inutile de garder la
+  // N'habille que les livres visibles dans La Récolte : inutile de garder la
   // couverture d'un livre dont aucun mot n'est surligné.
   _kdBooksNeedingCover() {
     const lib = this._kdLib;
@@ -17264,14 +17276,12 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdOpenNote(bookId) {
-    this._kdNoteId = bookId;
-    this._kdRenderNote();
+    this.navigate('recolte', { noteId: bookId });
   },
 
   _kdCloseNote() {
     this._kdNoteSave(true);
-    this._kdNoteId = null;
-    this._kdRenderBooks();
+    this.goBack();
   },
 
   // Ce que les fichiers du Kindle savent réellement du livre. La date de
@@ -17403,7 +17413,7 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   // ── Écran : la bibliothèque ───────────────────────────────────
-  renderLiseur() {
+  renderRecolte() {
     if (!this._kdLib) this.loadLiseur();
     this._kdSel = this._kdSel || new Set();
     document.getElementById('main').innerHTML = `
@@ -17411,7 +17421,7 @@ Réponds UNIQUEMENT avec ce JSON :
         <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px"><span class="logo-ph" style="color:#8B5CF6">Ph</span><span class="logo-onetique" style="color:#A78BFA">o</span></button>
         <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
         <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-        <div class="screen-title">Le Liseur</div>
+        <div class="screen-title">La Récolte</div>
       </div>
       <div id="kdBody" class="kd-body"></div>
       <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite,.jpg,.jpeg,.png" style="display:none"
@@ -17420,7 +17430,9 @@ Réponds UNIQUEMENT avec ce JSON :
     this._kdNoteId ? this._kdRenderNote()
       : this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
     // Si le serveur expose les fichiers, on se met à jour sans rien demander.
-    if (!this._kdBusy) setTimeout(async () => {
+    // Seulement en arrivant sur la liste des livres : passer d'un livre à
+    // l'autre n'a pas à relancer une recherche réseau.
+    if (!this._kdBusy && !this._kdBookId && !this._kdNoteId) setTimeout(async () => {
       await this._kdFetchFromServer(true);
       await this._kdFetchCoversFromServer(true);
     }, 300);
@@ -17520,15 +17532,15 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdOpenBook(id) {
-    this._kdBookId = id;
     this._kdSel = new Set();
-    this._kdRenderBook();
+    this.navigate('recolte', { bookId: id });
   },
 
+  // Revenir par l'historique, et non en redessinant : le bouton de l'appli et
+  // le geste d'Android empruntent ainsi exactement le même chemin.
   _kdBackToBooks() {
-    this._kdBookId = null;
     this._kdSel = new Set();
-    this._kdRenderBooks();
+    this.goBack();
   },
 
   _kdRenderBook() {
@@ -17561,6 +17573,12 @@ Réponds UNIQUEMENT avec ce JSON :
           ${this._kdShowDone ? '✓ ' : ''}Afficher les mots traités
         </button>
         ${list.length ? `<button class="kd-chip" onclick="App._kdSelectAll()">${sel.size >= list.length ? 'Tout décocher' : 'Tout cocher'}</button>` : ''}
+        ${list.length ? `<button class="kd-chip kd-chip-ordre" onclick="App._kdInverserOrdre()"
+          title="${this._kdOrdre === 'recents' ? 'Voir dans l\'ordre de lecture' : 'Voir les derniers surlignés d\'abord'}">
+          ${this._kdOrdre === 'recents'
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Plus récents'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Ordre de lecture'}
+        </button>` : ''}
       </div>
       <div class="kd-words">
         ${list.length ? list.map(w => this._kdWordRow(w)).join('') : `
@@ -17576,6 +17594,14 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdSetView(v) { this._kdView = v; this._kdSel = new Set(); this._kdRenderBook(); },
+
+  // Le choix vaut pour la suite de la séance : on relit rarement un livre
+  // dans un sens puis dans l'autre.
+  _kdInverserOrdre() {
+    this._kdOrdre = this._kdOrdre === 'recents' ? 'anciens' : 'recents';
+    this._kdSel = new Set();
+    this._kdRenderBook();
+  },
   _kdToggleDone() { this._kdShowDone = !this._kdShowDone; this._kdSel = new Set(); this._kdRenderBook(); },
 
   _kdWordRow(w) {
@@ -17682,7 +17708,7 @@ Réponds UNIQUEMENT avec ce JSON :
   // Un titre de livre fait un nom de paquet trop long : on coupe avant les
   // sous-titres, qui n'apportent rien dans une liste de paquets.
   _kdDeckName(book) {
-    let t = (book && book.title) || 'Liseur';
+    let t = (book && book.title) || 'Récolte';
     t = t.split(/\s*[:(]/)[0].trim() || t;
     return t.length > 38 ? t.slice(0, 36).trim() + '…' : t;
   },
