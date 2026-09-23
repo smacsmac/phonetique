@@ -2375,6 +2375,13 @@ body::before {
   transition: border-color 0.2s;
 }
 .wf-context-input:focus { border-color: rgba(251,191,36,0.65); }
+/* Une lueur brève quand le mot vient d'être collé : sans elle, rien ne dit
+   que le bouton a fait quelque chose. */
+.wf-ctx-flash { animation: wf-ctx-lueur 0.5s ease-out; }
+@keyframes wf-ctx-lueur {
+  0%   { background: rgba(251,191,36,0.30); border-color: #FBBF24; }
+  100% { background: ''; }
+}
 .wf-context-input::placeholder { color: var(--text3); }
 .wf-context-clear {
   position: absolute;
@@ -7658,6 +7665,28 @@ const KO_VOICES = [
     this._wfCtxCaret = { s: pos, e: pos };
     dst.focus();
     try { dst.setSelectionRange(pos, pos); } catch(err) {}
+    // Le champ est étroit : le mot collé tombe souvent hors de vue, et rien ne
+    // dit que ça a marché. On amène donc la fin de la phrase sous les yeux.
+    this._wfVoirCurseur(dst, pos);
+    dst.classList.remove('wf-ctx-flash');
+    void dst.offsetWidth;                  // relance l'animation si on reclique
+    dst.classList.add('wf-ctx-flash');
+  },
+
+  // Un <input> ne défile pas toujours jusqu'au curseur, surtout quand il avait
+  // déjà le focus. On mesure donc le texte pour placer le défilement nous-mêmes.
+  _wfVoirCurseur(el, pos) {
+    try {
+      const cs = getComputedStyle(el);
+      const cv = this._mesureCanvas || (this._mesureCanvas = document.createElement('canvas'));
+      const ctx = cv.getContext('2d');
+      ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const avant = ctx.measureText(String(el.value).slice(0, pos)).width;
+      const utile = el.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+      // On vise le dernier tiers : on voit le mot qu'on vient de coller, et
+      // il reste de la place devant pour continuer à écrire.
+      el.scrollLeft = Math.max(0, avant - utile * 0.7);
+    } catch (e) {}
   },
 
   _wfCloseContext() {
@@ -7795,13 +7824,9 @@ const KO_VOICES = [
               <span style="font-size:12px;color:var(--text3)">Écraser la définition existante</span>
             </label>
             <div style="display:flex;gap:6px">
-              <button class="wf-def-action-btn" id="wfImgSimpleBtn" onclick="App._wfGenerateImage('simple')" style="flex:1;justify-content:center;color:#34D399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Rapide
-              </button>
               <button class="wf-def-action-btn" id="wfImgSmartBtn" onclick="App._wfGenerateImage('smart')" style="flex:1;justify-content:center;color:#34D399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Malin
+                Générer
               </button>
             </div>
           </div>
@@ -12005,14 +12030,9 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                 <svg class="settings-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </div>
               <div class="settings-group-body" style="padding:0">
-                <div style="font-size:11px;color:var(--text3);padding:8px 16px 4px;line-height:1.4">Utilise votre clé OpenRouter existante. Choisissez un modèle rapide/économique pour <b style="color:#34D399">Simple</b> et un modèle plus puissant pour <b style="color:#34D399">Malin</b>.</div>
+                <div style="font-size:11px;color:var(--text3);padding:8px 16px 4px;line-height:1.4">Utilise votre clé OpenRouter existante.</div>
                 <div class="settings-field">
-                  <label class="field-label" style="color:#34D399">Modèle image — Simple ✦</label>
-                  <input class="settings-input" type="text" placeholder="sourceful/riverflow-v2-fast" id="imgSimpleModel" value="${this.settings.imgSimpleModel||'sourceful/riverflow-v2-fast'}">
-                  <div style="font-size:11px;color:var(--text3);margin-top:3px">Rapide et économique (~0,02$/img) — idéal pour animaux, objets simples</div>
-                </div>
-                <div class="settings-field">
-                  <label class="field-label" style="color:#34D399">Modèle image — Malin ✦</label>
+                  <label class="field-label" style="color:#34D399">Modèle image ✦</label>
                   <input class="settings-input" type="text" placeholder="google/gemini-3.1-flash-image-preview" id="imgSmartModel" value="${this.settings.imgSmartModel||'google/gemini-3.1-flash-image-preview'}">
                   <div style="font-size:11px;color:var(--text3);margin-top:3px">Haute qualité, contextuel — comprend le sens du mot</div>
                 </div>
@@ -12121,7 +12141,6 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this.settings.defComplexModel  = document.getElementById('defComplexModel')?.value || '';
     this.settings.defComplexPrompt = document.getElementById('defComplexPrompt')?.value.trim() || '';
     // Image generation models (uses same OpenRouter key)
-    this.settings.imgSimpleModel = document.getElementById('imgSimpleModel')?.value.trim() || 'sourceful/riverflow-v2-fast';
     this.settings.imgSmartModel  = document.getElementById('imgSmartModel')?.value.trim() || 'google/gemini-3.1-flash-image-preview';
     this.saveSettings();
     this.showToast('Paramètres IA sauvegardés ✓');
@@ -13659,11 +13678,11 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         </div>
         <div class="grenier-toolbar">
           <div class="grenier-view-toggle">
-            <button class="grenier-view-btn ${view==='grid'?'active':''}" onclick="App._grSetView('grid')" title="Grille">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            </button>
             <button class="grenier-view-btn ${view==='list'?'active':''}" onclick="App._grSetView('list')" title="Liste">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+            <button class="grenier-view-btn ${view==='grid'?'active':''}" onclick="App._grSetView('grid')" title="Grille">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             </button>
           </div>
           ${decks.length > 1 ? `
@@ -15610,13 +15629,9 @@ Réponds UNIQUEMENT avec ce JSON :
             <span style="font-size:12px;color:var(--text3)">Écraser la définition existante</span>
           </label>
           <div style="display:flex;gap:6px">
-            <button class="grenier-def-edit-btn" id="grImgSimpleBtn" onclick="App._grGenerateImage('${safeId}','${safeWord}','simple')" style="flex:1;justify-content:center;color:#34D399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Rapide
-            </button>
             <button class="grenier-def-edit-btn" id="grImgSmartBtn" onclick="App._grGenerateImage('${safeId}','${safeWord}','smart')" style="flex:1;justify-content:center;color:#34D399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              Malin
+              Générer
             </button>
           </div>
         </div>
@@ -15901,6 +15916,8 @@ Réponds UNIQUEMENT avec ce JSON :
     cartesExistantes.forEach(c => (c.tags || []).forEach(t => tagsActuels.add(t)));
     // If MOF already has a definition, default genDef to off (it will be carried over automatically)
     const defToggleOn = hasKey && !existingDef;
+    // Le choix de la dernière fois : on coche rarement l'image une seule fois.
+    const imgToggleOn = hasKey && this.settings.grenierImgAuto === true;
     const overlay = document.createElement('div');
     overlay.className = 'rep-overlay';
     overlay.id = 'wfGrenierModal';
@@ -15937,6 +15954,18 @@ Réponds UNIQUEMENT avec ce JSON :
               Complexe
             </button>
           </div>` : ''}
+        </div>
+        <div style="margin-top:8px;padding:12px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:var(--radius-sm)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+            <div class="grenier-toggle ${imgToggleOn ? 'on' : ''}" id="wfGrenierImgToggle"
+                 onclick="this.classList.toggle('on')" ${hasKey ? '' : 'style="opacity:0.35;pointer-events:none"'}></div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Générer une image</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${hasKey
+                ? 'Ajoutée au verso, après la définition'
+                : 'Requiert une clé OpenRouter'}</div>
+            </div>
+          </label>
         </div>
         <div style="margin-top:12px;padding:10px 12px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:var(--radius-sm)">
           <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Étiquettes (optionnel)${
@@ -16008,6 +16037,9 @@ Réponds UNIQUEMENT avec ce JSON :
     const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
     if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
     const genDef = document.getElementById('wfGrenierDefToggle')?.classList.contains('on');
+    const genImg = !!document.getElementById('wfGrenierImgToggle')?.classList.contains('on');
+    this.settings.grenierImgAuto = genImg;
+    this.saveSettings();
     const tags = [...(this._wfGrenierPendingTags || new Set())];
     const cardId = this._gid();
     this._grenier.cards.push({
@@ -16027,14 +16059,33 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveGrenier();
     document.getElementById('wfGrenierModal')?.remove();
     this.showToast(`"${word}" ajouté au Grenier ✓`);
-    // If MOF definition exists, use it directly — no need to generate
-    if (!existingDef && genDef && this.settings.openrouterKey) {
-      // Ne plus revenir à « simple » d'office : le choix doit tenir.
-      const defType = this._wfDefType || this.settings.defType || 'simple';
-      this._grGenerateDefForNewCard(cardId, word, context, defType);
-    }
+    // L'image se place APRÈS la définition sur le verso : on attend donc que
+    // celle-ci soit posée avant de la demander. Les deux sont reprises toutes
+    // seules si elles échouent, et rien de tout ça ne tient à l'écran affiché.
+    this._grPoserVerso(cardId, word, context, {
+      def: !existingDef && genDef, img: genImg,
+      type: this._wfDefType || this.settings.defType || 'simple',
+    });
     this._wfUpdateSaveBtn();
     this._wfUpdateRepBtn();
+  },
+
+  // Demande la définition puis l'image, dans cet ordre, sans bloquer l'appelant.
+  async _grPoserVerso(cardId, word, context, quoi) {
+    if (!this.settings?.openrouterKey) return;
+    try {
+      if (quoi.def) await this._grGenerateDefForNewCard(cardId, word, context, quoi.type);
+    } catch (e) {}
+    if (!quoi.img) return;
+    // Si la définition a échoué, elle reste en attente : l'image attendra son
+    // tour plutôt que de se retrouver avant le texte.
+    const c = this._grenier?.cards.find(x => x.id === cardId);
+    if (c && c.defPending) {
+      c.imgPending = { word, context: context || '', at: Date.now(), essais: 0 };
+      this.saveGrenier();
+      return;
+    }
+    try { await this._grImagePourCarte(cardId, word, context || ''); } catch (e) {}
   },
 
   _wfGrenierNewDeck() {
@@ -16124,11 +16175,13 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveGrenier();
     this.showToast(`Paquet "${name}" créé et "${word}" ajouté ✓`);
 
-    // Generate definition if no existing def and key available
-    if (!existingDef && this.settings.openrouterKey) {
+    // Même chemin que depuis un paquet existant : définition puis image.
+    if (this.settings.openrouterKey) {
       const defType = this._wfDefType || 'simple';
       this._wfDefType = 'simple';
-      this._grGenerateDefForNewCard(cardId, word, context, defType);
+      this._grPoserVerso(cardId, word, context, {
+        def: !existingDef, img: this.settings.grenierImgAuto === true, type: defType,
+      });
     }
 
     this._wfUpdateSaveBtn();
@@ -16170,10 +16223,80 @@ Réponds UNIQUEMENT avec ce JSON :
     }
   },
 
+  _imgEnVol: null,
+
+  _grImgEnAttente(c) {
+    return !!(c && c.imgPending && !c.deleted);
+  },
+
+  _grImagesEnAttente() {
+    return (this._grenier?.cards || []).filter(c => this._grImgEnAttente(c));
+  },
+
+  _grReprendreImages() {
+    if (!this._grenier || !this.settings?.openrouterKey) return;
+    if (!this._imgEnVol) this._imgEnVol = new Set();
+    const maintenant = Date.now();
+    for (const c of this._grImagesEnAttente()) {
+      // La définition d'abord : l'image se place après elle sur le verso.
+      if (c.defPending) continue;
+      const p = c.imgPending;
+      if ((p.essais || 0) >= this._DEF_ESSAIS_MAX) continue;
+      if (maintenant - (p.at || 0) < this._DEF_ATTENTE) continue;
+      if (this._imgEnVol.has(c.id)) continue;
+      this._grImagePourCarte(c.id, p.word, p.context || '', true);
+    }
+  },
+
+  // Générer une image pour une carte sans passer par un bouton : appelée à
+  // l'envoi depuis « Au Grenier », et par la reprise. Même durabilité que les
+  // définitions — la demande est inscrite sur la carte avant de partir.
+  async _grImagePourCarte(cardId, word, context = '', reprise = false) {
+    if (!this.settings?.openrouterKey) return;
+    if (!this._imgEnVol) this._imgEnVol = new Set();
+    if (this._imgEnVol.has(cardId)) return;
+    this._imgEnVol.add(cardId);
+
+    const inscrire = (essais) => {
+      const c = this._grenier?.cards.find(x => x.id === cardId);
+      if (!c) return null;
+      c.imgPending = { word, context, at: Date.now(),
+                       essais: essais != null ? essais : (c.imgPending?.essais || 0) };
+      this.saveGrenier();
+      return c;
+    };
+    const carte = inscrire();
+    const essaisAvant = carte ? (carte.imgPending.essais || 0) : 0;
+
+    try {
+      const { idbKey, blob } = await this._generateImageViaOpenRouter(word, 'smart', context);
+      const imgHtml = this._buildImgHtml(idbKey, URL.createObjectURL(blob), word);
+      const c = this._grenier.cards.find(x => x.id === cardId);
+      if (c) {
+        c.definition = (c.definition || '') + imgHtml;
+        delete c.imgPending;
+        this.saveGrenier();
+      }
+      if (reprise) this.showToast(`Image de « ${word} » arrivée ✓`);
+      if (this.currentScreen === 'grenier') this.renderGrenier();
+    } catch (e) {
+      const n = essaisAvant + 1;
+      inscrire(n);
+      if (n >= this._DEF_ESSAIS_MAX) {
+        this.showToast(`Image de « ${word} » : abandon après ${n} tentatives`);
+      }
+    } finally {
+      this._imgEnVol.delete(cardId);
+    }
+  },
+
   _grDemarrerReprise() {
     if (this._defTimer) return;
     this._defEnVol = new Set();
-    const tour = () => { try { this._grReprendreDefs(); } catch (e) {} };
+    const tour = () => {
+      try { this._grReprendreDefs(); } catch (e) {}
+      try { this._grReprendreImages(); } catch (e) {}
+    };
     setTimeout(tour, 8000);                       // peu après le démarrage
     this._defTimer = setInterval(tour, 90000);    // puis régulièrement
     // Revenir sur l'appli est le bon moment : le réseau est souvent revenu.
@@ -16518,12 +16641,9 @@ Réponds UNIQUEMENT avec ce JSON :
   async _wfGenerateImage(quality) {
     const word = this._wfCurrentWord;
     if (!word) return;
-    const simpleBtn = document.getElementById('wfImgSimpleBtn');
-    const smartBtn  = document.getElementById('wfImgSmartBtn');
-    const activeBtn = quality === 'smart' ? smartBtn : simpleBtn;
+    const activeBtn = document.getElementById('wfImgSmartBtn');
     const origHtml  = activeBtn?.innerHTML;
-    if (simpleBtn) { simpleBtn.disabled = true; simpleBtn.style.opacity = '0.5'; }
-    if (smartBtn)  { smartBtn.disabled  = true; smartBtn.style.opacity  = '0.5'; }
+    if (activeBtn) { activeBtn.disabled = true; activeBtn.style.opacity = '0.5'; }
     if (activeBtn) { activeBtn.classList.add('btn-processing'); activeBtn.style.opacity = '1'; }
     try {
       const context = this._wfGetContext();
@@ -16554,8 +16674,7 @@ Réponds UNIQUEMENT avec ce JSON :
       console.error(e);
       this.showToast('Erreur lors de la génération d\'image');
     }
-    if (simpleBtn) { simpleBtn.disabled = false; simpleBtn.style.opacity = ''; }
-    if (smartBtn)  { smartBtn.disabled  = false; smartBtn.style.opacity  = ''; }
+    if (activeBtn) { activeBtn.disabled = false; activeBtn.style.opacity = ''; }
     if (activeBtn && origHtml) { activeBtn.classList.remove('btn-processing'); activeBtn.innerHTML = origHtml; }
   },
 
@@ -16574,12 +16693,9 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // ── Grenier: generate image and insert into card def ──────────
   async _grGenerateImage(cardId, word, quality) {
-    const simpleBtn = document.getElementById('grImgSimpleBtn');
-    const smartBtn  = document.getElementById('grImgSmartBtn');
-    const activeBtn = quality === 'smart' ? smartBtn : simpleBtn;
+    const activeBtn = document.getElementById('grImgSmartBtn');
     const origHtml  = activeBtn?.innerHTML;
-    if (simpleBtn) { simpleBtn.disabled = true; simpleBtn.style.opacity = '0.5'; }
-    if (smartBtn)  { smartBtn.disabled  = true; smartBtn.style.opacity  = '0.5'; }
+    if (activeBtn) { activeBtn.disabled = true; activeBtn.style.opacity = '0.5'; }
     if (activeBtn) { activeBtn.classList.add('btn-processing'); activeBtn.style.opacity = '1'; }
     try {
       const context = document.getElementById('grCtxInput')?.value?.trim() || '';
@@ -16616,8 +16732,7 @@ Réponds UNIQUEMENT avec ce JSON :
       console.error(e);
       this.showToast('Erreur lors de la génération d\'image');
     }
-    if (simpleBtn) { simpleBtn.disabled = false; simpleBtn.style.opacity = ''; }
-    if (smartBtn)  { smartBtn.disabled  = false; smartBtn.style.opacity  = ''; }
+    if (activeBtn) { activeBtn.disabled = false; activeBtn.style.opacity = ''; }
     if (activeBtn && origHtml) { activeBtn.classList.remove('btn-processing'); activeBtn.innerHTML = origHtml; }
   },
 
