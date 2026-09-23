@@ -4754,6 +4754,19 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .kd-bookbar .kd-cover { width: 28px; height: 42px; }
 @media (max-width: 380px) { .kd-cover { width: 54px; height: 81px; } }
 
+/* Une définition demandée mais pas encore revenue : l'appli la reprendra
+   toute seule, il faut que ça se voie plutôt que d'avoir l'air vide. */
+.gr-def-attente {
+  font-style: italic; font-size: 12.5px; line-height: 1.5;
+  color: #FBBF24; display: inline-flex; align-items: center; gap: 7px;
+}
+.gr-def-attente::before {
+  content: ''; width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid rgba(251,191,36,0.35); border-top-color: #FBBF24;
+  animation: gr-def-tourne 0.9s linear infinite; flex-shrink: 0;
+}
+@keyframes gr-def-tourne { to { transform: rotate(360deg); } }
+
 /* — la page de notes d'un livre — */
 .kd-note-head {
   display: flex; gap: 14px; align-items: flex-start;
@@ -6382,6 +6395,7 @@ const KO_VOICES = [
     this.setupSpeechSynthVoices();
     this._setupLongPress();
     this._navBrancherRetour();
+    this._grDemarrerReprise();
     this._syncStartAuto();
     this._installWire();
     // Une session mains libres ne doit pas continuer à parler dans le vide.
@@ -6790,6 +6804,10 @@ const KO_VOICES = [
             // Re-enter deep mode after render, restoring the previous query
             setTimeout(() => this._wfRestoreDeepMode(params.query || ''), 50);
           } else {
+            // Une entrée franche sans mot (la tuile du Labo, un bouton) veut un
+            // écran vierge ; un simple réaffichage — après une synchro, par
+            // exemple — ne doit rien effacer, d'où le test sur skipHistory.
+            if (!skipHistory && !params?.word) this._wfResetEtat();
             this.renderWordFocus(params?.word || '', params?.compareWord || '', params?.context || '');
           }
           break;
@@ -6978,13 +6996,14 @@ const KO_VOICES = [
     this._wfCompareCurrentIpa = '';
     // Only reset def/gender if navigating to a different word
     const incomingWord = preloadWord.trim().toLowerCase();
-    if (incomingWord && incomingWord !== this._wfCurrentWord) {
-      this._wfCurrentDef = '';
+    const motCourant = String(this._wfCurrentWord || '').trim().toLowerCase();
+    if (incomingWord && incomingWord !== motCourant) {
+      this._wfSetDef('', incomingWord);
       this._wfCurrentGender = '';
       this._wfDefPanelOpen = false;
       // Pre-populate definition from grenier card if one exists for this word
       const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === incomingWord);
-      if (grCard?.definition) this._wfCurrentDef = grCard.definition;
+      if (grCard?.definition) this._wfSetDef(grCard.definition, incomingWord);
     }
     // Always close the panel visually on re-render (it will be re-opened after if needed)
     const wasDefOpen = this._wfDefPanelOpen;
@@ -7190,11 +7209,11 @@ const KO_VOICES = [
     const actionRow = document.getElementById('wfActionRow');
     if (actionRow) actionRow.style.display = '';
     // Reset definition state for new word (panel lives inside card via flip)
-    this._wfCurrentDef = '';
+    this._wfSetDef('', word);
     this._wfDefPanelOpen = false;
     // Pre-populate definition from grenier card if one exists for this word
     const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
-    if (grCard?.definition) this._wfCurrentDef = grCard.definition;
+    if (grCard?.definition) this._wfSetDef(grCard.definition, word);
     this._wfUpdateFlipDot();
     // Record this word in lookup history (IPA added after fetch)
     this._wfRecordLookup(word, '');
@@ -7658,13 +7677,40 @@ const KO_VOICES = [
 
   // ── MOF Definition panel — full card-back flip like Grenier ────
   _wfCurrentDef: '',
+  // À quel mot appartient la définition ci-dessus. Sans ce lien, une
+  // définition survivait au changement de mot et pouvait s'attacher au
+  // suivant : « définition déjà générée » pour un mot jamais défini.
+  _wfCurrentDefWord: '',
   _wfDefPanelOpen: false,
+
+  _wfSetDef(def, mot) {
+    this._wfCurrentDef = def || '';
+    this._wfCurrentDefWord = String(mot != null ? mot : this._wfCurrentWord || '').trim().toLowerCase();
+  },
+
+  // Entrer franchement dans Mot en Focus doit donner un écran vierge. L'écran
+  // ne réaffiche jamais le mot qu'il garde en mémoire : sans ce nettoyage, il
+  // avait l'air neuf tout en tenant encore le mot précédent et sa définition.
+  _wfResetEtat() {
+    this._wfCurrentWord = '';
+    this._wfCurrentIpa = '';
+    this._wfCurrentGender = '';
+    this._wfSetDef('', '');
+    this._wfDefPanelOpen = false;
+  },
+
+  // Ne rend la définition QUE si elle est bien celle de ce mot-là.
+  _wfDefPour(mot) {
+    const m = String(mot || '').trim().toLowerCase();
+    if (!m || !this._wfCurrentDef) return '';
+    return this._wfCurrentDefWord === m ? this._wfCurrentDef : '';
+  },
 
   _wfUpdateFlipDot() {
     const btn = document.getElementById('wfFlipBtn');
     if (!btn) return;
     const existing = btn.querySelector('.wf-def-dot');
-    if (this._wfCurrentDef) {
+    if (this._wfDefPour(this._wfCurrentWord)) {
       if (!existing) {
         const dot = document.createElement('span');
         dot.className = 'wf-def-dot';
@@ -7797,7 +7843,7 @@ const KO_VOICES = [
   _wfSaveDef() {
     const ta = document.getElementById('wfDefTextarea');
     if (!ta) return;
-    this._wfCurrentDef = ta.innerHTML.trim();
+    this._wfSetDef(ta.innerHTML.trim(), this._wfCurrentWord);
     const defContent = document.getElementById('wfDefContent');
     if (defContent) { defContent.innerHTML = this._wfCurrentDef || '<span style="opacity:0.4;font-style:italic;font-size:13px">Vide.</span>'; App._idbHydrateImages(defContent); }
     const area = document.getElementById('wfDefEditArea');
@@ -7845,13 +7891,13 @@ const KO_VOICES = [
       const data = await resp.json();
       const def = data.choices?.[0]?.message?.content?.trim() || '';
       if (def) {
-        this._wfCurrentDef = def;
+        this._wfSetDef(def, this._wfCurrentWord);
         // Si la carte a été créée avant l'arrivée de la définition, elle est
         // restée vide : on la complète maintenant.
         this._wfPushDefToGrenier(this._wfCurrentWord, def);
         const content = document.getElementById('wfDefContent');
         if (content) { content.innerHTML = def; App._idbHydrateImages(content); }
-        this._wfCurrentDef = def;
+        this._wfSetDef(def, this._wfCurrentWord);
         const ta = document.getElementById('wfDefTextarea');
         if (ta) ta.innerHTML = def;
         this._wfUpdateFlipDot();
@@ -10125,7 +10171,7 @@ const KO_VOICES = [
     this._wfCurrentWord = '';
     this._wfCurrentIpa = '';
     this._wfCurrentGender = '';
-    this._wfCurrentDef = '';
+    this._wfSetDef('', '');
     // Update dependent buttons
     this._wfUpdateSaveBtn?.();
     this._wfUpdateRepBtn?.();
@@ -10237,7 +10283,7 @@ const KO_VOICES = [
     if (clearBtn) clearBtn.style.display = 'flex';
     // Pre-load definition from the grenier card
     const card = (this._grenier?.cards || []).find(c => c.id === cardId);
-    if (card?.definition) this._wfCurrentDef = card.definition;
+    if (card?.definition) this._wfSetDef(card.definition, card.word);
     // Load the word
     this.wfLoadWord();
   },
@@ -10444,7 +10490,7 @@ const KO_VOICES = [
     this._wfDeepMode = false;
     // Preload definition from grenier card
     const card = (this._grenier?.cards || []).find(c => c.id === cardId);
-    if (card?.definition) this._wfCurrentDef = card.definition;
+    if (card?.definition) this._wfSetDef(card.definition, card.word);
     // Navigate — this pushes a new entry on top of the deep search entry
     this.navigate('word-focus', { word });
   },
@@ -15536,7 +15582,9 @@ Réponds UNIQUEMENT avec ce JSON :
           <button class="gr-fs-toggle" id="grFsToggle" onclick="App._grToggleFsBar('${safeId}')" title="Taille du texte">Aa</button>
           <button class="gr-fs-btn gr-fs-plus gr-fs-hidden" onclick="App._grSetCardFontSize('${safeId}', App._grCurrentFs+1)" title="Agrandir">+</button>
         </div>
-        <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def || '<span style=\"opacity:0.35;font-style:italic\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+        <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def || (this._grDefEnAttente(card)
+          ? `<span class="gr-def-attente">Définition en route${card.defPending.essais ? ` — ${card.defPending.essais} tentative${card.defPending.essais > 1 ? 's' : ''} sans réponse, l'appli réessaie` : '…'}</span>`
+          : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>')}</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:nowrap;align-items:center">
           <button class="grenier-def-edit-btn" id="grDefEditBtn" onclick="App._grToggleDefEdit('${safeId}')" style="margin-top:0;flex-shrink:0" title="Modifier">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -15762,7 +15810,7 @@ Réponds UNIQUEMENT avec ce JSON :
         this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
         // ── Mirror to MOF if same word ────────────────────────────
         if (this._wfCurrentWord && card && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
-          this._wfCurrentDef = def;
+          this._wfSetDef(def, this._wfCurrentWord);
           this._wfUpdateFlipDot();
           const wfContent = document.getElementById('wfDefContent');
           if (wfContent) { wfContent.innerHTML = def; App._idbHydrateImages(wfContent); }
@@ -15834,7 +15882,9 @@ Réponds UNIQUEMENT avec ce JSON :
 
     const ipa = this._wfCurrentIpa || '';
     const context = this._wfGetContext();
-    const existingDef = this._wfCurrentDef || '';
+    // Uniquement si elle est bien celle de CE mot : autrefois on prenait
+    // « la définition en cours », qui pouvait être celle du mot precedent.
+    const existingDef = this._wfDefPour(word);
 
     // Choix simple / complexe repris de la dernière fois.
     const defType = this.settings.defType === 'complex' ? 'complex' : 'simple';
@@ -16085,9 +16135,89 @@ Réponds UNIQUEMENT avec ce JSON :
     this._wfUpdateRepBtn();
   },
 
-  async _grGenerateDefForNewCard(cardId, word, context = '', type = 'simple') {
+  // ══ La définition finit toujours par arriver ══════════════════
+  // Elle pouvait se perdre de quatre façons : l'appel n'avait aucun délai
+  // maximum, l'erreur était avalée en silence, une réponse vide ne laissait
+  // aucune trace, et fermer l'appli en cours de route effaçait la demande.
+  //
+  // La demande est donc inscrite SUR LA CARTE. Une boucle indépendante la
+  // reprend : elle ne tient à aucun écran, survit à la navigation, et
+  // reprend même après un redémarrage de l'appli.
+
+  _DEF_ESSAIS_MAX: 6,
+  _DEF_ATTENTE: 60000,      // délai minimum entre deux tentatives
+  _defTimer: null,
+  _defEnVol: null,          // ids en cours, pour ne pas lancer deux fois le même
+
+  _grDefEnAttente(c) {
+    return !!(c && c.defPending && !c.deleted && !String(c.definition || '').trim());
+  },
+
+  _grDefsEnAttente() {
+    return (this._grenier?.cards || []).filter(c => this._grDefEnAttente(c));
+  },
+
+  _grReprendreDefs() {
+    if (!this._grenier || !this.settings?.openrouterKey) return;
+    if (!this._defEnVol) this._defEnVol = new Set();
+    const maintenant = Date.now();
+    for (const c of this._grDefsEnAttente()) {
+      const p = c.defPending;
+      if ((p.essais || 0) >= this._DEF_ESSAIS_MAX) continue;
+      if (maintenant - (p.at || 0) < this._DEF_ATTENTE) continue;
+      if (this._defEnVol.has(c.id)) continue;
+      this._grGenerateDefForNewCard(c.id, p.word, p.context || '', p.type || 'simple', true);
+    }
+  },
+
+  _grDemarrerReprise() {
+    if (this._defTimer) return;
+    this._defEnVol = new Set();
+    const tour = () => { try { this._grReprendreDefs(); } catch (e) {} };
+    setTimeout(tour, 8000);                       // peu après le démarrage
+    this._defTimer = setInterval(tour, 90000);    // puis régulièrement
+    // Revenir sur l'appli est le bon moment : le réseau est souvent revenu.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') setTimeout(tour, 1200);
+    });
+    window.addEventListener('online', () => setTimeout(tour, 1500));
+  },
+
+  // Un appel qui ne répond jamais doit finir par rendre la main, sinon la
+  // carte resterait « en attente » sans que rien ne soit jamais repris.
+  async _aiFetch(corps, ms = 60000) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    try {
+      return await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${this.settings.openrouterKey}`,
+                   'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
+        body: JSON.stringify(corps), signal: ctl.signal,
+      });
+    } finally { clearTimeout(t); }
+  },
+
+  async _grGenerateDefForNewCard(cardId, word, context = '', type = 'simple', reprise = false) {
     const key = this.settings?.openrouterKey;
     if (!key) return;
+    if (!this._defEnVol) this._defEnVol = new Set();
+    if (this._defEnVol.has(cardId)) return;
+    this._defEnVol.add(cardId);
+
+    // On note la demande AVANT de partir : si l'appli se ferme maintenant,
+    // la reprise la retrouvera au prochain démarrage.
+    const inscrire = (essais) => {
+      const c = this._grenier?.cards.find(x => x.id === cardId);
+      if (!c) return null;
+      c.defPending = { word, context, type, at: Date.now(),
+                       essais: essais != null ? essais : (c.defPending?.essais || 0) };
+      this.saveGrenier();
+      return c;
+    };
+    const carte = inscrire();
+    const essaisAvant = carte ? (carte.defPending.essais || 0) : 0;
+
     try {
       const isComplex = type === 'complex';
       const model = (isComplex ? this.settings?.defComplexModel : this.settings?.defSimpleModel)
@@ -16104,19 +16234,21 @@ Réponds UNIQUEMENT avec ce JSON :
       } else {
         prompt = `Donne une courte définition en français (1-2 phrases max) du mot : « ${word} ». Inclus un exemple d'usage. Mentionne brièvement le registre (courant/conversationnel, technique, littéraire, etc.) et, si applicable, tout usage régional notable — sinon ne le mentionne pas. Réponds UNIQUEMENT avec la définition, sans titre ni mise en forme.`;
       }
-      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method:'POST',
-        headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':window.location.href},
-        body:JSON.stringify({ model, messages:[{role:'user',content:prompt}], max_tokens:600 })
-      });
+      const resp = await this._aiFetch({ model, messages:[{role:'user',content:prompt}], max_tokens:600 });
       const data = await resp.json();
       const def = data.choices?.[0]?.message?.content?.trim() || '';
-      if (def) {
+      if (!def) throw new Error('réponse vide');
+      {
         const card = this._grenier.cards.find(c => c.id === cardId);
-        if (card) { card.definition = def; this.saveGrenier(); }
+        if (card) { card.definition = def; delete card.defPending; this.saveGrenier(); }
+        // Le mot peut être loin derrière : on le dit, sinon la définition
+        // arriverait sans que rien ne le signale.
+        if (reprise) this.showToast(`Définition de « ${word} » arrivée ✓`);
+        // Un écran du Grenier affiché doit montrer le résultat tout de suite.
+        if (this.currentScreen === 'grenier') this.renderGrenier();
         // ── Mirror definition to MOF immediately ────────────────
         if (this._wfCurrentWord && card && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
-          this._wfCurrentDef = def;
+          this._wfSetDef(def, this._wfCurrentWord);
           this._wfUpdateFlipDot();
           // If MOF def panel is currently open, update it live
           const wfContent = document.getElementById('wfDefContent');
@@ -16127,7 +16259,16 @@ Réponds UNIQUEMENT avec ce JSON :
           if (!this._wfDefPanelOpen) this.showToast('Définition prête — voir le verso ✓');
         }
       }
-    } catch(e) { /* silent */ }
+    } catch(e) {
+      // On garde la trace de l'échec : la boucle de reprise s'en chargera.
+      const n = essaisAvant + 1;
+      inscrire(n);
+      if (n >= this._DEF_ESSAIS_MAX) {
+        this.showToast(`Définition de « ${word} » : abandon après ${n} tentatives`);
+      }
+    } finally {
+      this._defEnVol.delete(cardId);
+    }
   },
 
   _grCardSettingColorChange(cardId, el, color) {
@@ -16393,7 +16534,7 @@ Réponds UNIQUEMENT avec ce JSON :
       const newDef = appendMode
         ? (this._wfCurrentDef ? this._wfCurrentDef + imgHtml : imgHtml)
         : imgHtml;
-      this._wfCurrentDef = newDef;
+      this._wfSetDef(newDef, this._wfCurrentWord);
       // Update MOF display
       const content = document.getElementById('wfDefContent');
       if (content) { content.innerHTML = newDef; App._idbHydrateImages(content); }
@@ -16458,7 +16599,7 @@ Réponds UNIQUEMENT avec ce JSON :
       if (ta) { ta.innerHTML = newDef; App._idbHydrateImages(ta); }
       // Mirror to MOF if same word
       if (this._wfCurrentWord && card && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
-        this._wfCurrentDef = newDef;
+        this._wfSetDef(newDef, this._wfCurrentWord);
         this._wfUpdateFlipDot();
         const wfContent = document.getElementById('wfDefContent');
         if (wfContent) { wfContent.innerHTML = newDef; App._idbHydrateImages(wfContent); }
@@ -16496,7 +16637,7 @@ Réponds UNIQUEMENT avec ce JSON :
     if (ta) ta.innerHTML = newDef;
     // Mirror to MOF
     if (this._wfCurrentWord && card.word?.toLowerCase() === this._wfCurrentWord.toLowerCase()) {
-      this._wfCurrentDef = newDef;
+      this._wfSetDef(newDef, this._wfCurrentWord);
       this._wfUpdateFlipDot();
       const wfContent = document.getElementById('wfDefContent');
       if (wfContent) wfContent.innerHTML = newDef.replace(/\n/g, '<br>');
