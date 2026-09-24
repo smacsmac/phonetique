@@ -180,13 +180,40 @@ Chaque carte reçoit :
 - le mot ;
 - **la phrase du livre**, en contexte — visible au verso, et reprise par la
   génération de définition et d'image ;
+- **le livre d'où il vient**, dont la couverture s'affiche au verso, à gauche
+  de la phrase ;
 - le titre du livre en étiquette.
+
+La carte ne garde que l'**identifiant** du livre, jamais son image : une
+couverture pèse 3 Ko, et cinquante cartes du même livre la porteraient
+cinquante fois, dans le stockage comme dans la synchro.
+
+Le chemin compte peu : cocher puis **Envoyer**, ou toucher un mot pour
+l'ouvrir dans Mot en Focus et l'envoyer de là — dans les deux cas la carte
+garde son livre. La provenance est attachée **au mot**, pas à l'écran : taper
+un autre mot dans Mot en Focus avant d'envoyer ne lui colle pas la couverture
+du précédent.
+
+Les cartes parties avant cette version retrouvent leur livre toutes seules :
+au démarrage, l'appli rapproche mot et phrase de La Récolte. Un mot présent
+dans deux livres sans phrase pour trancher reste sans couverture — mieux vaut
+rien qu'une fausse.
 
 Les définitions ne sont pas générées en masse : tu les fais carte par carte,
 quand tu y viens.
 
 Un mot déjà présent dans le paquet n'est pas dupliqué — il est simplement
 marqué comme traité.
+
+### Le verso d'une carte
+
+Le bandeau du haut porte **le mot seul** ; trop long, il est coupé par « … »
+avant d'atteindre le bouton **Aa**, dont la place est réservée en permanence —
+c'est pour ça qu'il ne bouge pas d'un pixel quand les − et + paraissent.
+
+**Aa** règle la taille de la définition. **Appui long sur Aa** : ce sont la
+phrase du livre et sa boîte qu'on règle à la place — le bouton passe au violet
+pour le dire. Les deux tailles sont retenues séparément, carte par carte.
 
 ## Ce qui se synchronise
 
