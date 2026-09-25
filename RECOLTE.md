@@ -195,9 +195,17 @@ un autre mot dans Mot en Focus avant d'envoyer ne lui colle pas la couverture
 du précédent.
 
 Les cartes parties avant cette version retrouvent leur livre toutes seules :
-au démarrage, l'appli rapproche mot et phrase de La Récolte. Un mot présent
-dans deux livres sans phrase pour trancher reste sans couverture — mieux vaut
-rien qu'une fausse.
+au démarrage, l'appli rapproche mot et phrase de La Récolte. C'est la phrase
+qui tranche — si la carte en porte une qu'aucun livre ne contient, l'appli
+s'abstient, puisque c'est la preuve que le mot ne vient pas de là. Sans
+phrase, il faut qu'un seul livre soit possible. Mieux vaut pas de couverture
+qu'une fausse.
+
+C'est ce rattrapage qui peut coller un livre à une carte que tu n'as jamais
+envoyée depuis La Récolte : le mot s'y trouve, dans un seul livre, et rien ne
+le contredisait. L'option **Afficher le livre** (options de la carte) coupe
+l'affichage pour cette carte-là ; la rangée nomme le livre concerné, donc on
+voit d'où vient la couverture avant de décider.
 
 Les définitions ne sont pas générées en masse : tu les fais carte par carte,
 quand tu y viens.
@@ -214,6 +222,18 @@ c'est pour ça qu'il ne bouge pas d'un pixel quand les − et + paraissent.
 **Aa** règle la taille de la définition. **Appui long sur Aa** : ce sont la
 phrase du livre et sa boîte qu'on règle à la place — le bouton passe au violet
 pour le dire. Les deux tailles sont retenues séparément, carte par carte.
+
+### Renvoyer un mot déjà au Grenier
+
+Rouvrir **Au Grenier** sur un mot qui y est déjà sert à retoucher ses
+étiquettes — et à le **changer de paquet** : les autres paquets annoncent
+alors « Déplacer ici », et choisir l'un d'eux déménage la carte au lieu d'en
+créer une seconde. La carte garde son historique de révision, sa définition
+et son image ; le mot suit dans son dossier du Répertoire.
+
+Si le mot traînait dans plusieurs paquets, ils sont réunis dans celui qu'on
+choisit, et la carte la plus travaillée l'emporte — la règle que l'appli
+applique déjà à ses doublons.
 
 ## Ce qui se synchronise
 

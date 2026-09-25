@@ -14703,6 +14703,17 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                 </div>
                 <div class="grenier-toggle ${editCard ? (editCard.showGender!==false?'on':'') : 'on'}" id="grOpt_showGender" onclick="this.classList.toggle('on')"></div>
               </div>
+              <div class="grenier-settings-row" style="padding:6px 0;border-bottom:none">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span>Afficher le livre</span>
+                  <span style="color:var(--text3);font-size:11px">${(() => {
+                    const l = this._grLivreDe(editCard);
+                    return l ? 'Couverture de « ' + this._kdEsc(l.title || '?') + ' », au verso'
+                             : 'Aucun livre associé à cette carte';
+                  })()}</span>
+                </div>
+                <div class="grenier-toggle ${editCard ? (editCard.showBook!==false?'on':'') : 'on'}" id="grOpt_showBook" onclick="this.classList.toggle('on')"></div>
+              </div>
             </div>
           </div>
           <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
@@ -14824,6 +14835,25 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     return '';
   },
 
+  // Un paquet du Grenier a son dossier miroir dans Le Répertoire : quand une
+  // carte change de paquet, le mot doit suivre, sinon la réconciliation au
+  // démarrage le remet dans l'ancien paquet et recrée un doublon.
+  _grSuivreDansRepertoire(mot, oldDeckId, newDeckId) {
+    if (!mot || oldDeckId === newDeckId) return false;
+    const oldDeck = this._grenier.decks.find(d => d.id === oldDeckId);
+    const newDeck = this._grenier.decks.find(d => d.id === newDeckId);
+    if (!oldDeck || !newDeck) return false;
+    const oldFolder = this._repertoire.folders.find(f => f.name === oldDeck.name);
+    const newFolder = this._repertoire.folders.find(f => f.name === newDeck.name);
+    if (!oldFolder || !newFolder) return false;
+    const repWord = this._repertoire.words.find(w =>
+      w.word.toLowerCase() === String(mot).toLowerCase() && w.folderId === oldFolder.id);
+    if (!repWord) return false;
+    repWord.folderId = newFolder.id;
+    this.saveRepertoire();
+    return true;
+  },
+
   _grSaveCard(editId) {
     const word = document.getElementById('grCardWordInput')?.value.trim();
     if (!word) { document.getElementById('grCardWordInput')?.focus(); return; }
@@ -14841,6 +14871,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const showRhymes = document.getElementById('grOpt_showRhymes')?.classList.contains('on') ?? true;
     const showIpa    = document.getElementById('grOpt_showIpa')?.classList.contains('on') ?? true;
     const showGender = document.getElementById('grOpt_showGender')?.classList.contains('on') ?? true;
+    const showBook   = document.getElementById('grOpt_showBook')?.classList.contains('on') ?? true;
 
     if (editId) {
       const card = this._grenier.cards.find(c=>c.id===editId);
@@ -14849,11 +14880,11 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         const oldWord = card.word;
         // Use manually entered gender if provided, otherwise keep existing
         const resolvedGender = genderInput || card.gender || '';
-        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender, tags, gender: resolvedGender });
-        // If deck changed, update the study session reference too
-        if (oldDeckId !== deckId && this._grenierStudySession?.deckId === oldDeckId) {
-          this._grenierStudySession.deckId = deckId;
-        }
+        Object.assign(card, { word, ipa, deckId, color, showListen, showRecord, showRhymes, showIpa, showGender, showBook, tags, gender: resolvedGender });
+        // La séance garde SON paquet. La repointer sur le nouveau, comme on le
+        // faisait, teignait toutes les cartes suivantes de la couleur du
+        // paquet d'arrivée : on ne déplaçait qu'une carte, mais la séance
+        // entière changeait de couleur.
         // If the word spelling changed, update the matching Répertoire entry so the
         // edited spelling is the canonical one and the old spelling doesn't back-sync.
         if (oldWord && oldWord.toLowerCase() !== word.toLowerCase()) {
@@ -14868,30 +14899,15 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
             if (repWord) { repWord.word = word; repWord.ipa = ipa; this.saveRepertoire(); }
           }
         }
-        // If deck changed, move the matching Répertoire word to the new folder
-        // to prevent _syncReconcile from re-adding it to the old deck as a duplicate
-        if (oldDeckId !== deckId) {
-          const oldDeck = this._grenier.decks.find(d => d.id === oldDeckId);
-          const newDeck = this._grenier.decks.find(d => d.id === deckId);
-          if (oldDeck && newDeck) {
-            const oldFolder = this._repertoire.folders.find(f => f.name === oldDeck.name);
-            const newFolder = this._repertoire.folders.find(f => f.name === newDeck.name);
-            if (oldFolder && newFolder) {
-              // Use the new word spelling (already updated above if it changed)
-              const repWord = this._repertoire.words.find(w =>
-                w.word.toLowerCase() === word.toLowerCase() && w.folderId === oldFolder.id
-              );
-              if (repWord) { repWord.folderId = newFolder.id; this.saveRepertoire(); }
-            }
-          }
-        }
+        // Use the new word spelling (already updated above if it changed)
+        if (oldDeckId !== deckId) this._grSuivreDansRepertoire(word, oldDeckId, deckId);
       }
     } else {
       const pendingGender = genderInput || this._grPendingGender || '';
       this._grPendingGender = '';
       const newCard = {
         id:this._gid(), deckId, word, ipa, interval:1, ease:2.5, reps:0,
-        nextDue:Date.now(), showListen, showRecord, showRhymes, showIpa, showGender,
+        nextDue:Date.now(), showListen, showRecord, showRhymes, showIpa, showGender, showBook,
         color, definition:'', gender: pendingGender, tags, createdAt:Date.now()
       };
       this._grenier.cards.push(newCard);
@@ -15051,6 +15067,14 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this._grRenderStudyCard();
   },
 
+  // La couleur d'une carte : la sienne si elle en a une, sinon celle de son
+  // paquet — le sien, pas celui de la séance en cours.
+  _grAccentDe(card, defaut) {
+    if (card && card.color) return card.color;
+    const deck = card && this._grenier.decks.find(d => d.id === card.deckId);
+    return (deck && deck.color) || defaut || '#FF6B1A';
+  },
+
   _grRenderStudyCard() {
     document.getElementById('main')?.classList.add('main-flex');
     const sess = this._grenierStudySession;
@@ -15067,7 +15091,10 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const card = queue[idx];
     const prog = idx / queue.length;
     const ipa = card.ipa || '';
-    const cardAccent = card.color || accent;
+    // La couleur vient du paquet de CETTE carte, pas de celui de la séance.
+    // Déplacer une carte en cours de séance ne doit teindre qu'elle : les
+    // suivantes gardent la couleur de leur propre paquet.
+    const cardAccent = this._grAccentDe(card, accent);
     const cardBg = cardAccent + '18';
     const cardBorder = cardAccent + '55';
 
@@ -15664,11 +15691,13 @@ Réponds UNIQUEMENT avec ce JSON :
       const cands = parMot.get(String(c.word).trim().toLowerCase());
       if (!cands || !cands.length) continue;
       const ctx = String(c.context || '').trim();
-      // La phrase tranche entre deux livres ; sans elle, on n'attribue que
-      // s'il n'y a qu'un seul livre possible. Mieux vaut pas de couverture
-      // qu'une couverture fausse.
-      const choix = (ctx && cands.find(w => String(w.c || '').trim() === ctx))
-        || (cands.length === 1 ? cands[0] : null);
+      // La phrase tranche. Si la carte en a une et qu'aucun livre ne la
+      // porte, c'est une preuve que le mot ne vient pas de là : on s'abstient
+      // plutôt que de se rabattre sur « le seul livre possible ». Sans phrase,
+      // ce repli reste la seule piste, et seulement s'il n'y a qu'un candidat.
+      const choix = ctx
+        ? (cands.find(w => String(w.c || '').trim() === ctx) || null)
+        : (cands.length === 1 ? cands[0] : null);
       if (choix) { c.book = choix.b; n++; }
     }
     if (n) this.saveGrenier();
@@ -15688,7 +15717,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const globalFs = this.settings.defFontSize || 14;
     const cardFs = card.fontSize || globalFs;
     const ctxFs = card.ctxFontSize || this.GR_CTX_FS;
-    const livre = this._grLivreDe(card);
+    const livre = card.showBook !== false ? this._grLivreDe(card) : null;
     this._grCurrentFs = cardFs;
     this._grFsExpanded = false;
     this._grFsCible = 'def';
@@ -16042,15 +16071,22 @@ Réponds UNIQUEMENT avec ce JSON :
     document.getElementById('wfGrenierModal')?.remove();
 
     const hasKey = !!this.settings.openrouterKey;
+    // Le mot est-il déjà au Grenier ? Si oui, la fenêtre sert à retoucher ses
+    // étiquettes — elles s'appliquent alors directement, sans rien confirmer —
+    // et désigner un autre paquet déplace la carte au lieu d'en créer une.
+    const cartesExistantes = (this._grenier.cards || [])
+      .filter(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
+    this._wfGrenierEditCards = cartesExistantes.map(c => c.id);
     const deckOptions = decks.length === 0
       ? ''
       : decks.map(d => {
           const alreadyIn = this._grenier.cards.some(c => c.deckId === d.id && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
+          const deplace = !alreadyIn && cartesExistantes.length > 0;
           return `<button class="rep-overlay-folder-btn" onclick="App._wfGrenierSelectDeck('${d.id}')"
             style="${alreadyIn ? 'opacity:0.5;cursor:default;' : ''}border-color:${d.color||'#FF6B1A'}33;color:${alreadyIn?'var(--text3)':'var(--text)'}">
             <span style="width:10px;height:10px;border-radius:50%;background:${d.color||'#FF6B1A'};display:inline-block;flex-shrink:0"></span>
             ${d.name}
-            ${alreadyIn ? '<span style="font-size:11px;color:var(--text3);margin-left:auto">Déjà ajouté</span>' : `<span style="font-size:11px;color:var(--text3);margin-left:auto">${(this._grenier.cards||[]).filter(c=>c.deckId===d.id&&!c.deleted).length} cartes</span>`}
+            ${alreadyIn ? '<span style="font-size:11px;color:var(--text3);margin-left:auto">Déjà ajouté</span>' : deplace ? '<span style="font-size:11px;color:#A78BFA;margin-left:auto">Déplacer ici</span>' : `<span style="font-size:11px;color:var(--text3);margin-left:auto">${(this._grenier.cards||[]).filter(c=>c.deckId===d.id&&!c.deleted).length} cartes</span>`}
           </button>`;
         }).join('');
 
@@ -16069,11 +16105,6 @@ Réponds UNIQUEMENT avec ce JSON :
     const styleTypeOn  = 'flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);background:rgba(167,139,250,0.2);border:1.5px solid #A78BFA;color:#A78BFA;transition:all 0.15s';
     const styleTypeOff = 'flex:1;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);background:var(--surface);border:1px solid var(--border);color:var(--text3);transition:all 0.15s';
 
-    // Le mot est-il déjà au Grenier ? Si oui, la fenêtre sert à retoucher ses
-    // étiquettes : elles s'appliquent alors directement, sans rien confirmer.
-    const cartesExistantes = (this._grenier.cards || [])
-      .filter(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
-    this._wfGrenierEditCards = cartesExistantes.map(c => c.id);
     const tagsActuels = new Set();
     cartesExistantes.forEach(c => (c.tags || []).forEach(t => tagsActuels.add(t)));
     // If MOF already has a definition, default genDef to off (it will be carried over automatically)
@@ -16152,7 +16183,7 @@ Réponds UNIQUEMENT avec ce JSON :
                 : 'border:2px solid transparent;background:transparent;filter:grayscale(1) opacity(0.35)'}">${t.emoji}</button>`; }).join('')
           }</div>
         </div>
-        <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Annuler</button>
+        <button class="rep-overlay-cancel" onclick="document.getElementById('wfGrenierModal').remove()">Fermer</button>
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
@@ -16194,6 +16225,37 @@ Réponds UNIQUEMENT avec ce JSON :
     }
   },
 
+  // Déplace les cartes existantes de ce mot vers le paquet choisi. Rend faux
+  // si rien n'a bougé — l'appelant crée alors une carte comme avant.
+  _wfGrenierDeplacer(word, deckId) {
+    const cartes = (this._wfGrenierEditCards || [])
+      .map(id => this._grenier.cards.find(c => c.id === id))
+      .filter(c => c && !c.deleted && c.deckId !== deckId);
+    if (!cartes.length) return false;
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    for (const c of cartes) {
+      const ancien = c.deckId;
+      c.deckId = deckId;
+      this._grSuivreDansRepertoire(c.word || word, ancien, deckId);
+    }
+    // Le mot vivait dans plusieurs paquets : les voilà réunis dans le même,
+    // donc en doublon. On applique la règle déjà en place dans l'appli —
+    // garder la carte la plus travaillée — plutôt que d'en inventer une autre.
+    let fusion = 0;
+    if (cartes.length > 1) {
+      const avant = this._grenier.cards.filter(c => !c.deleted).length;
+      this._grDeduplicateCards();
+      fusion = avant - this._grenier.cards.filter(c => !c.deleted).length;
+    }
+    this.saveGrenier();
+    document.getElementById('wfGrenierModal')?.remove();
+    this.showToast(`« ${word} » déplacé vers ${deck ? deck.name : 'ce paquet'} ✓`
+      + (fusion ? ` · ${fusion} doublon${fusion > 1 ? 's' : ''} fusionné${fusion > 1 ? 's' : ''}` : ''));
+    this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
+    return true;
+  },
+
   _wfGrenierSelectDeck(deckId) {
     const word = this._wfGrenierPendingWord;
     const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa;
@@ -16202,6 +16264,12 @@ Réponds UNIQUEMENT avec ce JSON :
     if (!word) return;
     const alreadyIn = this._grenier.cards.some(c => c.deckId === deckId && c.word?.toLowerCase() === word.toLowerCase() && !c.deleted);
     if (alreadyIn) { this.showToast(`"${word}" est déjà dans ce paquet`); return; }
+    // Le mot est déjà au Grenier et on désigne un autre paquet : c'est un
+    // déménagement, pas un second exemplaire. Une carte a son historique de
+    // révision, sa définition, son image — en refaire une les perdrait.
+    if ((this._wfGrenierEditCards || []).length) {
+      if (this._wfGrenierDeplacer(word, deckId)) return;
+    }
     const genDef = document.getElementById('wfGrenierDefToggle')?.classList.contains('on');
     const genImg = !!document.getElementById('wfGrenierImgToggle')?.classList.contains('on');
     this.settings.grenierImgAuto = genImg;
@@ -16571,9 +16639,7 @@ Réponds UNIQUEMENT avec ce JSON :
     // Live update the card in the DOM
     const sess = this._grenierStudySession;
     if (sess) {
-      const deckId = sess.deckId;
-      const deck = this._grenier.decks.find(d=>d.id===deckId);
-      const accent = color || deck?.color || '#FF6B1A';
+      const accent = this._grAccentDe(card, '#FF6B1A');
       const cardEl = document.querySelector('.grenier-card');
       if (cardEl) {
         cardEl.style.setProperty('--card-accent', accent);
