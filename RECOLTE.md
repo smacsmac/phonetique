@@ -235,6 +235,24 @@ Si le mot traînait dans plusieurs paquets, ils sont réunis dans celui qu'on
 choisit, et la carte la plus travaillée l'emporte — la règle que l'appli
 applique déjà à ses doublons.
 
+### Corriger un texte déjà envoyé
+
+Quand on rallonge ou corrige une phrase qu'on vient d'envoyer, **Au Grenier**
+propose en haut **Mettre à jour « … »** : la carte prend le nouveau texte et
+garde sa définition, son image, ses étiquettes et son historique de révision.
+Le bouton ne paraît que si l'envoi date de moins d'une heure, que la carte
+existe encore et que le texte a changé — sinon il n'y aurait rien à mettre à
+jour. Créer une seconde carte reste possible juste en dessous.
+
+### Une définition appartient à son mot
+
+Une génération dure, et on n'attend pas devant l'écran. Tout ce qui revient
+après coup vérifie donc que Mot en Focus parle **toujours du même mot** :
+sinon la définition va sur sa carte du Grenier et l'écran n'y touche pas. Le
+verso, de son côté, n'affiche que la définition du mot qu'il annonce en
+en-tête. Sans ces deux règles, une définition demandée pour une phrase
+s'affichait sous un mot tapé depuis.
+
 ## Ce qui se synchronise
 
 Seuls les **mots surlignés** voyagent entre appareils, avec les livres et tes

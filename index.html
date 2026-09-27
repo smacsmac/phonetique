@@ -7781,6 +7781,14 @@ const KO_VOICES = [
     this._wfLivreMot = String(mot != null ? mot : '').trim().toLowerCase();
   },
 
+  // Mot en Focus montre-t-il encore ce mot-là ? Une génération dure, et
+  // l'utilisateur ne l'attend pas : tout ce qui retombe dans l'écran après
+  // coup doit d'abord vérifier qu'il parle toujours du même mot.
+  _wfEstToujours(mot) {
+    return String(this._wfCurrentWord || '').trim().toLowerCase()
+        === String(mot || '').trim().toLowerCase();
+  },
+
   _wfLivrePour(mot) {
     const m = String(mot || '').trim().toLowerCase();
     if (!m || !this._wfLivreId) return null;
@@ -7849,7 +7857,11 @@ const KO_VOICES = [
       }
       card.classList.add('wf-card-scrollable');
       const word = this._wfCurrentWord;
-      const def = this._wfCurrentDef;
+      // L'en-tête annonce « Définition de X » : le corps doit donc être la
+      // définition de X, et pas celle qui traînait encore en mémoire. Lire
+      // _wfCurrentDef sans vérifier à qui elle appartient affichait la
+      // définition du mot précédent sous le nom du nouveau.
+      const def = this._wfDefPour(word);
       const hasKey = !!this.settings.openrouterKey;
       card.innerHTML = `
         <div class="wf-card-back" id="wfCardBack">
@@ -7975,20 +7987,27 @@ const KO_VOICES = [
       const data = await resp.json();
       const def = data.choices?.[0]?.message?.content?.trim() || '';
       if (def) {
-        this._wfSetDef(def, this._wfCurrentWord);
+        // Le Grenier est servi dans tous les cas : sa carte est désignée par
+        // le mot demandé, que l'écran ait changé ou non.
         // Si la carte a été créée avant l'arrivée de la définition, elle est
         // restée vide : on la complète maintenant.
-        this._wfPushDefToGrenier(this._wfCurrentWord, def);
-        const content = document.getElementById('wfDefContent');
-        if (content) { content.innerHTML = def; App._idbHydrateImages(content); }
-        this._wfSetDef(def, this._wfCurrentWord);
-        const ta = document.getElementById('wfDefTextarea');
-        if (ta) ta.innerHTML = def;
-        this._wfUpdateFlipDot();
-        this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
-        // Sync to grenier card if one exists for this word
+        this._wfPushDefToGrenier(word, def);
         const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
         if (grCard) { grCard.definition = def; this.saveGrenier(); }
+        // Mot en Focus, lui, n'est servi que s'il montre encore CE mot-là.
+        // La génération dure ; le mot affiché a pu changer entre-temps, et
+        // poser la définition sur le mot du moment la donnait au mauvais.
+        if (!this._wfEstToujours(word)) {
+          this.showToast(`Définition de « ${word} » prête — elle est sur sa carte ✓`);
+        } else {
+          this._wfSetDef(def, word);
+          const content = document.getElementById('wfDefContent');
+          if (content) { content.innerHTML = def; App._idbHydrateImages(content); }
+          const ta = document.getElementById('wfDefTextarea');
+          if (ta) ta.innerHTML = def;
+          this._wfUpdateFlipDot();
+          this.showToast(`Définition ${isComplex ? 'complexe' : 'simple'} générée ✓`);
+        }
       }
     } catch(e) { this.showToast('Erreur lors de la génération'); }
     if (btn) { btn.disabled = false; btn.classList.remove('btn-processing'); if (origHtml) btn.innerHTML = origHtml; }
@@ -14838,6 +14857,24 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
   // Un paquet du Grenier a son dossier miroir dans Le Répertoire : quand une
   // carte change de paquet, le mot doit suivre, sinon la réconciliation au
   // démarrage le remet dans l'ancien paquet et recrée un doublon.
+  // Le mot change d'orthographe (ou s'allonge) : son entrée du Répertoire
+  // doit suivre, sinon l'ancienne graphie reste la référence et revient par
+  // la réconciliation.
+  _grRenommerDansRepertoire(ancien, nouveau, ipa, deckId) {
+    if (!ancien || !nouveau) return false;
+    if (String(ancien).toLowerCase() === String(nouveau).toLowerCase()) return false;
+    const deck = this._grenier.decks.find(d => d.id === deckId);
+    const folder = deck ? this._repertoire.folders.find(f => f.name === deck.name) : null;
+    if (!folder) return false;
+    const repWord = this._repertoire.words.find(w =>
+      w.word.toLowerCase() === String(ancien).toLowerCase() && w.folderId === folder.id);
+    if (!repWord) return false;
+    repWord.word = nouveau;
+    if (ipa != null) repWord.ipa = ipa;
+    this.saveRepertoire();
+    return true;
+  },
+
   _grSuivreDansRepertoire(mot, oldDeckId, newDeckId) {
     if (!mot || oldDeckId === newDeckId) return false;
     const oldDeck = this._grenier.decks.find(d => d.id === oldDeckId);
@@ -14887,18 +14924,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
         // entière changeait de couleur.
         // If the word spelling changed, update the matching Répertoire entry so the
         // edited spelling is the canonical one and the old spelling doesn't back-sync.
-        if (oldWord && oldWord.toLowerCase() !== word.toLowerCase()) {
-          const currentDeck = this._grenier.decks.find(d => d.id === deckId);
-          const currentFolder = currentDeck
-            ? this._repertoire.folders.find(f => f.name === currentDeck.name)
-            : null;
-          if (currentFolder) {
-            const repWord = this._repertoire.words.find(w =>
-              w.word.toLowerCase() === oldWord.toLowerCase() && w.folderId === currentFolder.id
-            );
-            if (repWord) { repWord.word = word; repWord.ipa = ipa; this.saveRepertoire(); }
-          }
-        }
+        this._grRenommerDansRepertoire(oldWord, word, ipa, deckId);
         // Use the new word spelling (already updated above if it changed)
         if (oldDeckId !== deckId) this._grSuivreDansRepertoire(word, oldDeckId, deckId);
       }
@@ -16041,6 +16067,13 @@ Réponds UNIQUEMENT avec ce JSON :
       if (input) input.value = typedWord;
       this._wfCurrentWord = typedWord;
       this._wfCurrentIpa = '';
+      // Le mot change : la définition de l'ancien ne le suit pas. Sans ça,
+      // l'écran affichait un mot et gardait en mémoire la définition d'un
+      // autre — c'est cet écart que le verso finissait par montrer.
+      this._wfSetDef('', typedWord);
+      const dejaLa = (this._grenier?.cards || [])
+        .find(c => !c.deleted && c.word?.toLowerCase() === typedWord && c.definition);
+      if (dejaLa) this._wfSetDef(dejaLa.definition, typedWord);
       // Update word display card
       const card = document.getElementById('wfWordCard');
       this._wfRestoreFront(card);
@@ -16077,6 +16110,10 @@ Réponds UNIQUEMENT avec ce JSON :
     const cartesExistantes = (this._grenier.cards || [])
       .filter(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
     this._wfGrenierEditCards = cartesExistantes.map(c => c.id);
+    // Une phrase qu'on vient d'envoyer et qu'on rallonge : sans ce rappel,
+    // le seul geste possible était d'en envoyer une seconde version, et la
+    // première restait là, à moitié fausse.
+    const aMaj = cartesExistantes.length ? null : this._wfCarteRecente(word);
     const deckOptions = decks.length === 0
       ? ''
       : decks.map(d => {
@@ -16124,7 +16161,19 @@ Réponds UNIQUEMENT avec ce JSON :
           : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
         }<span style="line-height:1.4">${context || this._kdEsc(livre.title || '')}</span></div>` : ''}
         ${existingDef ? `<div style="font-size:12px;padding:8px 10px;background:rgba(20,184,166,0.07);border:1px solid rgba(20,184,166,0.25);border-radius:8px;color:rgba(20,184,166,0.9);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="line-height:1.4">Définition MOF sera utilisée pour le verso ✓</span></div>` : ''}
-        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Choisir un paquet :</div>
+        ${aMaj ? `<button onclick="App._wfGrenierMajCarte()"
+          style="width:100%;text-align:left;margin-bottom:12px;padding:10px 12px;border-radius:10px;cursor:pointer;
+                 background:rgba(56,189,248,0.09);border:1px solid rgba(56,189,248,0.35);font-family:var(--font-body)">
+          <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#7DD3FC">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Mettre à jour « ${this._kdEsc(aMaj.word)} »
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4">
+            La carte que tu viens d'envoyer prend ce nouveau texte. Sa définition,
+            son image, ses étiquettes et son historique restent.
+          </div>
+        </button>` : ''}
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${aMaj ? 'Ou l\'ajouter comme nouvelle carte :' : 'Choisir un paquet :'}</div>
         ${decks.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:8px 0 4px;font-style:italic">Aucun paquet pour l'instant.</div>` : ''}
         <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0">
         ${deckOptions}
@@ -16227,6 +16276,46 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // Déplace les cartes existantes de ce mot vers le paquet choisi. Rend faux
   // si rien n'a bougé — l'appelant crée alors une carte comme avant.
+  // La dernière carte envoyée depuis Mot en Focus, si elle est encore là et
+  // que le texte a changé depuis. Une heure : au-delà, ce n'est plus « celle
+  // qu'on vient d'envoyer », et la proposition n'aurait plus de sens.
+  WF_MAJ_DELAI: 3600000,
+
+  _wfCarteRecente(word) {
+    const d = this._wfDerniereCarte;
+    if (!d || Date.now() - d.at > this.WF_MAJ_DELAI) return null;
+    const c = this._grenier.cards.find(x => x.id === d.id);
+    if (!c || c.deleted) return null;
+    if (String(c.word || '').toLowerCase() === String(word || '').toLowerCase()) return null;
+    return c;
+  },
+
+  _wfGrenierMajCarte() {
+    const d = this._wfDerniereCarte;
+    const carte = d && this._grenier.cards.find(x => x.id === d.id && !x.deleted);
+    const word = this._wfGrenierPendingWord;
+    if (!carte || !word) { this.showToast('Cette carte n\'existe plus'); return; }
+    const ancien = carte.word;
+    const ipa = this._wfGrenierPendingIpa || this._wfCurrentIpa || carte.ipa || '';
+    carte.word = word;
+    carte.ipa = ipa;
+    // Un contexte nouvellement saisi remplace l'ancien ; s'il est vide, on ne
+    // détruit pas celui qui était déjà sur la carte.
+    const ctx = this._wfGrenierPendingContext || '';
+    if (ctx) carte.context = ctx;
+    const tags = [...(this._wfGrenierPendingTags || new Set())];
+    if (tags.length) carte.tags = tags;
+    this._grRenommerDansRepertoire(ancien, word, ipa, carte.deckId);
+    this.saveGrenier();
+    // La carte reste « celle qu'on vient d'envoyer » : on peut la rallonger
+    // une deuxième fois sans repartir de zéro.
+    this._wfDerniereCarte = { id: carte.id, mot: word, at: Date.now() };
+    document.getElementById('wfGrenierModal')?.remove();
+    this.showToast(`Carte mise à jour : « ${word} » ✓`);
+    this._wfUpdateSaveBtn();
+    this._wfUpdateRepBtn();
+  },
+
   _wfGrenierDeplacer(word, deckId) {
     const cartes = (this._wfGrenierEditCards || [])
       .map(id => this._grenier.cards.find(c => c.id === id))
@@ -16292,6 +16381,9 @@ Réponds UNIQUEMENT avec ce JSON :
       }
     }
     this.saveGrenier();
+    // De quoi proposer « mettre à jour » si le texte est repris dans la
+    // foulée, au lieu de n'offrir qu'un second exemplaire.
+    this._wfDerniereCarte = { id: cardId, mot: word, at: Date.now() };
     document.getElementById('wfGrenierModal')?.remove();
     this.showToast(`"${word}" ajouté au Grenier ✓`);
     // L'image se place APRÈS la définition sur le verso : on attend donc que
@@ -16884,19 +16976,22 @@ Réponds UNIQUEMENT avec ce JSON :
       const blobUrl = URL.createObjectURL(blob);
       const imgHtml = this._buildImgHtml(idbKey, blobUrl, word);
       const appendMode = !document.getElementById('wfImgReplaceCheck')?.checked;
-      const newDef = appendMode
-        ? (this._wfCurrentDef ? this._wfCurrentDef + imgHtml : imgHtml)
-        : imgHtml;
-      this._wfSetDef(newDef, this._wfCurrentWord);
-      // Update MOF display
-      const content = document.getElementById('wfDefContent');
-      if (content) { content.innerHTML = newDef; App._idbHydrateImages(content); }
-      const ta = document.getElementById('wfDefTextarea');
-      if (ta) { ta.innerHTML = newDef; App._idbHydrateImages(ta); }
-      this._wfUpdateFlipDot();
-      // Mirror to Grenier card if same word
+      // Le texte sur lequel on colle l'image est celui de CE mot : celui de
+      // l'écran a pu changer pendant la génération. S'il n'est plus en
+      // mémoire, la carte du Grenier le garde.
       const grCard = (this._grenier?.cards || []).find(c => !c.deleted && c.word?.toLowerCase() === word.toLowerCase());
+      const base = this._wfDefPour(word) || (grCard ? grCard.definition : '') || '';
+      const newDef = appendMode ? (base ? base + imgHtml : imgHtml) : imgHtml;
       if (grCard) { grCard.definition = newDef; this.saveGrenier(); }
+      if (this._wfEstToujours(word)) {
+        this._wfSetDef(newDef, word);
+        // Update MOF display
+        const content = document.getElementById('wfDefContent');
+        if (content) { content.innerHTML = newDef; App._idbHydrateImages(content); }
+        const ta = document.getElementById('wfDefTextarea');
+        if (ta) { ta.innerHTML = newDef; App._idbHydrateImages(ta); }
+        this._wfUpdateFlipDot();
+      }
       // Hide panel after generation
       const panel = document.getElementById('wfImgPanel');
       if (panel) panel.style.display = 'none';
