@@ -7040,6 +7040,13 @@ const KO_VOICES = [
   renderWordFocus(preloadWord = '', compareWord = '', preloadContext = '') {
     document.getElementById('main')?.classList.add('main-flex');
     this.currentScreen = 'word-focus';
+    // L'écran qu'on dessine est l'écran ordinaire : le bouton dira
+    // « Analyser ». L'état doit donc dire la même chose, sinon l'appli reste
+    // en recherche profonde derrière une façade qui annonce l'inverse — et
+    // c'est ce décalage qui faisait surgir « Aucun résultat pour … ».
+    // (_wfRestoreDeepMode le rallume juste après, quand c'est voulu.)
+    this._wfDeepMode = false;
+    clearTimeout(this._wfDeepSearchDebounceTimer);
     this._wfCompareWord = compareWord || '';
     this._wfContextOpen = false;
     this._wfCompareCurrentWord = '';
@@ -7863,13 +7870,18 @@ const KO_VOICES = [
       // définition du mot précédent sous le nom du nouveau.
       const def = this._wfDefPour(word);
       const hasKey = !!this.settings.openrouterKey;
+      // Même verso qu'au Grenier : le mot seul en tête, la phrase du livre
+      // avec sa couverture, puis la définition.
+      const livreId = this._wfLivrePour(word);
+      const livre = livreId ? this._grLivreDe({ book: livreId }) : null;
+      const defFs = this._fsLire('wf', 'def');
+      const ctxFs = this._fsLire('wf', 'ctx');
+      this._fsPoser('wf', defFs);
       card.innerHTML = `
-        <div class="wf-card-back" id="wfCardBack">
-          <div class="wf-card-back-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-            Définition de « ${word} »
-          </div>
-          <div class="wf-def-content" id="wfDefContent" style="font-size:${this.settings.defFontSize||14}px">${def || '<span style=\"opacity:0.4;font-style:italic;font-size:13px\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
+        <div class="wf-card-back" id="wfCardBack" style="--card-accent:#14B8A6">
+          ${this._versoTeteHTML(word, 'wf')}
+          ${this._versoCtxHTML(this._wfGetContext(), livre, ctxFs)}
+          <div class="wf-def-content" id="wfDefContent" style="font-size:${defFs}px">${def || '<span style=\"opacity:0.4;font-style:italic;font-size:13px\">Aucune définition. Générez-en une ci-dessous.</span>'}</div>
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             <button class="wf-def-action-btn" id="wfDefEditBtn" onclick="App._wfToggleDefEdit()" title="Modifier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -10460,6 +10472,7 @@ const KO_VOICES = [
 
   _wfExitDeepMode() {
     this._wfDeepMode = false;
+    clearTimeout(this._wfDeepSearchDebounceTimer);
     // Restore Analyser button
     const goBtn = document.getElementById('wfGoBtn');
     if (goBtn) {
@@ -10491,6 +10504,10 @@ const KO_VOICES = [
   },
 
   _wfDeepSearch() {
+    // Une recherche différée peut revenir après qu'on a quitté le mode :
+    // elle peindrait « Aucun résultat pour … » au milieu d'un écran
+    // ordinaire, sans que rien n'explique d'où ça sort.
+    if (!this._wfDeepMode) return;
     const input = document.getElementById('wfInput');
     const rawQuery = (input?.value || '').trim();
     const resultsEl = document.getElementById('wfDeepResults');
@@ -15740,34 +15757,14 @@ Réponds UNIQUEMENT avec ce JSON :
     const safeId = card.id;
     const hasKey = !!this.settings.openrouterKey;
     // Resolve font size: per-card overrides global
-    const globalFs = this.settings.defFontSize || 14;
-    const cardFs = card.fontSize || globalFs;
-    const ctxFs = card.ctxFontSize || this.GR_CTX_FS;
+    const cardFs = this._fsLire(card.id, 'def');
+    const ctxFs = this._fsLire(card.id, 'ctx');
     const livre = card.showBook !== false ? this._grLivreDe(card) : null;
-    this._grCurrentFs = cardFs;
-    this._grFsExpanded = false;
-    this._grFsCible = 'def';
+    this._fsPoser(card.id, cardFs);
     cardEl.innerHTML = `
       <div class="grenier-card-back" style="position:relative">
-        <div class="gr-back-head">
-          <div class="grenier-card-back-label" title="${this._kdAttr(card.word)}">${this._kdEsc(card.word)}</div>
-          <!-- Aa font-size toggle -->
-          <div class="gr-fs-wrap" id="grFsWrap">
-            <button class="gr-fs-btn gr-fs-minus gr-fs-hidden" onclick="App._grSetCardFontSize('${safeId}', App._grCurrentFs-1)" title="Réduire">−</button>
-            <button class="gr-fs-toggle" id="grFsToggle" oncontextmenu="return false"
-                    onclick="App._grFsClick('${safeId}')"
-                    onpointerdown="App._grFsDown('${safeId}')"
-                    onpointerup="App._grFsUp()" onpointercancel="App._grFsUp()" onpointerleave="App._grFsUp()"
-                    title="Taille de la définition — appui long : la phrase">Aa</button>
-            <button class="gr-fs-btn gr-fs-plus gr-fs-hidden" onclick="App._grSetCardFontSize('${safeId}', App._grCurrentFs+1)" title="Agrandir">+</button>
-          </div>
-        </div>
-        ${card.context || livre ? `<div class="gr-card-context" id="grCardCtx" style="font-size:${ctxFs}px">
-          ${livre ? this._kdCoverHTML(livre) : ''}
-          <div class="gr-ctx-txt">${card.context
-            ? this._kdEsc(card.context)
-            : this._kdEsc(livre.title || '')}</div>
-        </div>` : ''}
+        ${this._versoTeteHTML(card.word, card.id)}
+        ${this._versoCtxHTML(card.context, livre, ctxFs)}
         <div class="grenier-card-def" id="grDefDisplay" data-card-font-size="1" style="font-size:${cardFs}px">${def || (this._grDefEnAttente(card)
           ? `<span class="gr-def-attente">Définition en route${card.defPending.essais ? ` — ${card.defPending.essais} tentative${card.defPending.essais > 1 ? 's' : ''} sans réponse, l'appli réessaie` : '…'}</span>`
           : '<span style="opacity:0.35;font-style:italic">Aucune définition. Générez-en une ci-dessous.</span>')}</div>
@@ -15841,99 +15838,159 @@ Réponds UNIQUEMENT avec ce JSON :
     App._idbHydrateImages(_grDefEd);
   },
 
-  _grCurrentFs: 14,
-  _grFsExpanded: false,
-  GR_CTX_FS: 12,          // doit valoir la taille de .gr-card-context
-  _grFsCible: 'def',      // 'def' = la définition, 'ctx' = la phrase du livre
-  _grFsTimer: null,
-  _grFsLong: false,
-  GR_FS_LONG: 480,        // au-delà, l'appui n'est plus un clic
+  // ══ Le verso, partagé par Le Grenier et Mot en Focus ═══════════
+  // Les deux écrans montrent la même chose — le mot, la phrase de contexte
+  // avec la couverture de son livre, la définition — et doivent donc la
+  // montrer pareil. Une seule construction, deux cibles : 'wf' pour Mot en
+  // Focus, l'identifiant de la carte pour Le Grenier.
 
-  // Appui bref : la définition, comme avant. Appui long : la phrase du livre,
-  // au-dessus — c'est le même bouton, et le rond change de couleur pour dire
-  // lequel des deux textes les − et + vont toucher.
-  _grFsDown(cardId) {
-    this._grFsLong = false;
-    clearTimeout(this._grFsTimer);
-    this._grFsTimer = setTimeout(() => {
-      this._grFsLong = true;
-      this._grFsOuvrir(cardId, 'ctx');
-    }, this.GR_FS_LONG);
+  _versoTeteHTML(mot, cible) {
+    const c = String(cible).replace(/'/g, "\\'");
+    return `
+      <div class="gr-back-head">
+        <div class="grenier-card-back-label" title="${this._kdAttr(mot)}">${this._kdEsc(mot)}</div>
+        <div class="gr-fs-wrap" id="fsWrap">
+          <button class="gr-fs-btn gr-fs-minus gr-fs-hidden" onclick="App._fsPas('${c}',-1)" title="Réduire">−</button>
+          <button class="gr-fs-toggle" id="fsToggle" oncontextmenu="return false"
+                  onclick="App._fsClic('${c}')" onpointerdown="App._fsAppui('${c}')"
+                  onpointerup="App._fsRelache()" onpointercancel="App._fsRelache()" onpointerleave="App._fsRelache()"
+                  title="Taille de la définition — appui long : la phrase">Aa</button>
+          <button class="gr-fs-btn gr-fs-plus gr-fs-hidden" onclick="App._fsPas('${c}',1)" title="Agrandir">+</button>
+        </div>
+      </div>`;
   },
 
-  _grFsUp() { clearTimeout(this._grFsTimer); },
+  // Sans phrase mais avec un livre, la boîte porte le titre : autrement la
+  // couverture flotterait sans dire de quoi elle est la couverture.
+  _versoCtxHTML(contexte, livre, taille) {
+    if (!contexte && !livre) return '';
+    return `<div class="gr-card-context" id="cardCtx" style="font-size:${taille}px">
+      ${livre ? this._kdCoverHTML(livre) : ''}
+      <div class="gr-ctx-txt">${this._kdEsc(contexte || (livre && livre.title) || '')}</div>
+    </div>`;
+  },
+
+  GR_CTX_FS: 12,          // doit valoir la taille de .gr-card-context
+  FS_LONG: 480,           // au-delà, l'appui n'est plus un clic
+  _fsTaille: 14,
+  _fsOuverte: false,
+  _fsQuoi: 'def',         // 'def' = la définition, 'ctx' = la phrase
+  _fsTimer: null,
+  _fsLong: false,
+
+  // Où les tailles se rangent. C'est tout ce qui sépare les deux versos : au
+  // Grenier elles appartiennent à la carte, dans Mot en Focus il n'y a pas de
+  // carte, donc elles valent pour l'écran.
+  _fsLire(cible, quoi) {
+    if (cible === 'wf') {
+      return quoi === 'ctx' ? (this.settings.ctxFontSize || this.GR_CTX_FS)
+                            : (this.settings.defFontSize || 14);
+    }
+    const carte = this._grenier.cards.find(c => c.id === cible);
+    if (!carte) return quoi === 'ctx' ? this.GR_CTX_FS : (this.settings.defFontSize || 14);
+    return quoi === 'ctx' ? (carte.ctxFontSize || this.GR_CTX_FS)
+                          : (carte.fontSize || this.settings.defFontSize || 14);
+  },
+
+  _fsEcrire(cible, quoi, val) {
+    if (cible === 'wf') {
+      if (quoi === 'ctx') this.settings.ctxFontSize = val; else this.settings.defFontSize = val;
+      this.saveSettings();
+      return;
+    }
+    const carte = this._grenier.cards.find(c => c.id === cible);
+    if (!carte) return;
+    if (quoi === 'ctx') carte.ctxFontSize = val;
+    else {
+      const global = this.settings.defFontSize || 14;
+      carte.fontSize = (val === global) ? null : val;
+    }
+    this.saveGrenier();
+  },
+
+  _fsElement(cible, quoi) {
+    return document.getElementById(quoi === 'ctx' ? 'cardCtx'
+      : (cible === 'wf' ? 'wfDefContent' : 'grDefDisplay'));
+  },
+
+  // À l'ouverture d'un verso : barre repliée, réglage sur la définition.
+  _fsPoser(cible, taille) {
+    this._fsTaille = taille;
+    this._fsOuverte = false;
+    this._fsQuoi = 'def';
+  },
+
+  // Appui bref : la définition. Appui long : la phrase au-dessus — c'est le
+  // même bouton, et le rond change de couleur pour dire lequel des deux
+  // textes les − et + vont toucher.
+  _fsAppui(cible) {
+    this._fsLong = false;
+    clearTimeout(this._fsTimer);
+    this._fsTimer = setTimeout(() => {
+      this._fsLong = true;
+      this._fsOuvrir(cible, 'ctx');
+    }, this.FS_LONG);
+  },
+
+  _fsRelache() { clearTimeout(this._fsTimer); },
 
   // Un appui long produit tout de même un clic en se relevant : sans ce
   // garde-fou, il refermerait aussitôt la barre qu'il vient d'ouvrir.
-  _grFsClick(cardId) {
-    clearTimeout(this._grFsTimer);
-    if (this._grFsLong) { this._grFsLong = false; return; }
-    if (this._grFsExpanded && this._grFsCible === 'def') { this._grCollapseFsBar(); return; }
-    this._grFsOuvrir(cardId, 'def');
+  _fsClic(cible) {
+    clearTimeout(this._fsTimer);
+    if (this._fsLong) { this._fsLong = false; return; }
+    if (this._fsOuverte && this._fsQuoi === 'def') { this._fsReplier(); return; }
+    this._fsOuvrir(cible, 'def');
   },
 
-  _grFsOuvrir(cardId, cible) {
-    const toggle = document.getElementById('grFsToggle');
+  _fsOuvrir(cible, quoi) {
+    const toggle = document.getElementById('fsToggle');
     if (!toggle) return;
-    if (cible === 'ctx' && !document.getElementById('grCardCtx')) {
-      this.showToast('Cette carte n\'a pas de phrase de contexte');
+    if (quoi === 'ctx' && !document.getElementById('cardCtx')) {
+      this.showToast('Pas de phrase de contexte ici');
       return;
     }
-    const card = this._grenier.cards.find(c => c.id === cardId);
-    const premier = !this._grFsExpanded;
-    this._grFsCible = cible;
-    this._grFsExpanded = true;
-    this._grCurrentFs = cible === 'ctx'
-      ? Math.round((card && card.ctxFontSize) || this.GR_CTX_FS)
-      : ((card && card.fontSize) || this.settings.defFontSize || 14);
-    toggle.textContent = this._grCurrentFs;
-    toggle.classList.toggle('gr-fs-ctx', cible === 'ctx');
-    document.getElementById('grFsWrap')?.classList.toggle('gr-fs-ctx', cible === 'ctx');
+    const premier = !this._fsOuverte;
+    this._fsQuoi = quoi;
+    this._fsOuverte = true;
+    this._fsTaille = Math.round(this._fsLire(cible, quoi));
+    toggle.textContent = this._fsTaille;
+    toggle.classList.toggle('gr-fs-ctx', quoi === 'ctx');
+    document.getElementById('fsWrap')?.classList.toggle('gr-fs-ctx', quoi === 'ctx');
     document.querySelectorAll('.gr-fs-btn').forEach(b => b.classList.remove('gr-fs-hidden'));
     // Un seul écouteur, même si l'appui long rouvre une barre déjà ouverte.
     if (premier) {
       setTimeout(() => {
         const handler = (e) => {
-          if (!document.getElementById('grFsWrap')?.contains(e.target)) {
-            this._grCollapseFsBar();
+          if (!document.getElementById('fsWrap')?.contains(e.target)) {
+            this._fsReplier();
             document.removeEventListener('click', handler);
           }
         };
         document.addEventListener('click', handler);
       }, 0);
     }
-    if (cible === 'ctx' && navigator.vibrate) { try { navigator.vibrate(18); } catch (e) {} }
+    if (quoi === 'ctx' && navigator.vibrate) { try { navigator.vibrate(18); } catch (e) {} }
   },
 
-  _grCollapseFsBar() {
-    this._grFsExpanded = false;
-    this._grFsCible = 'def';
-    const toggle = document.getElementById('grFsToggle');
+  _fsReplier() {
+    this._fsOuverte = false;
+    this._fsQuoi = 'def';
+    const toggle = document.getElementById('fsToggle');
     if (toggle) { toggle.textContent = 'Aa'; toggle.classList.remove('gr-fs-ctx'); }
-    document.getElementById('grFsWrap')?.classList.remove('gr-fs-ctx');
+    document.getElementById('fsWrap')?.classList.remove('gr-fs-ctx');
     document.querySelectorAll('.gr-fs-btn').forEach(b => b.classList.add('gr-fs-hidden'));
   },
 
-  _grSetCardFontSize(cardId, val) {
-    const clamped = Math.min(28, Math.max(9, val));
-    this._grCurrentFs = clamped;
-    const card = this._grenier.cards.find(c => c.id === cardId);
-    if (!card) return;
-    if (this._grFsCible === 'ctx') {
-      card.ctxFontSize = clamped;
-      const ctx = document.getElementById('grCardCtx');
-      if (ctx) ctx.style.fontSize = clamped + 'px';
-    } else {
-      const global = this.settings.defFontSize || 14;
-      card.fontSize = (clamped === global) ? null : clamped;
-      // Live-update definition text
-      const def = document.getElementById('grDefDisplay');
-      if (def) def.style.fontSize = clamped + 'px';
-    }
-    this.saveGrenier();
-    // Update the toggle circle label
-    const toggle = document.getElementById('grFsToggle');
-    if (toggle) toggle.textContent = clamped;
+  _fsPas(cible, delta) {
+    const quoi = this._fsQuoi;
+    const val = Math.min(28, Math.max(9, Math.round(this._fsLire(cible, quoi)) + delta));
+    this._fsTaille = val;
+    this._fsEcrire(cible, quoi, val);
+    const el = this._fsElement(cible, quoi);
+    if (el) el.style.fontSize = val + 'px';
+    const toggle = document.getElementById('fsToggle');
+    if (toggle) toggle.textContent = val;
   },
 
   _grShowCardFront() {
@@ -16606,6 +16663,18 @@ Réponds UNIQUEMENT avec ce JSON :
       }
       if (reprise) this.showToast(`Image de « ${word} » arrivée ✓`);
       if (this.currentScreen === 'grenier') this.renderGrenier();
+      // Mot en Focus reçoit l'image comme il reçoit la définition : seulement
+      // s'il montre encore ce mot-là. Sans ça, la définition arrivait à
+      // l'écran et l'image ne se voyait que sur la carte.
+      if (c && this._wfEstToujours(word)) {
+        this._wfSetDef(c.definition, word);
+        this._wfUpdateFlipDot();
+        const wfContent = document.getElementById('wfDefContent');
+        if (wfContent) { wfContent.innerHTML = c.definition; App._idbHydrateImages(wfContent); }
+        const wfTa = document.getElementById('wfDefTextarea');
+        if (wfTa) { wfTa.innerHTML = c.definition; App._idbHydrateImages(wfTa); }
+        if (!this._wfDefPanelOpen) this.showToast('Image prête — voir le verso ✓');
+      }
     } catch (e) {
       const n = essaisAvant + 1;
       inscrire(n);

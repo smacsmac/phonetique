@@ -213,15 +213,26 @@ quand tu y viens.
 Un mot déjà présent dans le paquet n'est pas dupliqué — il est simplement
 marqué comme traité.
 
-### Le verso d'une carte
+### Le verso
+
+Le Grenier et Mot en Focus montrent la même chose au verso — le mot, la
+phrase du livre avec sa couverture, la définition — et le montrent donc
+pareil : une seule construction sert les deux écrans, chacun gardant sa
+couleur.
 
 Le bandeau du haut porte **le mot seul** ; trop long, il est coupé par « … »
 avant d'atteindre le bouton **Aa**, dont la place est réservée en permanence —
 c'est pour ça qu'il ne bouge pas d'un pixel quand les − et + paraissent.
 
 **Aa** règle la taille de la définition. **Appui long sur Aa** : ce sont la
-phrase du livre et sa boîte qu'on règle à la place — le bouton passe au violet
-pour le dire. Les deux tailles sont retenues séparément, carte par carte.
+phrase et sa boîte qu'on règle à la place — le bouton passe au violet pour le
+dire. Les deux tailles sont retenues séparément : sur la carte au Grenier,
+puisque chaque carte a la sienne ; dans les réglages généraux pour Mot en
+Focus, où il n'y a pas de carte.
+
+Une image demandée en même temps que la définition arrive sur la carte **et**
+dans Mot en Focus, dès qu'elle est prête — au même titre que la définition, et
+sous la même condition : que l'écran montre encore ce mot-là.
 
 ### Renvoyer un mot déjà au Grenier
 
