@@ -2,6 +2,10 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <!-- Le serveur remplace __BUILD__ par la date du fichier qu'il vient de
+       servir. C'est le seul moyen de savoir, depuis l'appli, quelle version
+       on regarde : resté tel quel, c'est une copie ouverte sans serveur. -->
+  <meta name="phonetique-build" content="__BUILD__">
   <!-- async : hors réseau ou sur une connexion capricieuse, ce script ne doit
        pas retarder l'affichage. Il n'est lu qu'au moment de parler. -->
   <script async src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -4723,6 +4727,22 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   border: 1px solid rgba(139,92,246,0.16);
 }
 .kd-word-done { opacity: 0.5; }
+/* Un mot surligné plusieurs fois dans le même livre : il a résisté deux fois,
+   il doit se repérer d'un coup d'œil. Vert là où la liste est violette —
+   la case, le cadre, la flèche de l'infinitif et le mot dans sa phrase. */
+.kd-word-rep {
+  border-color: rgba(52,211,153,0.42);
+  background: rgba(52,211,153,0.07);
+}
+.kd-word-rep .kd-check { border-color: rgba(52,211,153,0.6); }
+.kd-word-rep .kd-check.on { background: #34D399; border-color: #34D399; }
+.kd-word-rep .kd-word-stem { color: #34D399; }
+.kd-word-rep .kd-hit { color: #6EE7B7; }
+.kd-word-rep .kd-word-tag { background: rgba(52,211,153,0.16); color: #34D399; }
+.kd-rep {
+  font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px;
+  background: rgba(52,211,153,0.18); color: #34D399; letter-spacing: 0.3px;
+}
 .kd-check {
   flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; border-radius: 6px;
   cursor: pointer; background: transparent; padding: 0;
@@ -8476,6 +8496,7 @@ const KO_VOICES = [
         if (!r.ok) continue;
         const h = await r.json();
         if (h && h.app && h.app !== 'phonetique') continue;   // pas le bon serveur
+        if (h && h.build) this._versionVue(h.build);
         if (base !== cfg.url) {
           cfg.url = base;
           this._syncMsg = 'adresse de secours retenue : ' + base;
@@ -8489,6 +8510,27 @@ const KO_VOICES = [
       } catch(e) { /* on essaie la suivante */ }
     }
     return null;
+  },
+
+  // ── Quelle version regarde-t-on ? ─────────────────────────────
+  // Hors réseau, le service worker sert sa copie : c'est voulu, mais si cette
+  // copie est vieille, rien ne le disait. La date du fichier servi voyage
+  // donc avec la page, et /health dit celle du disque — la comparaison se
+  // fait toute seule.
+  _versionLocale() {
+    const m = document.querySelector('meta[name="phonetique-build"]');
+    const v = m ? String(m.content || '').trim() : '';
+    return (!v || v === '__BUILD__') ? '' : v;      // vide = ouverte sans serveur
+  },
+
+  _versionVue(distante) {
+    this._versionServeur = distante;
+    const locale = this._versionLocale();
+    if (!locale || !distante || locale === distante) return;
+    // Une seule fois par session : c'est une invitation, pas une alarme.
+    if (this._versionSignalee) return;
+    this._versionSignalee = true;
+    this.showToast('Version plus récente sur le PC — ferme et rouvre l\'appli');
   },
 
   async _syncNow(manual = false) {
@@ -9099,6 +9141,16 @@ const KO_VOICES = [
                 onclick="App.syncImagesImportFile()">importer des images depuis un fichier…</button>
       </div>
       <div class="sync-status" id="syncStatus">${this._syncStatusText()}</div>
+      ${(() => {
+        const locale = this._versionLocale();
+        const serveur = this._versionServeur || '';
+        if (!locale) return `<div class="sync-status" style="opacity:0.7">Version : copie locale (ouverte sans serveur)</div>`;
+        const vieille = serveur && serveur !== locale;
+        return `<div class="sync-status" style="${vieille ? 'color:#FBBF24' : 'opacity:0.7'}">
+          Version : ${this._kdEsc(locale)}${vieille
+            ? ` — le PC en a une plus récente (${this._kdEsc(serveur)}). Ferme et rouvre l'appli.`
+            : ''}</div>`;
+      })()}
       ${avert}
     </div>`;
   },
@@ -17525,6 +17577,13 @@ Réponds UNIQUEMENT avec ce JSON :
 
     // 2. Les surlignements — l'intention. Ils marquent les mots déjà présents
     //    et créent ceux que vocab.db ne connaît pas (ou plus).
+    //
+    // Un mot rencontré deux fois dans le même livre est surligné deux fois :
+    // on compte ces rencontres. Le comptage se fait sur CET import et le
+    // résultat est posé, pas ajouté — My Clippings.txt est relu en entier à
+    // chaque fois, et incrémenter ferait enfler le total à chaque importation
+    // sans qu'on ait rien lu de plus.
+    const rencontres = new Map();   // id → Map(position → page)
     for (const c of clips) {
       if (c.kind !== 'highlight' || !c.body) continue;
       if (c.n < 1 || c.n > 3) continue;   // au-delà, c'est un passage, pas du vocabulaire
@@ -17554,11 +17613,34 @@ Réponds UNIQUEMENT avec ce JSON :
       rec.h = 1;
       if (c.page && !rec.p) rec.p = c.page;
       if (c.at && c.at > (rec.t || 0)) rec.t = c.at;
+      // Deux surlignements du même mot se distinguent par leur page, sinon
+      // par leur date. Sans repère, on ne suppose rien — une même position
+      // relue ne compte qu'une fois.
+      const ou = c.page ? 'p' + c.page : (c.at ? 'd' + c.at : '');
+      if (ou) {
+        if (!rencontres.has(id)) rencontres.set(id, new Map());
+        rencontres.get(id).set(ou, c.page || '');
+      }
       if (hit) {
         if (hit.context.length > (rec.c || '').length) rec.c = hit.context;
         if (hit.stem && hit.stem !== hit.word) rec.s = hit.stem;
         if (hit.lang && !rec.g) rec.g = hit.lang;
       }
+    }
+
+    // Les pages s'accumulent d'un import à l'autre : la liseuse élague ses
+    // fichiers, et ce qu'on a déjà vu ne doit pas se perdre. Le compte suit
+    // les pages connues, ou le nombre de rencontres de cet import — le plus
+    // grand des deux.
+    for (const [id, vues] of rencontres) {
+      const rec = words.get(id);
+      if (!rec) continue;
+      const pages = [...new Set([...(rec.pp || []), ...[...vues.values()].filter(Boolean)])];
+      // Une seule page ne mérite pas sa liste : rec.p la porte déjà, et un
+      // tableau par mot pèserait sur la synchro pour ne rien apprendre.
+      if (pages.length > 1) rec.pp = pages.slice(0, 12);
+      const n = Math.max(rec.n || 1, vues.size, pages.length);
+      if (n > 1) rec.n = n;
     }
 
     // La date d'un livre est celle de son dernier mot connu.
@@ -17772,6 +17854,12 @@ Réponds UNIQUEMENT avec ce JSON :
       if (!cur.s && w.s) cur.s = w.s;
       if (!cur.p && w.p) cur.p = w.p;
       if ((w.t || 0) > (cur.t || 0)) cur.t = w.t;
+      // Les rencontres s'additionnent mal mais se réunissent bien : un
+      // appareil peut connaître des pages que l'autre n'a pas encore lues.
+      const pages = [...new Set([...(cur.pp || []), ...(w.pp || [])])];
+      if (pages.length > 1) cur.pp = pages.slice(0, 12);
+      const n = Math.max(cur.n || 1, w.n || 1, pages.length);
+      if (n > 1) cur.n = n;
     }
     lib.words = Array.from(words.values());
 
@@ -18265,8 +18353,9 @@ Réponds UNIQUEMENT avec ce JSON :
     const done = lib.sent[w.i] ? 'envoyé' : lib.dismissed[w.i] ? 'écarté' : '';
     const on = this._kdSel.has(w.i);
     const ctx = w.c ? this._kdHighlightWord(w.c, w.w) : '<i class="kd-nocontext">pas de phrase dans vocab.db</i>';
+    const rep = (w.n || 1) > 1;
     return `
-      <div class="kd-word ${done ? 'kd-word-done' : ''}">
+      <div class="kd-word ${done ? 'kd-word-done' : ''} ${rep ? 'kd-word-rep' : ''}">
         <button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${done ? 'disabled' : ''}>
           ${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </button>
@@ -18274,9 +18363,12 @@ Réponds UNIQUEMENT avec ce JSON :
           <div class="kd-word-head">
             <span class="kd-word-w">${this._kdEsc(w.w)}</span>
             ${w.s && w.s !== w.w ? `<span class="kd-word-stem">→ ${this._kdEsc(w.s)}</span>` : ''}
+            ${rep ? `<span class="kd-rep" title="Surligné ${w.n} fois dans ce livre">×${w.n}</span>` : ''}
             ${!w.h ? '<span class="kd-word-tag">cherché</span>' : ''}
             ${done ? `<span class="kd-word-tag kd-tag-done">${done}</span>` : ''}
-            ${w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>` : ''}
+            ${rep && w.pp && w.pp.length > 1
+              ? `<span class="kd-word-page">p.${this._kdEsc(w.pp.join(', '))}</span>`
+              : w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>` : ''}
           </div>
           <div class="kd-word-ctx">${ctx}</div>
         </div>

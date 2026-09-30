@@ -215,6 +215,32 @@ rouvrir montre donc toujours le neuf du premier coup.
 La requête partie continue en arrière-plan et rafraîchit la copie : même
 quand le délai a joué, l'ouverture suivante aura la dernière version.
 
+Ce que cette phrase suppose mérite d'être dit, parce que c'est là que ça
+cassait. Le navigateur peut arrêter un service worker dès que sa réponse est
+rendue — et sur un téléphone il ne s'en prive pas. L'écriture dans la réserve,
+lancée après coup, était alors interrompue avant d'aboutir : la copie gardée
+restait celle de l'installation, **indéfiniment**. On remplaçait `index.html`
+sans que rien ne change hors réseau. L'écriture est désormais déclarée au
+navigateur (`waitUntil`), qui garde le service worker en vie jusqu'à ce
+qu'elle soit finie.
+
+## Quelle version ai-je sous les yeux ?
+
+Le serveur inscrit dans la page la **date du fichier** qu'il vient de servir,
+et `Paramètres › Synchro` l'affiche :
+
+```
+Version : 2026-09-30 14:12:05
+```
+
+Si le PC en a une plus récente, la ligne passe en jaune et le dit ; l'appli le
+signale aussi une fois par session. « Copie locale » signifie que la page a
+été ouverte sans serveur — un fichier `.html` gardé sur l'appareil, qui ne
+peut pas savoir ce qu'il y a sur le PC.
+
+C'est le moyen de trancher en un coup d'œil entre « l'appli n'a pas la
+fonctionnalité » et « l'appli n'a pas la dernière version ».
+
 > ⚠️ Le service worker ne se met à jour qu'au chargement suivant. Après avoir
 > remplacé `phonetique-sync.mjs`, **relance le serveur et ouvre l'appli une
 > fois en étant chez toi** : sans ça, l'ancien service worker reste aux

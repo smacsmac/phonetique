@@ -182,7 +182,7 @@ const MANIFEST = JSON.stringify({
 // est là), cache en secours quand tu es dehors. Les données ne sont jamais
 // mises en cache : elles doivent venir du serveur ou pas du tout.
 const SERVICE_WORKER = `
-const CACHE = 'phonetique-shell-v4';
+const CACHE = 'phonetique-shell-v5';
 const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
 // Delai d'ETABLISSEMENT de la reponse, pas de transfert : fetch() se resout
 // des que les en-tetes arrivent, et le corps continue ensuite a son rythme.
@@ -191,7 +191,11 @@ const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
 const ATTENTE = 3000;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // 'reload' court-circuite le cache HTTP du navigateur : l'installation doit
+  // capturer le fichier du disque, pas une copie que le navigateur garderait.
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
@@ -219,11 +223,21 @@ self.addEventListener('fetch', e => {
 
     // Le reseau met la copie a jour des qu'il repond, meme si la course
     // ci-dessous est deja perdue : la prochaine ouverture aura le neuf.
-    const reseau = fetch(e.request).then(r => {
-      if(r && r.ok) caches.open(CACHE).then(c => c.put(key, r.clone())).catch(() => {});
+    //
+    // waitUntil est ce qui rend cette phrase vraie. Sans lui, le navigateur
+    // peut arreter le service worker des que respondWith a rendu sa reponse,
+    // c'est-a-dire AVANT que l'ecriture dans le cache soit finie — et sur un
+    // telephone il ne s'en prive pas. La copie gardee restait alors celle de
+    // l'installation, indefiniment : on remplacait index.html sans que rien
+    // ne change hors reseau.
+    const reseau = fetch(e.request).then(async r => {
+      if(r && r.ok){
+        const c = await caches.open(CACHE);
+        await c.put(key, r.clone());
+      }
       return r;
     });
-    reseau.catch(() => {});   // pas de rejet non gere si la course est perdue
+    e.waitUntil(reseau.catch(() => {}));   // et pas de rejet non gere
 
     if(!copie){
       // Rien en reserve : il faut bien attendre le reseau.
@@ -296,6 +310,20 @@ async function coverFiles(){
     }catch{}
   }
   return out;
+}
+
+// La date du index.html servi, en clair. L'appli l'affiche dans Paramètres ;
+// c'est ainsi qu'on sait, sans deviner, si la version chargée est bien celle
+// du disque ou une copie gardée hors réseau.
+async function appBuild(){
+  try{
+    const d = (await stat(APP)).mtime;
+    const p = n => String(n).padStart(2, '0');
+    // Les secondes comptent : deux remplacements dans la même minute doivent
+    // se distinguer, sinon la comparaison dirait « à jour » à tort.
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`
+         + ` ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }catch{ return 'inconnue'; }
 }
 
 function send(res, code, body, type='application/json; charset=utf-8', extra={}){
@@ -494,7 +522,8 @@ const server = http.createServer(async (req, res) => {
   // ── l'application ──
   if(req.method === 'GET' && (path === '/' || path === '/index.html')){
     try{
-      const html = await readFile(APP, 'utf8');
+      const html = (await readFile(APP, 'utf8'))
+        .replace('content="__BUILD__"', 'content="' + await appBuild() + '"');
       // ?download=1 → garde une copie sur l'appareil. Indispensable pour le
       // téléphone : une adresse http://192.168… n'est pas un contexte
       // sécurisé, donc pas de service worker, donc rien ne s'ouvre hors du
@@ -531,6 +560,7 @@ const server = http.createServer(async (req, res) => {
     const secure = !!req.socket.encrypted;
     return send(res, 200, JSON.stringify({
       ok: true, name: hostname(), app: 'phonetique', secure,
+      build: await appBuild(),               // ce que le disque contient maintenant
       images: IMGDIR,
       addresses: candidateURLs(secure),      // même protocole : une page https
       https: candidateURLs(true),            // ne peut pas parler à du http

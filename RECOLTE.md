@@ -169,6 +169,20 @@ Les notes voyagent avec la synchro. Elles se rédigent sur un appareil à la
 fois, donc en cas de conflit **la version modifiée le plus récemment gagne**,
 entière — fusionner deux textes ferait plus de dégâts que de bien.
 
+## Les mots rencontrés plusieurs fois
+
+Un mot surligné deux fois dans le même livre t'a résisté deux fois. Dans la
+liste, il passe du **violet au vert** — le cadre, la case, la flèche de
+l'infinitif, le mot dans sa phrase — avec une pastille **×2** et ses pages
+(« p.75, 91 »).
+
+Deux surlignements se distinguent par leur page, sinon par leur date ; deux
+lignes à la même position ne comptent que pour une rencontre. Le comptage se
+fait sur le fichier entier à chaque importation et le résultat est **posé, pas
+ajouté** : réimporter le même fichier ne fait pas enfler le total. Les pages
+déjà connues, elles, s'accumulent — la liseuse élague ses fichiers, et ce
+qu'on a vu ne doit pas se perdre.
+
 ## Envoyer au Grenier
 
 Coche, puis **Envoyer au Grenier**. Le paquet proposé porte le nom du livre
