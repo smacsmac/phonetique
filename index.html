@@ -18098,22 +18098,119 @@ Réponds UNIQUEMENT avec ce JSON :
       <div class="kd-note-sheet" id="kdSheet" onclick="App._kdSheetClick(event)">
         <textarea class="kd-note-text" id="kdNoteText" spellcheck="true" rows="1"
           placeholder="Ce que tu retiens de ce livre…"
-          oninput="App._kdNoteGrow(this); App._kdNoteSave(false)"
-          onblur="App._kdNoteSave(true)">${this._kdEsc(note.t)}</textarea>
+          onfocus="App._kdNoteFocus(this)"
+          oninput="App._kdNoteGrow(this); App._kdNoteSuivre(this); App._kdNoteSave(false)"
+          onblur="App._kdNoteBlur()">${this._kdEsc(note.t)}</textarea>
       </div>
     `;
     const ta = document.getElementById('kdNoteText');
-    if (ta) this._kdNoteGrow(ta);
+    if (ta) { this._kdNoteLen = null; this._kdNoteGrow(ta); }
   },
 
   // La zone de saisie épouse exactement son contenu : ce qui reste de la
   // feuille en dessous est donc, à coup sûr, « après la fin du texte ».
   // rows="1" dans le HTML est indispensable : sans lui un textarea vaut deux
   // lignes d'office, et une note vide en réserverait deux au lieu d'une.
+  //
+  // Mesurer coûtait cher : mettre la hauteur à « auto » réduit la zone à une
+  // ligne le temps d'un calcul. La page raccourcit, le navigateur rabat son
+  // défilement pour rester dans les clous, et quand la zone reprend sa taille
+  // le texte a glissé. À chaque frappe. D'où la vue qui sautait.
+  //
+  // En écrivant, la hauteur ne fait que grandir : il suffit de la pousser
+  // quand le contenu déborde, sans jamais rétrécir d'abord. La mesure à vide
+  // n'est nécessaire que si le texte a raccourci, et on y rend alors le
+  // défilement où il était.
   _kdNoteGrow(ta) {
     if (!ta) return;
+    const n = ta.value.length;
+    const raccourci = n < (this._kdNoteLen == null ? n : this._kdNoteLen);
+    this._kdNoteLen = n;
+    if (!raccourci) {
+      if (ta.scrollHeight > ta.clientHeight) ta.style.height = ta.scrollHeight + 'px';
+      return;
+    }
+    const main = document.getElementById('main');
+    const y = main ? main.scrollTop : 0;
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
+    if (main && main.scrollTop !== y) main.scrollTop = y;
+  },
+
+  KD_MARGE: 58,          // de quoi respirer sous la ligne qu'on écrit
+
+  // Où en est le curseur, verticalement, dans la zone de saisie. Un textarea
+  // ne le dit pas : on recopie son texte jusqu'au curseur dans un calque de
+  // même largeur et même police, et on regarde où tombe la marque.
+  _kdCaretY(ta) {
+    let m = this._kdMiroir;
+    if (!m) {
+      m = this._kdMiroir = document.createElement('div');
+      m.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(m);
+    }
+    const cs = getComputedStyle(ta);
+    m.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;'
+      + 'white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;'
+      + `width:${ta.clientWidth}px;padding:${cs.padding};border:${cs.border};`
+      + `font:${cs.font};line-height:${cs.lineHeight};letter-spacing:${cs.letterSpacing};`;
+    m.textContent = ta.value.slice(0, ta.selectionStart);
+    const marque = document.createElement('span');
+    marque.textContent = '​';
+    m.appendChild(marque);
+    return marque.offsetTop;
+  },
+
+  // Garder la ligne qu'on écrit à distance des bords. Le navigateur, lui, se
+  // contente de la coller tout en bas de ce qui reste visible : il suffit
+  // alors qu'une barre de suggestions du clavier paraisse ou disparaisse pour
+  // qu'on n'en voie plus que la moitié.
+  _kdNoteSuivre(ta) {
+    const main = document.getElementById('main');
+    if (!main || !ta) return;
+    // Le clavier occupe le bas de l'écran : le visible s'arrête là, pas au
+    // bas de la fenêtre.
+    const vv = window.visualViewport;
+    const hautEcran = vv ? vv.offsetTop : 0;
+    const basEcran = hautEcran + (vv ? vv.height : window.innerHeight);
+    const r = main.getBoundingClientRect();
+    const haut = Math.max(r.top, hautEcran);
+    const bas = Math.min(r.bottom, basEcran);
+    const ligne = this.KD_LIGNE;
+    // Sur une fenêtre écrasée par le clavier, deux lignes de marge de chaque
+    // côté ne tiendraient pas : on rétrécit plutôt que de faire n'importe quoi.
+    const marge = Math.min(this.KD_MARGE, Math.max(0, (bas - haut - ligne) / 2));
+    const y = ta.getBoundingClientRect().top + this._kdCaretY(ta);
+    if (y + ligne + marge > bas) main.scrollTop += (y + ligne + marge) - bas;
+    else if (y - marge < haut) main.scrollTop -= haut - (y - marge);
+  },
+
+  // Pendant la frappe, le défilement doit être instantané. Sinon chaque
+  // correction s'anime (#main est en scroll-behavior:smooth), l'animation
+  // continue après la dernière touche, et la ligne « redescend d'une
+  // demi-ligne » quand on s'arrête — alors qu'elle finissait seulement sa
+  // course.
+  _kdNoteFocus(ta) {
+    this._kdNoteLen = ta ? ta.value.length : 0;
+    const main = document.getElementById('main');
+    if (main) main.style.scrollBehavior = 'auto';
+    if (!this._kdNoteVVWired && window.visualViewport) {
+      this._kdNoteVVWired = true;
+      // Le clavier qui s'ouvre, se ferme, ou change de hauteur : la ligne
+      // qu'on écrit doit rester visible dans tous les cas.
+      const suivre = () => {
+        const t = document.getElementById('kdNoteText');
+        if (t && document.activeElement === t) this._kdNoteSuivre(t);
+      };
+      window.visualViewport.addEventListener('resize', suivre);
+      window.visualViewport.addEventListener('scroll', suivre);
+    }
+  },
+
+  _kdNoteBlur() {
+    const main = document.getElementById('main');
+    if (main) main.style.scrollBehavior = '';
+    this._kdNoteSave(true);
   },
 
   // Toucher une ligne vide plus bas doit y poser le curseur — comme sur un
@@ -18132,6 +18229,7 @@ Réponds UNIQUEMENT avec ce JSON :
     }
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
+    this._kdNoteSuivre(ta);
   },
 
   _kdNoteSave(tout_de_suite) {

@@ -183,6 +183,29 @@ ajouté** : réimporter le même fichier ne fait pas enfler le total. Les pages
 déjà connues, elles, s'accumulent — la liseuse élague ses fichiers, et ce
 qu'on a vu ne doit pas se perdre.
 
+## Écrire dans le carnet
+
+La feuille se comporte comme du papier : la zone de saisie épouse le texte,
+et toucher une ligne vide plus bas y pose le curseur.
+
+Trois choses la rendent stable sous le doigt :
+
+- **Le défilement ne s'anime pas pendant la frappe.** `#main` est en
+  `scroll-behavior: smooth` : le défilement que le navigateur déclenche pour
+  suivre le curseur s'animait donc, et l'animation courait encore longtemps
+  après la dernière touche — mesuré sur la version d'avant, **1591 px de
+  dérive 700 ms après le relâchement**. D'où l'impression que la ligne
+  « redescendait toute seule » dès qu'on s'arrêtait.
+- **La ligne qu'on écrit garde ses distances** : deux lignes de respiration
+  sous elle, au lieu d'être collée au bas du visible. Une barre de suggestions
+  du clavier qui paraît ou disparaît ne la coupe donc plus en deux. La hauteur
+  réellement visible est lue sur `visualViewport`, c'est-à-dire au-dessus du
+  clavier, et non au bas de la fenêtre.
+- **La zone ne rétrécit plus pour se mesurer.** Elle grandissait en passant par
+  `height: auto`, ce qui la réduisait à une ligne le temps d'un calcul ; la
+  mesure à vide ne sert plus que si le texte a raccourci, et le défilement y
+  est rendu où il était.
+
 ## Envoyer au Grenier
 
 Coche, puis **Envoyer au Grenier**. Le paquet proposé porte le nom du livre
