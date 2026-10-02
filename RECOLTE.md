@@ -171,17 +171,43 @@ entière — fusionner deux textes ferait plus de dégâts que de bien.
 
 ## Les mots rencontrés plusieurs fois
 
-Un mot surligné deux fois dans le même livre t'a résisté deux fois. Dans la
-liste, il passe du **violet au vert** — le cadre, la case, la flèche de
-l'infinitif, le mot dans sa phrase — avec une pastille **×2** et ses pages
-(« p.75, 91 »).
+Un mot surligné deux fois dans le même livre t'a résisté deux fois. Il paraît
+alors **deux fois dans la liste**, chacune à sa place chronologique — souvent
+très loin l'une de l'autre — et chacune **avec sa propre phrase** et sa propre
+page. Les deux passent du violet au **vert** (le cadre, la case, la flèche de
+l'infinitif, le mot dans sa phrase) et portent une pastille **×2**.
+
+Cocher, écarter ou envoyer une rencontre ne touche pas l'autre : ce sont deux
+lignes indépendantes, et envoyer la seconde envoie **sa** phrase. Une décision
+prise avant que les rencontres soient séparées vaut encore pour toutes.
+
+Une rencontre est un **surlignement** — le geste par lequel tu dis « ce
+mot-là ». Les consultations du dictionnaire n'en sont pas : les compter aussi
+donnait 502 mots « rencontrés plusieurs fois » sur 2 166 au lieu de 15, et un
+repère qui marque un mot sur quatre ne repère plus rien. Elles servent en
+revanche à donner sa phrase à chaque rencontre : on cherche un mot au moment
+où on le surligne, donc la consultation la plus proche dans le temps est la
+bonne, et chacune ne sert qu'une fois.
 
 Deux surlignements se distinguent par leur page, sinon par leur date ; deux
-lignes à la même position ne comptent que pour une rencontre. Le comptage se
-fait sur le fichier entier à chaque importation et le résultat est **posé, pas
-ajouté** : réimporter le même fichier ne fait pas enfler le total. Les pages
-déjà connues, elles, s'accumulent — la liseuse élague ses fichiers, et ce
-qu'on a vu ne doit pas se perdre.
+lignes à la même position ne comptent que pour une rencontre. Les positions
+déjà connues s'accumulent d'un import à l'autre — la liseuse élague ses
+fichiers, et ce qu'on a vu ne doit pas se perdre.
+
+## La barre d'outils
+
+Quatre pictogrammes, chacun avec sa phrase entière en infobulle — en toutes
+lettres, la barre ne tenait pas sur un téléphone.
+
+| | |
+|---|---|
+| 👁 | afficher ou masquer les mots déjà traités |
+| **2×** | ne montrer que les mots rencontrés plusieurs fois (absent s'il n'y en a aucun) |
+| ☑ | tout cocher / tout décocher |
+| ↓ ↑ | ordre de lecture, ou les derniers surlignés d'abord |
+
+Le sens de lecture est **retenu d'une fois sur l'autre** : on relit rarement un
+livre dans un sens puis dans l'autre.
 
 ## Écrire dans le carnet
 

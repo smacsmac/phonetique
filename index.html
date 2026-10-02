@@ -4660,6 +4660,14 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .kd-chip.on { background: rgba(139,92,246,0.2); border-color: #8B5CF6; color: #C4B5FD; }
 .kd-chip-ordre { display: inline-flex; align-items: center; gap: 5px; }
 .kd-chip-ordre svg { width: 11px; height: 11px; flex-shrink: 0; }
+/* En pictogrammes : la barre tient sur un téléphone, et chaque bouton garde
+   sa phrase entière dans l'infobulle. */
+.kd-chip-icone {
+  width: 36px; height: 32px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.kd-chip-icone svg { width: 15px; height: 15px; }
+.kd-chip-2x { font-size: 12.5px; font-weight: 700; letter-spacing: -0.02em; }
 
 /* — liste des livres — */
 .kd-books { display: flex; flex-direction: column; gap: 8px; }
@@ -17228,6 +17236,7 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdView: 'hl',         // 'hl' = surlignés · 'all' = tous les mots cherchés
   _kdOrdre: 'anciens',   // 'anciens' = dans l'ordre de lecture · 'recents' = les derniers d'abord
   _kdShowDone: false,    // afficher aussi les mots déjà traités
+  _kdRepOnly: false,     // ne montrer que les mots rencontrés plusieurs fois
   _kdSel: null,          // Set des identifiants cochés
   _kdSort: 'recent',     // 'recent' | 'alpha' | 'count'
   _kdYear: '',
@@ -17243,6 +17252,7 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdAttr(s) { return this._kdEsc(s).replace(/\n/g, ' '); },
 
   loadLiseur() {
+    if (this.settings && this.settings.kdOrdre) this._kdOrdre = this.settings.kdOrdre;
     this._kdLib = { books: [], words: [], dismissed: {}, sent: {}, sources: {}, at: 0 };
     try {
       const raw = localStorage.getItem('phonetique_liseur');
@@ -17511,6 +17521,45 @@ Réponds UNIQUEMENT avec ce JSON :
    * Fusionne des extraits et des vocab.db dans la bibliothèque existante.
    * Rien n'est supprimé : les imports successifs s'additionnent.
    */
+  // Une rencontre, c'est un SURLIGNEMENT : le geste par lequel on dit « ce
+  // mot-là ». Les consultations de vocab.db ne comptent pas comme telles —
+  // compter aussi les recherches donnait 502 mots « rencontrés plusieurs
+  // fois » sur 2 166 au lieu de 15, et un repère qui marque un mot sur
+  // quatre ne repère plus rien.
+  //
+  // Elles servent en revanche à donner sa phrase à chaque rencontre : on
+  // cherche un mot au moment où on le surligne, donc la consultation la plus
+  // proche dans le temps est la bonne. Chacune ne sert qu'une fois, sans quoi
+  // les deux lignes d'un même mot montreraient la même phrase alors que le
+  // livre en offre deux.
+  _kdRencontres(consult, surl, anciennes) {
+    // La page identifie une rencontre ; à défaut, sa date. Les positions déjà
+    // connues ne se perdent pas : la liseuse élague ses fichiers.
+    const vues = new Map();
+    const cle = (o) => o.p ? 'p' + o.p : 't' + (o.t || 0);
+    for (const o of anciennes) vues.set(cle(o), { c: o.c || '', p: o.p || '', t: o.t || 0 });
+    for (const s of surl) {
+      const k = cle(s), d = vues.get(k);
+      if (d) { if (s.t && !d.t) d.t = s.t; }
+      else vues.set(k, { c: '', p: s.p || '', t: s.t || 0 });
+    }
+    const oc = [...vues.values()].sort((a, b) => (a.t || 0) - (b.t || 0));
+    if (oc.length < 2) return oc;
+
+    const libres = consult.slice();
+    for (const o of oc) {
+      if (o.c || !libres.length) continue;
+      let i = 0, ecart = Infinity;
+      for (let k = 0; k < libres.length; k++) {
+        const e = Math.abs((libres[k].t || 0) - (o.t || 0));
+        if (e < ecart) { ecart = e; i = k; }
+      }
+      o.c = libres[i].c || '';
+      libres.splice(i, 1);
+    }
+    return oc;
+  },
+
   _kdMerge(clips, vocabs) {
     const lib = this._kdLib;
     const bookByKey = new Map(), wordsOf = new Map(), anyWord = new Map();
@@ -17532,8 +17581,12 @@ Réponds UNIQUEMENT avec ce JSON :
           context: l.usage || '', at: l.timestamp || w.timestamp || 0, bookId: l.book_key,
         };
         if (!wordsOf.has(l.book_key)) wordsOf.set(l.book_key, new Map());
-        const m = wordsOf.get(l.book_key), prev = m.get(w.word);
-        if (!prev || e.context.length > prev.context.length) m.set(w.word, e);
+        const m = wordsOf.get(l.book_key);
+        // Toutes les consultations, pas seulement la mieux fournie : chercher
+        // deux fois le même mot dans un livre, c'est deux passages distincts,
+        // et vocab.db en garde bien deux phrases différentes.
+        if (!m.has(w.word)) m.set(w.word, []);
+        m.get(w.word).push(e);
         const pa = anyWord.get(w.word);
         if (!pa || e.context.length > pa.context.length) anyWord.set(w.word, e);
       }
@@ -17557,11 +17610,15 @@ Réponds UNIQUEMENT avec ce JSON :
     };
 
     // 1. Tout ce qui a été cherché — la matière, avec les phrases du livre.
+    const consultations = new Map();    // id → [{c, t}]
     for (const [bid, m] of wordsOf) {
       const vb = Array.from(bookByKey.values()).find(x => x.id === bid);
       touchBook(bid, vb ? vb.title : '', vb ? vb.author : '', vb ? vb.lang : '', 0, vb ? vb.asin : '');
-      for (const e of m.values()) {
+      for (const liste of m.values()) {
+        // La mieux fournie représente le mot ; toutes servent aux rencontres.
+        const e = liste.reduce((a, b) => (b.context.length > a.context.length ? b : a));
         const id = bid + '|' + e.word.toLowerCase();
+        consultations.set(id, liste.map(x => ({ c: x.context || '', t: x.at || 0 })));
         const prev = words.get(id);
         if (!prev) {
           words.set(id, { i: id, b: bid, w: e.word, s: e.stem === e.word ? '' : e.stem,
@@ -17597,7 +17654,8 @@ Réponds UNIQUEMENT avec ce JSON :
       let hit = null;
       const local = wordsOf.get(bid);
       const cands = this._kdVariants(c.body);
-      if (local) for (const k of cands) if (local.has(k)) { hit = local.get(k); break; }
+      const mieux = (l) => l.reduce((a, b) => (b.context.length > a.context.length ? b : a));
+      if (local) for (const k of cands) if (local.has(k)) { hit = mieux(local.get(k)); break; }
       if (!hit) for (const k of cands) if (anyWord.has(k)) { hit = anyWord.get(k); break; }
       if (hit) matched++;
 
@@ -17619,7 +17677,7 @@ Réponds UNIQUEMENT avec ce JSON :
       const ou = c.page ? 'p' + c.page : (c.at ? 'd' + c.at : '');
       if (ou) {
         if (!rencontres.has(id)) rencontres.set(id, new Map());
-        rencontres.get(id).set(ou, c.page || '');
+        rencontres.get(id).set(ou, { p: c.page || '', t: c.at || 0 });
       }
       if (hit) {
         if (hit.context.length > (rec.c || '').length) rec.c = hit.context;
@@ -17628,19 +17686,23 @@ Réponds UNIQUEMENT avec ce JSON :
       }
     }
 
-    // Les pages s'accumulent d'un import à l'autre : la liseuse élague ses
-    // fichiers, et ce qu'on a déjà vu ne doit pas se perdre. Le compte suit
-    // les pages connues, ou le nombre de rencontres de cet import — le plus
-    // grand des deux.
-    for (const [id, vues] of rencontres) {
+    // Chaque mot reçoit la liste de ses rencontres, chacune avec sa phrase et
+    // sa page. Les anciennes s'accumulent d'un import à l'autre : la liseuse
+    // élague ses fichiers, et ce qu'on a déjà vu ne doit pas se perdre.
+    const touches = new Set([...consultations.keys(), ...rencontres.keys()]);
+    for (const id of touches) {
       const rec = words.get(id);
       if (!rec) continue;
-      const pages = [...new Set([...(rec.pp || []), ...[...vues.values()].filter(Boolean)])];
-      // Une seule page ne mérite pas sa liste : rec.p la porte déjà, et un
-      // tableau par mot pèserait sur la synchro pour ne rien apprendre.
-      if (pages.length > 1) rec.pp = pages.slice(0, 12);
-      const n = Math.max(rec.n || 1, vues.size, pages.length);
-      if (n > 1) rec.n = n;
+      const oc = this._kdRencontres(
+        consultations.get(id) || [],
+        [...(rencontres.get(id) || new Map()).values()],
+        rec.oc || []);
+      if (oc.length > 1) {
+        rec.oc = oc;
+        rec.n = oc.length;
+        const pages = oc.map(o => o.p).filter(Boolean);
+        if (pages.length > 1) rec.pp = [...new Set(pages)].slice(0, 12);
+      }
     }
 
     // La date d'un livre est celle de son dernier mot connu.
@@ -17769,19 +17831,72 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   // ── Sélection de ce qui s'affiche ─────────────────────────────
+  // La liste ne montre plus des mots mais des RENCONTRES : un mot croisé deux
+  // fois dans un livre paraît deux fois, chacune à sa place chronologique,
+  // avec sa propre phrase. Un mot rencontré une seule fois garde exactement
+  // son identifiant d'avant — rien de ce qui a déjà été trié ne se perd.
+  _kdEntrees(w) {
+    if (!w.oc || w.oc.length < 2) return [Object.assign({}, w, { n: 1 })];
+    return w.oc.map((o, k) => Object.assign({}, w, {
+      i: w.i + '#' + k, n: w.oc.length, rang: k + 1,
+      c: o.c || w.c, p: o.p || '', t: o.t || w.t,
+    }));
+  },
+
+  _kdEntree(id) {
+    const s = String(id), coupe = s.indexOf('#');
+    const base = coupe < 0 ? s : s.slice(0, coupe);
+    const w = this._kdLib.words.find(x => x.i === base);
+    if (!w) return null;
+    const l = this._kdEntrees(w);
+    if (coupe < 0) return l[0];
+    return l[Number(s.slice(coupe + 1))] || l[0];
+  },
+
+  // Une rencontre traitée avant qu'on les sépare porte l'identifiant du mot
+  // entier : il vaut alors pour toutes ses rencontres, sinon un tri déjà fait
+  // repartirait de zéro.
+  _kdEtat(id) {
+    const lib = this._kdLib;
+    const s = String(id), coupe = s.indexOf('#');
+    const base = coupe < 0 ? s : s.slice(0, coupe);
+    if (lib.sent[s] || lib.sent[base]) return 'envoyé';
+    if (lib.dismissed[s] || lib.dismissed[base]) return 'écarté';
+    return '';
+  },
+
   _kdWordsOf(bookId) {
     const lib = this._kdLib;
-    let list = lib.words.filter(w => w.b === bookId);
-    if (this._kdView === 'hl') list = list.filter(w => w.h);
-    if (!this._kdShowDone) list = list.filter(w => !lib.sent[w.i] && !lib.dismissed[w.i]);
+    let mots = lib.words.filter(w => w.b === bookId);
+    if (this._kdView === 'hl') mots = mots.filter(w => w.h);
+    if (this._kdRepOnly) mots = mots.filter(w => (w.n || 1) > 1);
+    let list = [];
+    for (const w of mots) list.push(...this._kdEntrees(w));
+    if (!this._kdShowDone) list = list.filter(e => !this._kdEtat(e.i));
     const sens = this._kdOrdre === 'recents' ? -1 : 1;
     return list.sort((a, b) => sens * ((a.t || 0) - (b.t || 0))
                             || sens * String(a.w).localeCompare(String(b.w), 'fr'));
   },
 
+  // Les identifiants des rencontres d'un mot, sans construire les entrées :
+  // la liste des livres compte ce qui reste pour chaque livre, donc ceci est
+  // appelé des milliers de fois par rendu — y allouer un objet par mot se
+  // payait en lenteur à l'affichage.
+  _kdIdsDe(w) {
+    const k = (w.oc && w.oc.length > 1) ? w.oc.length : 0;
+    if (!k) return [w.i];
+    const out = new Array(k);
+    for (let j = 0; j < k; j++) out[j] = w.i + '#' + j;
+    return out;
+  },
+
   _kdRemaining(bookId) {
-    const lib = this._kdLib;
-    return lib.words.filter(w => w.b === bookId && w.h && !lib.sent[w.i] && !lib.dismissed[w.i]).length;
+    let n = 0;
+    for (const w of this._kdLib.words) {
+      if (w.b !== bookId || !w.h) continue;
+      for (const id of this._kdIdsDe(w)) if (!this._kdEtat(id)) n++;
+    }
+    return n;
   },
 
   _kdYears() {
@@ -18035,7 +18150,8 @@ Réponds UNIQUEMENT avec ce JSON :
     const mots = lib.words.filter(w => w.b === book.id);
     const surl = mots.filter(w => w.h);
     const dates = mots.map(w => w.t).filter(Boolean).sort((a, b) => a - b);
-    const envoyes = surl.filter(w => lib.sent[w.i]).length;
+    const envoyes = surl.reduce((n, w) =>
+      n + this._kdIdsDe(w).filter(id => this._kdEtat(id) === 'envoyé').length, 0);
     const LANGUES = { fr: 'français', en: 'anglais', es: 'espagnol', de: 'allemand',
                       it: 'italien', pt: 'portugais', ko: 'coréen', ja: 'japonais' };
     const jour = (t) => new Date(t).toLocaleDateString('fr-CA',
@@ -18411,16 +18527,7 @@ Réponds UNIQUEMENT avec ce JSON :
         <button class="kd-tab ${this._kdView === 'all' ? 'on' : ''}" onclick="App._kdSetView('all')">Tous les mots <b>${nAll}</b></button>
       </div>
       <div class="kd-filters">
-        <button class="kd-chip ${this._kdShowDone ? 'on' : ''}" onclick="App._kdToggleDone()">
-          ${this._kdShowDone ? '✓ ' : ''}Afficher les mots traités
-        </button>
-        ${list.length ? `<button class="kd-chip" onclick="App._kdSelectAll()">${sel.size >= list.length ? 'Tout décocher' : 'Tout cocher'}</button>` : ''}
-        ${list.length ? `<button class="kd-chip kd-chip-ordre" onclick="App._kdInverserOrdre()"
-          title="${this._kdOrdre === 'recents' ? 'Voir dans l\'ordre de lecture' : 'Voir les derniers surlignés d\'abord'}">
-          ${this._kdOrdre === 'recents'
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Plus récents'
-            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Ordre de lecture'}
-        </button>` : ''}
+        ${this._kdOutils(list, sel)}
       </div>
       <div class="kd-words">
         ${list.length ? list.map(w => this._kdWordRow(w)).join('') : `
@@ -18435,20 +18542,70 @@ Réponds UNIQUEMENT avec ce JSON :
     `;
   },
 
+  // La barre d'outils ne tient pas en toutes lettres sur un téléphone : des
+  // pictogrammes, et le mot entier dans l'infobulle.
+  _kdOutils(list, sel) {
+    const tout = sel.size >= list.length && list.length > 0;
+    const b = (actif, titre, action, dedans) =>
+      `<button class="kd-chip kd-chip-icone ${actif ? 'on' : ''}" title="${titre}"
+        aria-label="${titre}" onclick="App.${action}">${dedans}</button>`;
+    const S = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}${extra}</svg>`;
+    const oeil = S('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>');
+    const oeilBarre = S('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>'
+      + '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>'
+      + '<path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>');
+    const coche = S('<rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="8 12 11 15 16 9"/>');
+    const vide = S('<rect x="3" y="3" width="18" height="18" rx="2"/>');
+    const bas = S('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>');
+    const haut = S('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>');
+    const nRep = this._kdRepetes(this._kdBookId);
+    return [
+      b(this._kdShowDone,
+        this._kdShowDone ? 'Masquer les mots déjà traités' : 'Afficher les mots déjà traités',
+        '_kdToggleDone()', this._kdShowDone ? oeil : oeilBarre),
+      nRep ? b(this._kdRepOnly,
+        this._kdRepOnly ? `Revoir tous les mots` : `Ne montrer que les ${nRep} mots rencontrés plusieurs fois`,
+        '_kdRepOnly2x()', '<span class="kd-chip-2x">2×</span>') : '',
+      list.length ? b(false, tout ? 'Tout décocher' : 'Tout cocher',
+        '_kdSelectAll()', tout ? coche : vide) : '',
+      list.length ? b(false,
+        this._kdOrdre === 'recents' ? 'Voir dans l\'ordre de lecture' : 'Voir les derniers surlignés d\'abord',
+        '_kdInverserOrdre()', this._kdOrdre === 'recents' ? haut : bas) : '',
+    ].join('');
+  },
+
+  // Combien de mots ce livre compte-t-il de rencontrés plusieurs fois ? Zéro
+  // signifie que le bouton n'a rien à montrer : autant ne pas l'afficher.
+  _kdRepetes(bookId) {
+    return this._kdLib.words.filter(w => w.b === bookId && (w.n || 1) > 1
+      && (this._kdView !== 'hl' || w.h)).length;
+  },
+
+  _kdRepOnly2x() {
+    this._kdRepOnly = !this._kdRepOnly;
+    this._kdSel = new Set();
+    this._kdRenderBook();
+  },
+
   _kdSetView(v) { this._kdView = v; this._kdSel = new Set(); this._kdRenderBook(); },
 
   // Le choix vaut pour la suite de la séance : on relit rarement un livre
   // dans un sens puis dans l'autre.
   _kdInverserOrdre() {
     this._kdOrdre = this._kdOrdre === 'recents' ? 'anciens' : 'recents';
+    // Le choix vaut pour la prochaine fois aussi : on relit rarement un livre
+    // dans un sens puis dans l'autre, et le retrouver à chaque ouverture est
+    // une irritation gratuite.
+    this.settings.kdOrdre = this._kdOrdre;
+    this.saveSettings();
     this._kdSel = new Set();
     this._kdRenderBook();
   },
   _kdToggleDone() { this._kdShowDone = !this._kdShowDone; this._kdSel = new Set(); this._kdRenderBook(); },
 
   _kdWordRow(w) {
-    const lib = this._kdLib;
-    const done = lib.sent[w.i] ? 'envoyé' : lib.dismissed[w.i] ? 'écarté' : '';
+    const done = this._kdEtat(w.i);
     const on = this._kdSel.has(w.i);
     const ctx = w.c ? this._kdHighlightWord(w.c, w.w) : '<i class="kd-nocontext">pas de phrase dans vocab.db</i>';
     const rep = (w.n || 1) > 1;
@@ -18461,12 +18618,12 @@ Réponds UNIQUEMENT avec ce JSON :
           <div class="kd-word-head">
             <span class="kd-word-w">${this._kdEsc(w.w)}</span>
             ${w.s && w.s !== w.w ? `<span class="kd-word-stem">→ ${this._kdEsc(w.s)}</span>` : ''}
-            ${rep ? `<span class="kd-rep" title="Surligné ${w.n} fois dans ce livre">×${w.n}</span>` : ''}
+            ${rep ? `<span class="kd-rep" title="${w.rang ? `${w.rang}e rencontre sur ${w.n}` : `Rencontré ${w.n} fois`} dans ce livre">×${w.n}</span>` : ''}
             ${!w.h ? '<span class="kd-word-tag">cherché</span>' : ''}
             ${done ? `<span class="kd-word-tag kd-tag-done">${done}</span>` : ''}
-            ${rep && w.pp && w.pp.length > 1
-              ? `<span class="kd-word-page">p.${this._kdEsc(w.pp.join(', '))}</span>`
-              : w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>` : ''}
+            ${w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>`
+              : (rep && w.pp && w.pp.length > 1
+                ? `<span class="kd-word-page">p.${this._kdEsc(w.pp.join(', '))}</span>` : '')}
           </div>
           <div class="kd-word-ctx">${ctx}</div>
         </div>
@@ -18493,8 +18650,8 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdSelectAll() {
-    const list = this._kdWordsOf(this._kdBookId).filter(w => !this._kdLib.sent[w.i] && !this._kdLib.dismissed[w.i]);
-    this._kdSel = this._kdSel.size >= list.length ? new Set() : new Set(list.map(w => w.i));
+    const list = this._kdWordsOf(this._kdBookId).filter(e => !this._kdEtat(e.i));
+    this._kdSel = this._kdSel.size >= list.length ? new Set() : new Set(list.map(e => e.i));
     this._kdRenderBook();
   },
 
@@ -18506,8 +18663,15 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdRestore(id) {
-    delete this._kdLib.dismissed[id];
-    delete this._kdLib.sent[id];
+    // Remettre en attente doit lever aussi la marque posée sur le mot entier,
+    // du temps où ses rencontres n'étaient pas séparées — sinon la ligne
+    // reviendrait aussitôt comme traitée.
+    const s = String(id), coupe = s.indexOf('#');
+    const base = coupe < 0 ? s : s.slice(0, coupe);
+    for (const k of (base === s ? [s] : [s, base])) {
+      delete this._kdLib.dismissed[k];
+      delete this._kdLib.sent[k];
+    }
     this.saveLiseur();
     this._kdRenderBook();
   },
@@ -18516,7 +18680,7 @@ Réponds UNIQUEMENT avec ce JSON :
   // Focus retient de quel livre il sort, pour que la carte garde sa
   // couverture même si l'envoi au Grenier se fait de là plutôt que d'ici.
   _kdOpenWord(id) {
-    const w = this._kdLib.words.find(x => x.i === id);
+    const w = this._kdEntree(id);
     if (!w) return;
     this._wfFromBilan = false;
     this._kdPendingContext = w.c || '';
@@ -18592,7 +18756,7 @@ Réponds UNIQUEMENT avec ce JSON :
 
     let added = 0, already = 0;
     for (const id of ids) {
-      const w = this._kdLib.words.find(x => x.i === id);
+      const w = this._kdEntree(id);
       if (!w) continue;
       const mot = String(w.w || '').trim();
       if (!mot) continue;
