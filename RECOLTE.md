@@ -194,6 +194,29 @@ lignes à la même position ne comptent que pour une rencontre. Les positions
 déjà connues s'accumulent d'un import à l'autre — la liseuse élague ses
 fichiers, et ce qu'on a vu ne doit pas se perdre.
 
+### Les bibliothèques d'avant
+
+Une bibliothèque importée avant cette version ne gardait d'un mot rencontré
+plusieurs fois que **son compte et ses pages**, pas chaque rencontre. Deux
+choses la remettent d'aplomb :
+
+- **Au chargement**, l'appli reconstruit ce qu'elle peut : une rencontre par
+  page connue, la phrase connue allant à la première. C'est une
+  reconstitution, pas une mesure — la seule date disponible est celle du mot,
+  donc ces rencontres se tiennent côte à côte dans la liste au lieu d'être
+  chacune à son moment. Elles sont vertes, numérotées, et se trient
+  séparément. Cela marche sans la liseuse et sans le PC.
+- **Au prochain import**, chacune retrouve sa date et sa phrase. Et comme la
+  lecture des fichiers porte désormais un numéro de version, un dossier
+  **inchangé est relu malgré tout** quand ce numéro a monté : sans cela, une
+  bibliothèque ancienne resterait sur sa reconstitution pour toujours — le
+  dossier n'ayant pas bougé, l'appli ne le relisait jamais.
+
+À la synchro, les deux descriptions d'un même mot **ne se cousent pas**
+ensemble : les deux appareils parlent des mêmes surlignements, l'un parfois
+mieux que l'autre. On garde la plus riche — d'abord celle qui compte le plus
+de rencontres, puis, à nombre égal, celle qui porte le plus de phrases.
+
 ## La barre d'outils
 
 Quatre pictogrammes, chacun avec sa phrase entière en infobulle — en toutes

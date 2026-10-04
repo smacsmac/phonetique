@@ -8843,6 +8843,9 @@ const KO_VOICES = [
           dismissed: data.liseur.dismissed || {}, sent: data.liseur.sent || {},
           notes: data.liseur.notes || {}, sources: {}, at: data.liseur.at || 0,
         };
+        // Une sauvegarde peut être plus ancienne que l'appli : ses mots
+        // rencontrés plusieurs fois n'ont alors que leur compte.
+        this._kdMigrerRencontres();
         this.saveLiseur();
       }
       if (data.bilan) {
@@ -17261,6 +17264,33 @@ Réponds UNIQUEMENT avec ce JSON :
     for (const k of ['books', 'words']) if (!Array.isArray(this._kdLib[k])) this._kdLib[k] = [];
     for (const k of ['dismissed', 'sent', 'sources', 'notes'])
       if (!this._kdLib[k] || typeof this._kdLib[k] !== 'object') this._kdLib[k] = {};
+    if (this._kdMigrerRencontres()) this.saveLiseur();
+  },
+
+  // Les bibliothèques d'avant ne gardaient d'un mot rencontré plusieurs fois
+  // que le compte et les pages, pas chaque rencontre. Elles n'afficheraient
+  // donc qu'une ligne jusqu'au prochain import — et si la liseuse n'est pas
+  // branchée, pour longtemps. On reconstruit ce qu'on peut : une rencontre
+  // par page connue, la phrase connue allant à la première.
+  //
+  // C'est une reconstitution, pas une mesure : la date du mot est la seule
+  // qu'on ait, donc ces rencontres se tiennent côte à côte dans la liste au
+  // lieu d'être chacune à son moment. Le prochain import rend à chacune sa
+  // date et sa phrase.
+  _kdMigrerRencontres() {
+    let faits = 0;
+    for (const w of this._kdLib.words) {
+      if (w.oc && w.oc.length) continue;
+      const k = w.n || 1;
+      if (k < 2) continue;
+      const pages = (w.pp && w.pp.length ? w.pp : (w.p ? [w.p] : []));
+      w.oc = [];
+      for (let j = 0; j < k; j++) {
+        w.oc.push({ c: j === 0 ? (w.c || '') : '', p: pages[j] || '', t: w.t || 0 });
+      }
+      faits++;
+    }
+    return faits;
   },
 
   saveLiseur() {
@@ -17517,6 +17547,13 @@ Réponds UNIQUEMENT avec ce JSON :
     return this._kdFlat(`${title || ''} ${author || ''}`).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   },
 
+  // Version de la lecture des fichiers. Quand elle monte, les fichiers du
+  // serveur sont relus même s'ils n'ont pas bougé : sans cela, une
+  // bibliothèque importée par l'ancienne version n'apprend jamais ce que la
+  // nouvelle sait en tirer. C'est exactement ce qui est arrivé aux rencontres
+  // séparées — le dossier était inchangé, donc jamais relu.
+  KD_MOTEUR: 2,
+
   /**
    * Fusionne des extraits et des vocab.db dans la bibliothèque existante.
    * Rien n'est supprimé : les imports successifs s'additionnent.
@@ -17718,6 +17755,7 @@ Réponds UNIQUEMENT avec ce JSON :
     // la condition resterait vraie et l'appli relirait les fichiers à chaque
     // ouverture de l'écran.
     lib.sources.asinDone = true;
+    lib.sources.moteur = this.KD_MOTEUR;
     this.saveLiseur();
     // Des mots arrivent : des cartes parties avant eux peuvent enfin
     // retrouver leur livre.
@@ -17795,9 +17833,12 @@ Réponds UNIQUEMENT avec ce JSON :
       }
       // Rien n'a bougé depuis le dernier import : on ne refait pas le travail.
       // Sauf s'il manque les identifiants de livres, que les anciennes
-      // bibliothèques n'ont pas : là, il faut relire malgré tout.
+      // bibliothèques n'ont pas — ou si la lecture des fichiers a appris
+      // quelque chose depuis le dernier import : là, il faut relire malgré
+      // tout, même sur un dossier inchangé.
       const sig = man.files.map(f => `${f.name}:${f.size}:${f.mtime}`).join('|');
-      const rattrapage = this._kdNeedsBackfill() && !this._kdLib.sources.asinDone;
+      const rattrapage = (this._kdNeedsBackfill() && !this._kdLib.sources.asinDone)
+        || (this._kdLib.sources.moteur || 0) < this.KD_MOTEUR;
       if (sig === this._kdLib.sources.serverSig && !rattrapage) {
         if (!silent) this.showToast('Déjà à jour');
         return false;
@@ -17836,7 +17877,10 @@ Réponds UNIQUEMENT avec ce JSON :
   // avec sa propre phrase. Un mot rencontré une seule fois garde exactement
   // son identifiant d'avant — rien de ce qui a déjà été trié ne se perd.
   _kdEntrees(w) {
-    if (!w.oc || w.oc.length < 2) return [Object.assign({}, w, { n: 1 })];
+    // Un mot dont on sait le compte mais pas le détail des rencontres garde
+    // son compte : effacer ce qu'on sait pour n'avoir qu'une ligne enlevait
+    // au mot son « ×3 » et son vert, alors que le bouton 2× le comptait.
+    if (!w.oc || w.oc.length < 2) return [Object.assign({}, w, { n: w.n || 1 })];
     return w.oc.map((o, k) => Object.assign({}, w, {
       i: w.i + '#' + k, n: w.oc.length, rang: k + 1,
       c: o.c || w.c, p: o.p || '', t: o.t || w.t,
@@ -17944,6 +17988,15 @@ Réponds UNIQUEMENT avec ce JSON :
     };
   },
 
+  // La plus riche des deux listes de rencontres : d'abord celle qui en compte
+  // le plus, puis, à nombre égal, celle qui porte le plus de phrases.
+  _kdMieuxOc(a, b) {
+    const na = a ? a.length : 0, nb = b ? b.length : 0;
+    if (na !== nb) return nb > na ? b : a;
+    const ca = (a || []).filter(o => o.c).length, cb = (b || []).filter(o => o.c).length;
+    return cb > ca ? b : a;
+  },
+
   _kdSyncMerge(remote) {
     if (!remote || typeof remote !== 'object') return;
     if (!this._kdLib) this.loadLiseur();
@@ -17973,7 +18026,14 @@ Réponds UNIQUEMENT avec ce JSON :
       // appareil peut connaître des pages que l'autre n'a pas encore lues.
       const pages = [...new Set([...(cur.pp || []), ...(w.pp || [])])];
       if (pages.length > 1) cur.pp = pages.slice(0, 12);
-      const n = Math.max(cur.n || 1, w.n || 1, pages.length);
+      // Le détail des rencontres, lui, ne s'additionne pas : les deux
+      // appareils décrivent les mêmes surlignements, l'un parfois mieux que
+      // l'autre — une reconstitution d'un côté, les vraies dates et les
+      // vraies phrases de l'autre. Les coudre ensemble inventerait des
+      // rencontres ; on garde donc la description la plus riche.
+      const oc = this._kdMieuxOc(cur.oc, w.oc);
+      if (oc && oc.length > 1) cur.oc = oc;
+      const n = Math.max(cur.n || 1, w.n || 1, pages.length, (cur.oc || []).length);
       if (n > 1) cur.n = n;
     }
     lib.words = Array.from(words.values());
@@ -17994,6 +18054,9 @@ Réponds UNIQUEMENT avec ce JSON :
         if (!lib[k][id] || ts < lib[k][id]) lib[k][id] = ts;
       }
     }
+    // Un mot venu d'un appareil resté sur l'ancienne version arrive sans le
+    // détail de ses rencontres : on le reconstitue comme au chargement.
+    this._kdMigrerRencontres();
     this.saveLiseur();
   },
 
