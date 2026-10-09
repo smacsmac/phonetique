@@ -160,6 +160,10 @@ body::before {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Trois écrans qui se rejoignent, c'est deux boutons de plus en haut. Sur
+     un téléphone étroit, le titre passe alors à la ligne plutôt que de se
+     couper en deux ou trois morceaux au milieu des boutons. */
+  flex-wrap: wrap;
   padding: 16px 20px 12px;
   position: sticky;
   top: 0;
@@ -174,6 +178,7 @@ body::before {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   flex: 1;
+  white-space: nowrap;
   text-align: right;
   color: var(--text2);
 }
@@ -3677,6 +3682,8 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 /* Le titre du Grenier fait office de sélecteur de thème. */
 .grenier-titlebox {
   text-align: right;
+  flex: 1 1 auto;
+  white-space: nowrap;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -3709,6 +3716,10 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Un bouton de plus : sur un téléphone étroit, le titre passe à la ligne
+     entier plutôt que de se casser en « Le / Grenier ». */
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 16px 20px 12px;
   background: linear-gradient(180deg, rgba(var(--gr-rgb),0.06) 0%, transparent 100%);
   border-bottom: 1px solid var(--gr-border);
@@ -4772,6 +4783,78 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
 .kd-word-page { font-size: 10px; color: var(--text3, #777); margin-left: auto; }
 .kd-word-ctx { font-size: 12px; color: var(--text2, #aaa); line-height: 1.5; margin-top: 3px; }
 .kd-hit { color: #C4B5FD; font-weight: 700; }
+/* — mode 2× : une teinte d'arc-en-ciel par mot, une nuance par rencontre —
+   Le vert repérait les mots répétés au milieu des autres ; quand il n'y a
+   qu'eux, il ne distingue plus rien. Chaque mot prend donc sa teinte, et
+   ses rencontres des nuances de celle-ci : --arc-h la teinte, --arc-l la
+   clarté de cette rencontre-là. */
+.kd-word-arc {
+  border-color: hsl(var(--arc-h) 72% 55% / 0.55);
+  background: hsl(var(--arc-h) 72% 50% / var(--arc-a, 0.1));
+  cursor: pointer;
+}
+.kd-word-arc .kd-word-w { color: hsl(var(--arc-h) 85% var(--arc-l2, 80%)); }
+.kd-word-arc .kd-word-stem { color: hsl(var(--arc-h) 70% var(--arc-l, 64%)); }
+.kd-word-arc .kd-hit { color: hsl(var(--arc-h) 88% var(--arc-l2, 80%)); }
+.kd-word-arc .kd-rep {
+  background: hsl(var(--arc-h) 72% 50% / 0.2);
+  color: hsl(var(--arc-h) 80% var(--arc-l2, 78%));
+}
+.kd-word-arc .kd-word-tag {
+  background: hsl(var(--arc-h) 72% 50% / 0.18);
+  color: hsl(var(--arc-h) 75% var(--arc-l, 64%));
+}
+.kd-etude-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.kd-etude-mot {
+  font-size: 17px; font-weight: 700;
+  color: hsl(var(--arc-h) 85% 78%);
+}
+/* — la définition, repliée par défaut — */
+.kd-defbox {
+  margin-top: 10px; border-radius: 11px; padding: 10px 11px;
+  border: 1px dashed hsl(var(--arc-h) 72% 55% / 0.5);
+  background: hsl(var(--arc-h) 72% 50% / 0.05);
+}
+.kd-defbox-tete { display: flex; align-items: center; gap: 8px; }
+.kd-defbox-titre {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: hsl(var(--arc-h) 70% 70%);
+}
+.kd-defbox-chev {
+  margin-left: auto; width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 7px; cursor: pointer; padding: 0;
+  background: transparent; border: 1px solid hsl(var(--arc-h) 72% 55% / 0.45);
+  color: hsl(var(--arc-h) 75% 72%);
+  display: flex; align-items: center; justify-content: center; transition: transform 0.15s;
+}
+.kd-defbox-chev svg { width: 14px; height: 14px; }
+.kd-defbox.ouverte .kd-defbox-chev { transform: rotate(180deg); }
+/* Replié, le texte s'efface au lieu d'être coupé net : on voit qu'il
+   continue, ce qu'une coupure franche ne dit pas. Un masque plutôt qu'un
+   voile posé par-dessus : le voile devrait connaître la couleur du fond, et
+   se voyait comme une barre sombre en travers de la dernière ligne. */
+.kd-defbox-corps {
+  font-size: 12.5px; line-height: 1.55; color: var(--text2, #aaa);
+  margin-top: 6px; white-space: pre-wrap;
+  max-height: 4.65em; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+}
+.kd-defbox.ouverte .kd-defbox-corps {
+  max-height: none;
+  -webkit-mask-image: none; mask-image: none;
+}
+.kd-defbox-corps img { max-width: 100%; border-radius: 8px; }
+.kd-defbox-vide { font-size: 12px; color: var(--text3, #777); font-style: italic; margin-top: 6px; }
+.kd-defbox-pied { display: flex; gap: 8px; margin-top: 9px; }
+.kd-defbox-btn {
+  font-size: 11.5px; font-weight: 600; padding: 6px 11px; border-radius: 8px;
+  cursor: pointer; font-family: var(--font-body);
+  background: hsl(var(--arc-h) 72% 50% / 0.14);
+  border: 1px solid hsl(var(--arc-h) 72% 55% / 0.5);
+  color: hsl(var(--arc-h) 80% 76%);
+}
+.kd-defbox-btn:disabled { opacity: 0.4; cursor: default; }
 .kd-nocontext { color: var(--text3, #777); font-size: 11px; }
 .kd-x {
   flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
@@ -7112,6 +7195,11 @@ const KO_VOICES = [
         <button class="back-btn" onclick="App.navigate('grenier')" title="Le Grenier">
           <svg viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">
             <path d="M3 7h18v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M2 4h20v3H2z"/><line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+        </button>
+        <button class="back-btn" onclick="App.navigate('recolte')" title="La Récolte">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
           </svg>
         </button>
         <div class="lang-flags">${this.flagsHTML()}</div>
@@ -13829,6 +13917,11 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
                 <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
             </button>
+            <button class="grenier-icon-btn" onclick="App.navigate('recolte')" title="La Récolte">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </button>
           </div>
           <div class="grenier-titlebox" onclick="App._grCycleTheme()" title="Toucher pour changer le thème">
             <div class="grenier-title">Le Grenier</div>
@@ -17240,6 +17333,8 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdOrdre: 'anciens',   // 'anciens' = dans l'ordre de lecture · 'recents' = les derniers d'abord
   _kdShowDone: false,    // afficher aussi les mots déjà traités
   _kdRepOnly: false,     // ne montrer que les mots rencontrés plusieurs fois
+  _kdEtude: null,        // en mode 2× : le mot ouvert seul, avec ses rencontres
+  _kdDefOuverte: false,  // sa définition dépliée ou repliée
   _kdSel: null,          // Set des identifiants cochés
   _kdSort: 'recent',     // 'recent' | 'alpha' | 'count'
   _kdYear: '',
@@ -18018,6 +18113,10 @@ Réponds UNIQUEMENT avec ce JSON :
       const cur = words.get(w.i);
       if (!cur) { words.set(w.i, w); continue; }
       cur.h = cur.h || w.h;
+      // La définition se réécrit en entier quand on la régénère : la plus
+      // récente gagne, pas la plus longue.
+      if (w.def && (w.defAt || 0) > (cur.defAt || 0)) { cur.def = w.def; cur.defAt = w.defAt; }
+      else if (w.def && !cur.def) cur.def = w.def;
       if ((w.c || '').length > (cur.c || '').length) cur.c = w.c;
       if (!cur.s && w.s) cur.s = w.s;
       if (!cur.p && w.p) cur.p = w.p;
@@ -18442,6 +18541,16 @@ Réponds UNIQUEMENT avec ce JSON :
         <button class="home-btn" onclick="App.navigate('labo')" title="Le Labo" style="padding:7px 10px"><span class="logo-ph" style="color:#8B5CF6">Ph</span><span class="logo-onetique" style="color:#A78BFA">o</span></button>
         <button class="back-btn" onclick="App.goBack()" title="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg></button>
         <button class="back-btn" onclick="App.navigate('settings')" title="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <button class="back-btn" onclick="App._wfFromBilan=false; App.navigate('word-focus')" title="Mot en focus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" width="16" height="16">
+            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+        <button class="back-btn" onclick="App.navigate('grenier')" title="Le Grenier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+            <path d="M3 7h18v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M2 4h20v3H2z"/><line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+        </button>
         <div class="screen-title">La Récolte</div>
       </div>
       <div id="kdBody" class="kd-body"></div>
@@ -18554,6 +18663,7 @@ Réponds UNIQUEMENT avec ce JSON :
 
   _kdOpenBook(id) {
     this._kdSel = new Set();
+    this._kdEtude = null;
     this.navigate('recolte', { bookId: id });
   },
 
@@ -18561,6 +18671,7 @@ Réponds UNIQUEMENT avec ce JSON :
   // le geste d'Android empruntent ainsi exactement le même chemin.
   _kdBackToBooks() {
     this._kdSel = new Set();
+    this._kdEtude = null;
     this.goBack();
   },
 
@@ -18575,8 +18686,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const nHl = lib.words.filter(w => w.b === book.id && w.h).length;
     const nAll = lib.words.filter(w => w.b === book.id).length;
     const sel = this._kdSel;
-
-    body.innerHTML = `
+    const entete = `
       <div class="kd-bookbar">
         <button class="kd-btn kd-btn-ghost" onclick="App._kdBackToBooks()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -18584,7 +18694,24 @@ Réponds UNIQUEMENT avec ce JSON :
         </button>
         ${this._kdCoverHTML(book)}
         <div class="kd-bookbar-title">${this._kdEsc(book.title)}</div>
-      </div>
+      </div>`;
+
+    // Un mot ouvert depuis le mode 2× occupe l'écran à lui seul. S'il a
+    // disparu entre-temps — un import l'a renommé, une synchro l'a retiré —
+    // on revient à la liste plutôt que de montrer un écran vide.
+    if (this._kdEtude && !lib.words.some(w => w.i === this._kdEtude)) this._kdEtude = null;
+    if (this._kdEtude) {
+      body.innerHTML = entete + this._kdEtudeHTML(list, this._kdEtude);
+      this._idbHydrateImages(body);
+      return;
+    }
+
+    // En mode 2× la liste ne sert plus à trier mais à réviser : chaque mot
+    // porte sa teinte, chaque rencontre sa nuance, et toucher une ligne
+    // ouvre le mot entier au lieu de Mot en Focus.
+    const arc = this._kdRepOnly ? this._kdArcMap(list) : null;
+
+    body.innerHTML = entete + `
       <div class="kd-tabs">
         <button class="kd-tab ${this._kdView === 'hl' ? 'on' : ''}" onclick="App._kdSetView('hl')">Surlignés <b>${nHl}</b></button>
         <button class="kd-tab ${this._kdView === 'all' ? 'on' : ''}" onclick="App._kdSetView('all')">Tous les mots <b>${nAll}</b></button>
@@ -18593,7 +18720,7 @@ Réponds UNIQUEMENT avec ce JSON :
         ${this._kdOutils(list, sel)}
       </div>
       <div class="kd-words">
-        ${list.length ? list.map(w => this._kdWordRow(w)).join('') : `
+        ${list.length ? list.map(w => this._kdWordRow(w, arc && arc.get(w.i))).join('') : `
           <div class="kd-note">${this._kdView === 'hl'
             ? 'Aucun mot surligné en attente dans ce livre.'
             : 'Aucun mot pour ce livre.'}</div>`}
@@ -18605,10 +18732,167 @@ Réponds UNIQUEMENT avec ce JSON :
     `;
   },
 
+  // ── Le mode 2× : réviser, pas trier ───────────────────────────
+  // L'identifiant du mot entier, une rencontre ayant la forme « base#k ».
+  _kdBase(id) {
+    const s = String(id), k = s.indexOf('#');
+    return k < 0 ? s : s.slice(0, k);
+  },
+
+  // Du rouge au violet, comme un arc-en-ciel, les mots répartis tout du long.
+  // Prendre les couleurs à la file — rouge, orange, jaune — les rendrait
+  // voisines et donc confuses sur fond sombre ; les étaler garde l'ordre de
+  // l'arc-en-ciel tout en les séparant vraiment. Avec cinq mots : rouge,
+  // jaune, vert, azur, magenta.
+  _kdArcHue(i, n) { return n > 1 ? Math.round(i * 300 / (n - 1)) : 0; },
+
+  // Une nuance par rencontre : la première claire, la dernière sombre.
+  _kdArcStyle(hue, rang, total) {
+    const t = total > 1 ? (rang - 1) / (total - 1) : 0;
+    const l = Math.round(72 - 18 * t);
+    return `--arc-h:${hue};--arc-l:${l}%;--arc-l2:${l + 8}%;--arc-a:${(0.13 - 0.05 * t).toFixed(3)}`;
+  },
+
+  // À chaque rencontre affichée, le style de sa couleur. La teinte vient du
+  // rang du MOT dans la liste, la nuance du rang de la rencontre dans ce mot.
+  _kdArcMap(list) {
+    const bases = [];
+    for (const e of list) {
+      const b = this._kdBase(e.i);
+      if (!bases.includes(b)) bases.push(b);
+    }
+    const m = new Map();
+    for (const e of list) {
+      const b = this._kdBase(e.i);
+      const hue = this._kdArcHue(bases.indexOf(b), bases.length);
+      m.set(e.i, { hue, style: this._kdArcStyle(hue, e.rang || 1, e.n || 1), base: b });
+    }
+    return m;
+  },
+
+  _kdEtudier(base) {
+    this._kdEtude = base;
+    this._kdDefOuverte = false;
+    this._kdRenderBook();
+    const main = document.getElementById('main');
+    if (main) main.scrollTop = 0;
+  },
+
+  _kdQuitterEtude() {
+    this._kdEtude = null;
+    this._kdRenderBook();
+  },
+
+  _kdEtudeHTML(list, base) {
+    const w = this._kdLib.words.find(x => x.i === base);
+    if (!w) { this._kdEtude = null; return ''; }
+    // La teinte est celle que ce mot porte dans la liste : on la retrouve
+    // telle quelle en ouvrant le mot, sinon le lien entre les deux se perd.
+    const arc = this._kdArcMap(list);
+    const sienne = [...arc.values()].find(a => a.base === base);
+    const hue = sienne ? sienne.hue : 0;
+    const rencontres = this._kdEntrees(w);
+    return `
+      <div class="kd-etude-bar" style="--arc-h:${hue}">
+        <button class="kd-btn kd-btn-ghost" onclick="App._kdQuitterEtude()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          2×
+        </button>
+        <div class="kd-etude-mot">${this._kdEsc(w.w)}</div>
+        <span class="kd-rep" style="background:hsl(${hue} 72% 50% / 0.2);color:hsl(${hue} 80% 78%)">×${rencontres.length}</span>
+      </div>
+      <div class="kd-words">
+        ${rencontres.map(e => this._kdWordRow(e, {
+          hue, style: this._kdArcStyle(hue, e.rang || 1, e.n || 1), base, ouvrir: true,
+        })).join('')}
+      </div>
+      ${this._kdDefBoiteHTML(w, hue)}
+    `;
+  },
+
+  // ── La définition du mot étudié ───────────────────────────────
+  // Celle du Kindle n'est pas dans les fichiers : vocab.db ne garde que les
+  // mots, les phrases et les dates — le texte des définitions vit dans le
+  // dictionnaire de la liseuse, un fichier que le dossier de synchro n'a
+  // pas. Celle-ci est donc écrite par l'IA, et demandée en plusieurs sens.
+  _kdDefDe(w) {
+    if (w && w.def) return w.def;
+    const c = (this._grenier && this._grenier.cards || [])
+      .find(x => !x.deleted && x.word && w && x.word.toLowerCase() === String(w.w).toLowerCase());
+    return (c && c.definition) || '';
+  },
+
+  _kdDefBascule() {
+    this._kdDefOuverte = !this._kdDefOuverte;
+    const b = document.getElementById('kdDefBox');
+    if (b) b.classList.toggle('ouverte', this._kdDefOuverte);
+  },
+
+  _kdDefBoiteHTML(w, hue) {
+    const def = this._kdDefDe(w);
+    const cle = !!this.settings.openrouterKey;
+    return `
+      <div class="kd-defbox ${this._kdDefOuverte ? 'ouverte' : ''}" id="kdDefBox" style="--arc-h:${hue}">
+        <div class="kd-defbox-tete">
+          <span class="kd-defbox-titre">Définition</span>
+          ${def ? `<button class="kd-defbox-chev" id="kdDefChev" onclick="App._kdDefBascule()"
+            title="Déplier ou replier la définition" aria-label="Déplier ou replier la définition">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>` : ''}
+        </div>
+        ${def ? `<div class="kd-defbox-corps" id="kdDefCorps">${def}</div>`
+              : `<div class="kd-defbox-vide">${cle ? 'Pas encore de définition pour ce mot.'
+                  : 'Pas de définition — il faut une clé OpenRouter (Paramètres).'}</div>`}
+        <div class="kd-defbox-pied">
+          <button class="kd-defbox-btn" id="kdDefGen" onclick="App._kdDefGenerer()" ${cle ? '' : 'disabled'}>
+            ${def ? 'Régénérer' : 'Générer'}
+          </button>
+        </div>
+      </div>`;
+  },
+
+  // Les sens d'un mot, numérotés : c'est ce qu'on cherche en révisant un mot
+  // croisé plusieurs fois — il n'avait pas forcément le même sens chaque fois.
+  async _kdDefGenerer() {
+    const base = this._kdEtude;
+    const w = base && this._kdLib.words.find(x => x.i === base);
+    if (!w || !this.settings.openrouterKey) return;
+    const btn = document.getElementById('kdDefGen');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const model = this.settings.defSimpleModel || this.settings.openrouterModel || 'openai/gpt-4o-mini';
+      const prompt = `Donne les différents sens du mot « ${w.w} » en français, numérotés, un par ligne : `
+        + `le sens en quelques mots, puis un très court exemple. `
+        + `Donne-les tous s'il y en a plusieurs (jusqu'à cinq), un seul s'il n'y en a qu'un. `
+        + `Réponds UNIQUEMENT avec la liste numérotée.`;
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${this.settings.openrouterKey}`,
+                   'Content-Type': 'application/json', 'HTTP-Referer': window.location.href },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 600 }),
+      });
+      const data = await resp.json();
+      const def = (data.choices && data.choices[0] && data.choices[0].message
+                   && data.choices[0].message.content || '').trim();
+      if (!def) throw new Error('réponse vide');
+      // Au mot, pas à l'écran : l'écran a pu changer pendant l'attente.
+      w.def = def;
+      w.defAt = Date.now();
+      this.saveLiseur();
+      if (this._kdEtude === base) { this._kdDefOuverte = true; this._kdRenderBook(); }
+    } catch (e) {
+      this.showToast('Définition impossible : ' + (e.message || 'erreur'));
+      if (this._kdEtude === base) this._kdRenderBook();
+    }
+  },
+
   // La barre d'outils ne tient pas en toutes lettres sur un téléphone : des
   // pictogrammes, et le mot entier dans l'infobulle.
   _kdOutils(list, sel) {
     const tout = sel.size >= list.length && list.length > 0;
+    // En mode 2× il n'y a plus de cases à cocher : « tout cocher » n'aurait
+    // rien à cocher.
+    const trier = !this._kdRepOnly;
     const b = (actif, titre, action, dedans) =>
       `<button class="kd-chip kd-chip-icone ${actif ? 'on' : ''}" title="${titre}"
         aria-label="${titre}" onclick="App.${action}">${dedans}</button>`;
@@ -18628,9 +18912,9 @@ Réponds UNIQUEMENT avec ce JSON :
         this._kdShowDone ? 'Masquer les mots déjà traités' : 'Afficher les mots déjà traités',
         '_kdToggleDone()', this._kdShowDone ? oeil : oeilBarre),
       nRep ? b(this._kdRepOnly,
-        this._kdRepOnly ? `Revoir tous les mots` : `Ne montrer que les ${nRep} mots rencontrés plusieurs fois`,
+        this._kdRepOnly ? `Revoir tous les mots` : `Étudier les ${nRep} mots rencontrés plusieurs fois`,
         '_kdRepOnly2x()', '<span class="kd-chip-2x">2×</span>') : '',
-      list.length ? b(false, tout ? 'Tout décocher' : 'Tout cocher',
+      trier && list.length ? b(false, tout ? 'Tout décocher' : 'Tout cocher',
         '_kdSelectAll()', tout ? coche : vide) : '',
       list.length ? b(false,
         this._kdOrdre === 'recents' ? 'Voir dans l\'ordre de lecture' : 'Voir les derniers surlignés d\'abord',
@@ -18647,11 +18931,12 @@ Réponds UNIQUEMENT avec ce JSON :
 
   _kdRepOnly2x() {
     this._kdRepOnly = !this._kdRepOnly;
+    this._kdEtude = null;
     this._kdSel = new Set();
     this._kdRenderBook();
   },
 
-  _kdSetView(v) { this._kdView = v; this._kdSel = new Set(); this._kdRenderBook(); },
+  _kdSetView(v) { this._kdView = v; this._kdEtude = null; this._kdSel = new Set(); this._kdRenderBook(); },
 
   // Le choix vaut pour la suite de la séance : on relit rarement un livre
   // dans un sens puis dans l'autre.
@@ -18662,26 +18947,41 @@ Réponds UNIQUEMENT avec ce JSON :
     // une irritation gratuite.
     this.settings.kdOrdre = this._kdOrdre;
     this.saveSettings();
+    this._kdEtude = null;
     this._kdSel = new Set();
     this._kdRenderBook();
   },
-  _kdToggleDone() { this._kdShowDone = !this._kdShowDone; this._kdSel = new Set(); this._kdRenderBook(); },
+  _kdToggleDone() {
+    this._kdShowDone = !this._kdShowDone;
+    this._kdEtude = null;
+    this._kdSel = new Set();
+    this._kdRenderBook();
+  },
 
-  _kdWordRow(w) {
+  // En mode 2× (« arc » fourni) la ligne sert à réviser : pas de case à
+  // cocher ni de croix, la couleur du mot, et toucher ouvre le mot entier —
+  // ou, quand on y est déjà, Mot en Focus sur cette rencontre-là.
+  _kdWordRow(w, arc) {
     const done = this._kdEtat(w.i);
     const on = this._kdSel.has(w.i);
     const ctx = w.c ? this._kdHighlightWord(w.c, w.w) : '<i class="kd-nocontext">pas de phrase dans vocab.db</i>';
     const rep = (w.n || 1) > 1;
+    const clic = arc
+      ? (arc.ouvrir ? `App._kdOpenWord('${this._kdAttr(w.i)}')` : `App._kdEtudier('${this._kdAttr(arc.base)}')`)
+      : `App._kdOpenWord('${this._kdAttr(w.i)}')`;
     return `
-      <div class="kd-word ${done ? 'kd-word-done' : ''} ${rep ? 'kd-word-rep' : ''}">
-        <button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${done ? 'disabled' : ''}>
+      <div class="kd-word ${done ? 'kd-word-done' : ''} ${arc ? 'kd-word-arc' : rep ? 'kd-word-rep' : ''}"
+           ${arc ? `style="${arc.style}"` : ''}>
+        ${arc ? '' : `<button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${done ? 'disabled' : ''}>
           ${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-        </button>
-        <div class="kd-word-main" onclick="App._kdOpenWord('${this._kdAttr(w.i)}')">
+        </button>`}
+        <div class="kd-word-main" onclick="${clic}">
           <div class="kd-word-head">
             <span class="kd-word-w">${this._kdEsc(w.w)}</span>
             ${w.s && w.s !== w.w ? `<span class="kd-word-stem">→ ${this._kdEsc(w.s)}</span>` : ''}
-            ${rep ? `<span class="kd-rep" title="${w.rang ? `${w.rang}e rencontre sur ${w.n}` : `Rencontré ${w.n} fois`} dans ce livre">×${w.n}</span>` : ''}
+            ${rep ? (arc && arc.ouvrir
+              ? `<span class="kd-rep" title="${w.rang || 1}e rencontre sur ${w.n} dans ce livre">${w.rang || 1}/${w.n}</span>`
+              : `<span class="kd-rep" title="${w.rang ? `${w.rang}e rencontre sur ${w.n}` : `Rencontré ${w.n} fois`} dans ce livre">×${w.n}</span>`) : ''}
             ${!w.h ? '<span class="kd-word-tag">cherché</span>' : ''}
             ${done ? `<span class="kd-word-tag kd-tag-done">${done}</span>` : ''}
             ${w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>`
@@ -18690,7 +18990,7 @@ Réponds UNIQUEMENT avec ce JSON :
           </div>
           <div class="kd-word-ctx">${ctx}</div>
         </div>
-        ${done
+        ${arc ? '' : done
           ? `<button class="kd-x" onclick="App._kdRestore('${this._kdAttr(w.i)}')" title="Remettre en attente">↺</button>`
           : `<button class="kd-x" onclick="App._kdDismiss('${this._kdAttr(w.i)}')" title="Écarter ce mot">✕</button>`}
       </div>`;

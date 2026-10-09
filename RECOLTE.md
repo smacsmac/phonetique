@@ -225,12 +225,65 @@ lettres, la barre ne tenait pas sur un téléphone.
 | | |
 |---|---|
 | 👁 | afficher ou masquer les mots déjà traités |
-| **2×** | ne montrer que les mots rencontrés plusieurs fois (absent s'il n'y en a aucun) |
-| ☑ | tout cocher / tout décocher |
+| **2×** | n'afficher que les mots rencontrés plusieurs fois, pour les étudier (absent s'il n'y en a aucun) |
+| ☑ | tout cocher / tout décocher (absent en mode 2×, où il n'y a plus de cases) |
 | ↓ ↑ | ordre de lecture, ou les derniers surlignés d'abord |
 
 Le sens de lecture est **retenu d'une fois sur l'autre** : on relit rarement un
 livre dans un sens puis dans l'autre.
+
+## Le mode 2× : étudier, pas trier
+
+Hors de ce mode, la liste sert à **trier** : on coche, on écarte, on envoie au
+Grenier. En mode 2× elle sert à **réviser**, et change donc de comportement.
+
+**Pas de cases à cocher ni de croix.** Une ligne entière se touche, et ouvre
+le mot.
+
+**Une teinte d'arc-en-ciel par mot, une nuance par rencontre.** Le vert
+repérait les mots répétés au milieu des autres ; quand il n'y a qu'eux, il ne
+distingue plus rien. Les teintes vont du rouge au violet, réparties sur tout
+l'arc : prendre les couleurs à la file — rouge, orange, jaune — les rendrait
+voisines et donc confuses sur fond sombre. Avec cinq mots : rouge, jaune,
+vert, azur, magenta. Les rencontres d'un même mot partagent sa teinte et se
+distinguent par la clarté, la première claire, la dernière sombre.
+
+**Toucher un mot l'ouvre seul**, avec toutes ses rencontres et rien d'autre,
+dans sa couleur — chacune numérotée *1/3*, *2/3*, *3/3*. De là, toucher une
+rencontre ouvre Mot en Focus sur elle, avec *sa* phrase.
+
+### La définition
+
+Sous les rencontres, une boîte **repliée par défaut** sur trois ou quatre
+lignes ; le chevron la déplie. Repliée, le bas du texte s'efface en dégradé
+plutôt que d'être coupé net.
+
+Elle montre, dans l'ordre : la définition enregistrée pour ce mot, sinon celle
+de sa carte au Grenier s'il en a une, sinon rien — avec un bouton pour en
+faire écrire une.
+
+**Ce n'est pas la définition du Kindle.** Elle n'est pas dans les fichiers :
+`vocab.db` ne garde que les mots, leurs phrases et leurs dates ; le texte des
+définitions vit dans le dictionnaire de la liseuse, un fichier que le dossier
+de synchro ne contient pas. Celle-ci est donc écrite par l'IA, et demandée
+sous forme de **sens numérotés** (jusqu'à cinq) : un mot croisé trois fois
+n'avait pas forcément le même sens chaque fois, et c'est précisément ce qu'on
+vient vérifier.
+
+Elle est enregistrée sur le mot, voyage avec la synchro, et en cas de conflit
+**la plus récente gagne** — une définition se réécrit en entier quand on la
+régénère, donc la plus longue ne veut rien dire.
+
+## Passer d'un écran à l'autre
+
+Mot en Focus, Le Grenier et La Récolte se rejoignent directement : chacun
+porte en haut les deux autres — la loupe (Mot en Focus), le coffre (Le
+Grenier), le livre (La Récolte).
+
+Deux boutons de plus, c'est un en-tête plus chargé : sur un téléphone étroit,
+le titre de l'écran **passe à la ligne entier** au lieu de se casser en « Le /
+Grenier ». Les boutons y gagnent aussi leur taille pleine, qu'ils perdaient en
+se serrant.
 
 ## Écrire dans le carnet
 
