@@ -369,6 +369,17 @@ dire. Les deux tailles sont retenues séparément : sur la carte au Grenier,
 puisque chaque carte a la sienne ; dans les réglages généraux pour Mot en
 Focus, où il n'y a pas de carte.
 
+La phrase de contexte fait **16 px** par défaut, et ce défaut se règle dans
+*Paramètres › Apparence › Taille du texte (phrases de contexte)* : il vaut
+pour **toutes** les phrases de contexte, carte du Grenier comme Mot en Focus.
+Une carte réglée à part par l'appui long garde sa taille à elle — c'est à cela
+que sert ce geste — et ne suit plus le réglage général.
+
+La couverture est **fixée en haut à gauche** de la boîte, et le texte
+l'enrobe : il court à sa droite, puis reprend toute la largeur **sous** elle.
+Avant, la phrase restait cantonnée dans une colonne à droite de l'image, ce
+qui laissait un grand vide sous la couverture dès qu'elle était longue.
+
 Une image demandée en même temps que la définition arrive sur la carte **et**
 dans Mot en Focus, dès qu'elle est prête — au même titre que la définition, et
 sous la même condition : que l'écran montre encore ce mot-là.
