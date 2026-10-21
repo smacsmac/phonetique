@@ -53,6 +53,24 @@
   --glow-purple: rgba(139, 92, 246, 0.3);
   --font-display: 'Space Mono', 'Noto Sans', monospace;
   --font-body: 'DM Sans', sans-serif;
+  /* L'alphabet phonétique a sa propre pile, et ce n'est pas un caprice de
+     mise en page. « ɑ̃ » n'est pas une lettre mais DEUX caractères — U+0251
+     (alpha latin) et U+0303 (tilde combinant) — et une police qui n'a ni
+     l'un ni l'autre affiche deux carrés vides, « aʁ.dXX » au lieu de
+     « aʁ.dɑ̃ ». C'est ce qui arrivait partout où l'API s'affichait en
+     --font-display : Space Mono est une police d'affichage, et la pile
+     finissait sur « monospace », dont le repli système est maigre.
+     Celle-ci est EXACTEMENT la pile du corps de texte, la seule dont on ait
+     la preuve qu'elle rend ces signes sur l'appareil : c'est elle qui sert
+     dans Mot en Focus, où ils ont toujours été lisibles. Ni plus ni moins —
+     ajouter d'autres polices devant le repli changerait d'où vient le
+     glyphe, et DM Sans n'a pas l'alpha : ce sont bien les polices du
+     système, derrière « sans-serif », qui le fournissent. Autant garder la
+     chaîne qui marche plutôt que d'en inventer une autre.
+     Elle existe à part de --font-body pour que l'intention reste lisible et
+     qu'un test puisse la garder : l'API ne doit jamais repasser à une
+     police d'affichage. */
+  --font-ipa: 'DM Sans', sans-serif;
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 24px;
@@ -406,7 +424,7 @@ body::before {
 }
 
 .phoneme-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 22px;
   color: var(--cat-accent);
   font-weight: 700;
@@ -442,7 +460,7 @@ body::before {
 }
 
 .phoneme-hero-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 52px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -570,7 +588,7 @@ body::before {
 }
 
 .practice-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 48px;
   font-weight: 700;
   color: var(--cat-accent);
@@ -586,7 +604,7 @@ body::before {
 }
 
 .practice-word-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 14px;
   color: var(--text3);
 }
@@ -1102,7 +1120,7 @@ body::before {
 }
 
 .compare-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 32px;
   font-weight: 700;
   color: var(--cat-accent);
@@ -1241,7 +1259,7 @@ body::before {
 .score-phoneme-row:hover { background: var(--surface2); }
 
 .score-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 16px;
   font-weight: 700;
 }
@@ -1650,7 +1668,7 @@ body::before {
   margin-bottom: 3px;
 }
 .rep-recent-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 10px;
   color: #14B8A6;
 }
@@ -1774,7 +1792,7 @@ body::before {
   cursor: pointer;
 }
 .rep-word-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 11px;
   color: var(--text2);
 }
@@ -2509,7 +2527,7 @@ body::before {
 }
 .wf-rhyme-chip:hover { background: rgba(251,191,36,0.15); border-color: #FBBF24; color: #FBBF24; transform: translateY(-1px); }
 .wf-rhyme-chip-ipa {
-  font-family: var(--font-display);
+  font-family: var(--font-ipa);
   font-size: 10px;
   color: rgba(251,191,36,0.6);
 }
@@ -3157,6 +3175,7 @@ body::before {
   text-align: center;
 }
 .wf-ipa {
+  font-family: var(--font-ipa);
   font-size: 18px;
   color: #14B8A6;
   letter-spacing: 0.04em;
@@ -3518,7 +3537,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   transition: border-color 0.15s;
 }
 .ph-word:hover { border-color: #14B8A6; }
-.ph-word-ipa { font-family: var(--font-display); font-size: 10px; color: #14B8A6; opacity: 0.75; }
+.ph-word-ipa { font-family: var(--font-ipa); font-size: 10px; color: #14B8A6; opacity: 0.75; }
 .ph-start {
   width: 100%; padding: 13px;
   background: rgba(20,184,166,0.14);
@@ -4254,6 +4273,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   margin-bottom: 4px;
 }
 .grenier-card-ipa {
+  font-family: var(--font-ipa);
   text-align: center;
   font-size: 18px;
   color: color-mix(in srgb, var(--card-accent, var(--gr-amber)) 70%, var(--gr-amber));
@@ -4784,7 +4804,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
    Même couleur qu'ailleurs dans l'appli, et Noto Sans en secours : beaucoup
    de polices n'ont pas les glyphes de l'API et les rendraient en rectangles. */
 .kd-word-ipa {
-  font-family: var(--font-display); font-size: 11.5px;
+  font-family: var(--font-ipa); font-size: 11.5px;
   color: #14B8A6; opacity: 0.85; letter-spacing: 0.02em;
 }
 /* Le bout de la ligne : la coche, la date, la page. Groupés pour qu'ils
@@ -10013,7 +10033,7 @@ const KO_VOICES = [
       <div class="rep-overlay-panel">
         <div class="rep-overlay-title">Sauvegarder dans Le Répertoire</div>
         <div class="rep-overlay-subtitle" style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
-        ${ipa ? `<div class="rep-overlay-subtitle" style="font-family:var(--font-display);font-size:12px;color:#14B8A6;margin-bottom:8px">${ipa}</div>` : ''}
+        ${ipa ? `<div class="rep-overlay-subtitle" style="font-family:var(--font-ipa);font-size:12px;color:#14B8A6;margin-bottom:8px">${ipa}</div>` : ''}
         ${folders.length === 0 ? `<div style="font-size:13px;color:var(--text3);padding:6px 0 4px;font-style:italic">Aucun dossier — créez-en un ci-dessous.</div>` : `<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Choisir un dossier :</div>`}
         ${folders.map(f => `
           <button class="rep-overlay-folder-btn" onclick="App._repConfirmSave('${word.replace(/'/g,"\\'")}','${(ipa||'').replace(/'/g,"\\'")}','${f.id}')">
@@ -16424,7 +16444,7 @@ Réponds UNIQUEMENT avec ce JSON :
       <div class="rep-overlay-panel" onclick="event.stopPropagation()">
         <div class="rep-overlay-title" style="color:#A78BFA">✦ Au Grenier</div>
         <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px">${word}</div>
-        ${ipa ? `<div style="font-family:var(--font-display);font-size:12px;color:#A78BFA;margin-bottom:10px">${ipa}</div>` : '<div style="margin-bottom:10px"></div>'}
+        ${ipa ? `<div style="font-family:var(--font-ipa);font-size:12px;color:#A78BFA;margin-bottom:10px">${ipa}</div>` : '<div style="margin-bottom:10px"></div>'}
         ${context || livre ? `<div style="font-size:12px;padding:8px 10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:rgba(251,191,36,0.9);margin-bottom:10px;display:flex;align-items:${livre ? 'center' : 'flex-start'};gap:8px">${livre
           ? `<span class="gr-ctx-mini" style="flex-shrink:0;display:flex">${this._kdCoverHTML(livre)}</span>`
           : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="flex-shrink:0;margin-top:1px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`

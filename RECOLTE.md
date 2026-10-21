@@ -268,6 +268,23 @@ au plus par écran et une à la fois. Elle est ensuite **gardée sur le mot** :
 elle voyage avec la synchro et ne se redemande jamais. Hors réseau, rien n'est
 demandé et les lignes s'affichent simplement sans elle.
 
+### La police de l'alphabet phonétique
+
+`ɑ̃` n'est pas une lettre mais **deux caractères** : U+0251 (alpha latin) et
+U+0303 (tilde combinant). Une police qui n'a ni l'un ni l'autre affiche donc
+**deux carrés vides** — `aʁ.dXX` au lieu de `aʁ.dɑ̃`. C'est ce qui arrivait
+partout où l'API s'affichait en `--font-display` : *Space Mono* est une police
+d'affichage, et la pile finissait sur `monospace`, dont le repli système est
+maigre. Dans Mot en Focus, où la transcription héritait de la police du corps
+de texte, elle a toujours été lisible.
+
+Toute l'API passe donc par `--font-ipa`, qui est **exactement** la pile du
+corps de texte. Ni plus ni moins : *DM Sans* n'a pas l'alpha non plus, ce sont
+les polices du système, derrière `sans-serif`, qui le fournissent — autant
+garder la chaîne dont on a la preuve qu'elle marche plutôt que d'en inventer
+une autre. Un test relit la feuille de style et refuse qu'une règle d'API
+reparte vers une police d'affichage.
+
 ## Le mode 2× : étudier, pas trier
 
 Hors de ce mode, la liste sert à **trier** : on coche, on écarte, on envoie au
