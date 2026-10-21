@@ -224,13 +224,49 @@ lettres, la barre ne tenait pas sur un téléphone.
 
 | | |
 |---|---|
-| 👁 | afficher ou masquer les mots déjà traités |
+| 👁 | afficher ou masquer les mots **écartés** |
 | **2×** | n'afficher que les mots rencontrés plusieurs fois, pour les étudier (absent s'il n'y en a aucun) |
-| ☑ | tout cocher / tout décocher (absent en mode 2×, où il n'y a plus de cases) |
+| ☑ | tout cocher / tout décocher — ne vise que ce qui reste à traiter (absent en mode 2×, où il n'y a plus de cases) |
 | ↓ ↑ | ordre de lecture, ou les derniers surlignés d'abord |
 
 Le sens de lecture est **retenu d'une fois sur l'autre** : on relit rarement un
 livre dans un sens puis dans l'autre.
+
+## Ce qui reste dans la liste, et ce qui en sort
+
+**Seule la croix fait sortir un mot.** L'écarter, c'est dire « pas celui-là » ;
+l'œil le ramène quand on veut revoir ce qu'on a mis de côté, grisé et marqué
+*écarté*, sa croix devenue un retour en arrière.
+
+**Un mot envoyé reste.** Il reste à sa place, de plein droit, et porte une
+**coche verte** avant sa date. Le faire disparaître obligeait à lever l'œil
+pour vérifier ce qu'on venait de faire.
+
+La coche ne lit pas une marque locale : elle regarde **la collection
+elle-même** — le mot est-il au Répertoire, ou sur une carte du Grenier ? Donc
+un mot parti par Mot en Focus la porte aussi, et un mot envoyé depuis l'autre
+appareil la porte dès la synchro suivante.
+
+Le compte affiché sur la couverture, lui, reste **ce qui est à traiter** : ni
+les envoyés ni les écartés n'y figurent. Il est donc normal qu'il soit plus
+petit que le nombre de lignes.
+
+## Ce que porte chaque ligne
+
+Entre le mot et le bout de la ligne, dans l'ordre : la **transcription**,
+puis, groupés à droite, la **coche**, la **date du surlignement** et la
+**page**.
+
+La date est courte — *4 avr.* — et ne montre l'année que si ce n'est pas celle
+qui court.
+
+La transcription, elle, ne vient pas de la liseuse : celle-ci n'en garde
+aucune. L'appli prend d'abord celle qu'elle connaît déjà — celle du mot, de
+son entrée au Répertoire ou de sa carte — et **va chercher les autres au
+Wiktionnaire**, après le rendu, pour les lignes affichées seulement, quarante
+au plus par écran et une à la fois. Elle est ensuite **gardée sur le mot** :
+elle voyage avec la synchro et ne se redemande jamais. Hors réseau, rien n'est
+demandé et les lignes s'affichent simplement sans elle.
 
 ## Le mode 2× : étudier, pas trier
 
@@ -239,6 +275,11 @@ Grenier. En mode 2× elle sert à **réviser**, et change donc de comportement.
 
 **Pas de cases à cocher ni de croix.** Une ligne entière se touche, et ouvre
 le mot.
+
+**Une ligne par mot**, pas une par rencontre : celle de la **rencontre la plus
+récente**. Les autres sont à un doigt — toucher la ligne ouvre le mot avec
+toutes les siennes. Dans la liste ordinaire, au contraire, chaque rencontre
+garde sa ligne : c'est là qu'on trie, et on ne trie pas un mot en bloc.
 
 **Une teinte d'arc-en-ciel par mot, une nuance par rencontre.** Le vert
 repérait les mots répétés au milieu des autres ; quand il n'y a qu'eux, il ne

@@ -4780,6 +4780,21 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   background: rgba(139,92,246,0.14); color: #A78BFA; text-transform: uppercase; letter-spacing: 0.4px;
 }
 .kd-tag-done { background: rgba(52,211,153,0.15); color: #34D399; }
+/* La transcription, dans l'espace libre entre le mot et le bout de la ligne.
+   Même couleur qu'ailleurs dans l'appli, et Noto Sans en secours : beaucoup
+   de polices n'ont pas les glyphes de l'API et les rendraient en rectangles. */
+.kd-word-ipa {
+  font-family: var(--font-display); font-size: 11.5px;
+  color: #14B8A6; opacity: 0.85; letter-spacing: 0.02em;
+}
+/* Le bout de la ligne : la coche, la date, la page. Groupés pour qu'ils
+   restent ensemble à droite et passent à la ligne d'un bloc. */
+.kd-word-fin {
+  margin-left: auto; display: flex; align-items: baseline; gap: 7px; flex-shrink: 0;
+}
+.kd-word-fin .kd-word-page { margin-left: 0; }
+.kd-word-ok { font-size: 11px; color: #34D399; font-weight: 700; line-height: 1; }
+.kd-word-date { font-size: 10px; color: var(--text3, #777); white-space: nowrap; }
 .kd-word-page { font-size: 10px; color: var(--text3, #777); margin-left: auto; }
 .kd-word-ctx { font-size: 12px; color: var(--text2, #aaa); line-height: 1.5; margin-top: 3px; }
 .kd-hit { color: #C4B5FD; font-weight: 700; }
@@ -18052,10 +18067,126 @@ Réponds UNIQUEMENT avec ce JSON :
     if (this._kdRepOnly) mots = mots.filter(w => (w.n || 1) > 1);
     let list = [];
     for (const w of mots) list.push(...this._kdEntrees(w));
-    if (!this._kdShowDone) list = list.filter(e => !this._kdEtat(e.i));
+    // Seul un mot ÉCARTÉ quitte la liste. Un mot envoyé y reste, marqué d'une
+    // coche : l'envoyer est une décision qu'on aime revoir, et le faire
+    // disparaître obligeait à lever l'œil pour vérifier ce qu'on avait fait.
+    if (!this._kdShowDone) list = list.filter(e => this._kdEtat(e.i) !== 'écarté');
+    // En mode 2×, une ligne par mot suffit : on la touche pour voir toutes
+    // ses rencontres. On garde la plus récente, la trace la plus fraîche.
+    if (this._kdRepOnly) {
+      const parMot = new Map();
+      for (const e of list) {
+        const b = this._kdBase(e.i);
+        const v = parMot.get(b);
+        if (!v || (e.t || 0) > (v.t || 0)) parMot.set(b, e);
+      }
+      list = [...parMot.values()];
+    }
     const sens = this._kdOrdre === 'recents' ? -1 : 1;
     return list.sort((a, b) => sens * ((a.t || 0) - (b.t || 0))
                             || sens * String(a.w).localeCompare(String(b.w), 'fr'));
+  },
+
+  // ── Le mot est-il déjà dans la collection ? ───────────────────
+  // « Envoyé » au sens où tu l'entends : présent au Répertoire, donc au
+  // Grenier. On interroge la collection elle-même plutôt que la marque
+  // locale — ainsi un mot parti par Mot en Focus, ou envoyé depuis l'autre
+  // appareil, porte la coche lui aussi.
+  _kdDejaPris(mot) {
+    const bas = String(mot || '').trim().toLowerCase();
+    if (!bas) return false;
+    if (this._repertoire && this._repertoire.words
+        && this._repertoire.words.some(w => String(w.word).toLowerCase() === bas)) return true;
+    return !!(this._grenier && this._grenier.cards
+      && this._grenier.cards.some(c => !c.deleted && c.word
+          && String(c.word).toLowerCase() === bas));
+  },
+
+  // L'IPA qu'on connaît déjà, sans rien demander au réseau : celle du mot,
+  // sinon celle de son entrée au Répertoire, sinon celle de sa carte.
+  _kdIpaDe(w) {
+    if (w && w.ipa) return w.ipa;
+    const bas = String((w && w.w) || '').toLowerCase();
+    if (!bas) return '';
+    const r = (this._repertoire && this._repertoire.words || [])
+      .find(x => x.ipa && String(x.word).toLowerCase() === bas);
+    if (r) return r.ipa;
+    const c = (this._grenier && this._grenier.cards || [])
+      .find(x => !x.deleted && x.ipa && x.word && String(x.word).toLowerCase() === bas);
+    return (c && c.ipa) || '';
+  },
+
+  // Une date courte pour la ligne : l'année seulement si ce n'est pas celle
+  // qui court, sinon elle encombre sans rien apprendre.
+  _kdDateCourte(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const opts = { day: 'numeric', month: 'short' };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = '2-digit';
+    return d.toLocaleDateString('fr-CA', opts);
+  },
+
+  KD_IPA_MAX: 40,        // par rendu : de quoi remplir un écran, pas un livre
+  KD_IPA_PAUSE: 150,     // ms entre deux mots — le Wiktionnaire est un invité
+
+  // Les mots de La Récolte n'ont pas de transcription : ils viennent de la
+  // liseuse, qui n'en garde aucune. On va la chercher une fois, après le
+  // rendu, pour les lignes affichées seulement, et on la garde sur le mot —
+  // elle voyage ensuite avec la synchro et ne se redemande jamais.
+  //
+  // Jamais pendant le rendu : l'écran doit paraître tout de suite, la
+  // transcription se pose ensuite, ligne par ligne.
+  async _kdRemplirIpa(entrees) {
+    if (this._kdIpaEnCours || !entrees || !entrees.length) return;
+    if (navigator.onLine === false) return;
+    if (!this._kdIpaRatees) this._kdIpaRatees = new Set();
+
+    const aFaire = [], vus = new Set();
+    for (const e of entrees) {
+      const base = this._kdBase(e.i);
+      if (vus.has(base)) continue;
+      vus.add(base);
+      if (this._kdIpaRatees.has(base)) continue;
+      const w = this._kdLib.words.find(x => x.i === base);
+      if (w && !this._kdIpaDe(w)) aFaire.push(w);
+      if (aFaire.length >= this.KD_IPA_MAX) break;
+    }
+    if (!aFaire.length) return;
+
+    this._kdIpaEnCours = true;
+    let ecrits = 0;
+    try {
+      for (const w of aFaire) {
+        // On a quitté l'écran ou changé de livre : plus rien à remplir.
+        if (this.currentScreen !== 'recolte' || this._kdBookId !== w.b) break;
+        let ipa = '';
+        try { ({ ipa } = await this._fetchIpaForWord(w.w)); } catch (e) {}
+        if (ipa) { w.ipa = ipa; ecrits++; this._kdPoserIpa(w.i, ipa); }
+        else this._kdIpaRatees.add(w.i);
+        await new Promise(r => setTimeout(r, this.KD_IPA_PAUSE));
+      }
+    } finally {
+      this._kdIpaEnCours = false;
+      if (ecrits) this.saveLiseur();
+    }
+  },
+
+  // Pose la transcription sur les lignes déjà à l'écran, sans redessiner :
+  // un rendu complet pendant le remplissage ferait sauter la liste sous les
+  // doigts, et un mot peut avoir plusieurs lignes.
+  _kdPoserIpa(id, ipa) {
+    let lignes;
+    try { lignes = document.querySelectorAll(`.kd-word[data-mot="${CSS.escape(id)}"]`); }
+    catch (e) { return; }
+    for (const ligne of lignes) {
+      if (ligne.querySelector('.kd-word-ipa')) continue;
+      const mot = ligne.querySelector('.kd-word-w');
+      if (!mot) continue;
+      const el = document.createElement('span');
+      el.className = 'kd-word-ipa';
+      el.textContent = ipa;
+      mot.insertAdjacentElement('afterend', el);
+    }
   },
 
   // Les identifiants des rencontres d'un mot, sans construire les entrées :
@@ -18158,6 +18289,9 @@ Réponds UNIQUEMENT avec ce JSON :
       // récente gagne, pas la plus longue.
       if (w.def && (w.defAt || 0) > (cur.defAt || 0)) { cur.def = w.def; cur.defAt = w.defAt; }
       else if (w.def && !cur.def) cur.def = w.def;
+      // La transcription ne change pas d'un appareil à l'autre : la première
+      // trouvée fait foi, et l'autre appareil n'a plus à la redemander.
+      if (w.ipa && !cur.ipa) cur.ipa = w.ipa;
       if ((w.c || '').length > (cur.c || '').length) cur.c = w.c;
       if (!cur.s && w.s) cur.s = w.s;
       if (!cur.p && w.p) cur.p = w.p;
@@ -18744,6 +18878,8 @@ Réponds UNIQUEMENT avec ce JSON :
     if (this._kdEtude) {
       body.innerHTML = entete + this._kdEtudeHTML(list, this._kdEtude);
       this._idbHydrateImages(body);
+      const mot = lib.words.find(x => x.i === this._kdEtude);
+      if (mot) this._kdRemplirIpa([mot]);
       return;
     }
 
@@ -18771,6 +18907,7 @@ Réponds UNIQUEMENT avec ce JSON :
         <button class="kd-btn kd-btn-primary" onclick="App._kdSend()">Envoyer au Grenier</button>
       </div>
     `;
+    this._kdRemplirIpa(list);
   },
 
   // ── Le mode 2× : réviser, pas trier ───────────────────────────
@@ -18930,7 +19067,10 @@ Réponds UNIQUEMENT avec ce JSON :
   // La barre d'outils ne tient pas en toutes lettres sur un téléphone : des
   // pictogrammes, et le mot entier dans l'infobulle.
   _kdOutils(list, sel) {
-    const tout = sel.size >= list.length && list.length > 0;
+    // « Tout cocher » ne vise que ce qui est encore à traiter : un mot déjà
+    // envoyé reste affiché, mais il n'a rien à faire dans un nouvel envoi.
+    const aCocher = list.filter(e => !this._kdEtat(e.i)).length;
+    const tout = sel.size >= aCocher && aCocher > 0;
     // En mode 2× il n'y a plus de cases à cocher : « tout cocher » n'aurait
     // rien à cocher.
     const trier = !this._kdRepOnly;
@@ -18950,7 +19090,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const nRep = this._kdRepetes(this._kdBookId);
     return [
       b(this._kdShowDone,
-        this._kdShowDone ? 'Masquer les mots déjà traités' : 'Afficher les mots déjà traités',
+        this._kdShowDone ? 'Masquer les mots écartés' : 'Afficher les mots écartés',
         '_kdToggleDone()', this._kdShowDone ? oeil : oeilBarre),
       nRep ? b(this._kdRepOnly,
         this._kdRepOnly ? `Revoir tous les mots` : `Étudier les ${nRep} mots rencontrés plusieurs fois`,
@@ -19003,35 +19143,46 @@ Réponds UNIQUEMENT avec ce JSON :
   // cocher ni de croix, la couleur du mot, et toucher ouvre le mot entier —
   // ou, quand on y est déjà, Mot en Focus sur cette rencontre-là.
   _kdWordRow(w, arc) {
-    const done = this._kdEtat(w.i);
+    const etat = this._kdEtat(w.i);
+    // Seul « écarté » grise la ligne et transforme la croix en retour : un mot
+    // envoyé reste un mot vivant de la liste.
+    const ecarte = etat === 'écarté';
+    const pris = this._kdDejaPris(w.w);
+    const ipa = this._kdIpaDe(w);
+    const date = this._kdDateCourte(w.t);
     const on = this._kdSel.has(w.i);
     const ctx = w.c ? this._kdHighlightWord(w.c, w.w) : '<i class="kd-nocontext">pas de phrase dans vocab.db</i>';
     const rep = (w.n || 1) > 1;
+    const page = w.p ? `p.${this._kdEsc(w.p)}`
+      : (rep && w.pp && w.pp.length > 1 ? `p.${this._kdEsc(w.pp.join(', '))}` : '');
     const clic = arc
       ? (arc.ouvrir ? `App._kdOpenWord('${this._kdAttr(w.i)}')` : `App._kdEtudier('${this._kdAttr(arc.base)}')`)
       : `App._kdOpenWord('${this._kdAttr(w.i)}')`;
     return `
-      <div class="kd-word ${done ? 'kd-word-done' : ''} ${arc ? 'kd-word-arc' : rep ? 'kd-word-rep' : ''}"
-           ${arc ? `style="${arc.style}"` : ''}>
-        ${arc ? '' : `<button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${done ? 'disabled' : ''}>
+      <div class="kd-word ${ecarte ? 'kd-word-done' : ''} ${arc ? 'kd-word-arc' : rep ? 'kd-word-rep' : ''}"
+           data-mot="${this._kdAttr(this._kdBase(w.i))}" ${arc ? `style="${arc.style}"` : ''}>
+        ${arc ? '' : `<button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${ecarte ? 'disabled' : ''}>
           ${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </button>`}
         <div class="kd-word-main" onclick="${clic}">
           <div class="kd-word-head">
             <span class="kd-word-w">${this._kdEsc(w.w)}</span>
+            ${ipa ? `<span class="kd-word-ipa">${this._kdEsc(ipa)}</span>` : ''}
             ${w.s && w.s !== w.w ? `<span class="kd-word-stem">→ ${this._kdEsc(w.s)}</span>` : ''}
             ${rep ? (arc && arc.ouvrir
               ? `<span class="kd-rep" title="${w.rang || 1}e rencontre sur ${w.n} dans ce livre">${w.rang || 1}/${w.n}</span>`
               : `<span class="kd-rep" title="${w.rang ? `${w.rang}e rencontre sur ${w.n}` : `Rencontré ${w.n} fois`} dans ce livre">×${w.n}</span>`) : ''}
             ${!w.h ? '<span class="kd-word-tag">cherché</span>' : ''}
-            ${done ? `<span class="kd-word-tag kd-tag-done">${done}</span>` : ''}
-            ${w.p ? `<span class="kd-word-page">p.${this._kdEsc(w.p)}</span>`
-              : (rep && w.pp && w.pp.length > 1
-                ? `<span class="kd-word-page">p.${this._kdEsc(w.pp.join(', '))}</span>` : '')}
+            ${ecarte ? '<span class="kd-word-tag kd-tag-done">écarté</span>' : ''}
+            <span class="kd-word-fin">
+              ${pris ? '<span class="kd-word-ok" title="Déjà au Répertoire, donc au Grenier">✓</span>' : ''}
+              ${date ? `<span class="kd-word-date" title="Surligné le ${new Date(w.t).toLocaleDateString('fr-CA')}">${date}</span>` : ''}
+              ${page ? `<span class="kd-word-page">${page}</span>` : ''}
+            </span>
           </div>
           <div class="kd-word-ctx">${ctx}</div>
         </div>
-        ${arc ? '' : done
+        ${arc ? '' : ecarte
           ? `<button class="kd-x" onclick="App._kdRestore('${this._kdAttr(w.i)}')" title="Remettre en attente">↺</button>`
           : `<button class="kd-x" onclick="App._kdDismiss('${this._kdAttr(w.i)}')" title="Écarter ce mot">✕</button>`}
       </div>`;
