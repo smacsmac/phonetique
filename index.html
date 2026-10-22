@@ -7016,11 +7016,15 @@ const KO_VOICES = [
         case 'grenier': this.renderGrenier(); break;
         case 'phoneme-focus': this.renderPhonemeFocus(); break;
         case 'recolte':
-          // Les trois vues de l'écran (livres, mots d'un livre, carnet) sont
-          // des étapes de navigation à part entière : sans ça, le retour
-          // sautait l'écran entier au lieu de remonter d'un cran.
+          // Les vues de l'écran — livres, mots d'un livre, carnet, mode 2×,
+          // mot étudié — sont des étapes de navigation à part entière : sans
+          // ça, le retour sautait l'écran entier au lieu de remonter d'un
+          // cran. Tout l'état de la vue tient donc dans les paramètres, et
+          // le retour le restitue sans que personne ait à s'en souvenir.
           this._kdBookId = params?.bookId || null;
           this._kdNoteId = params?.noteId || null;
+          this._kdRepOnly = !!params?.rep;
+          this._kdEtude = params?.etude || null;
           this.renderRecolte();
           break;
         case 'hands-free': this.renderHandsFree(); break;
@@ -18146,6 +18150,53 @@ Réponds UNIQUEMENT avec ce JSON :
     return d.toLocaleDateString('fr-CA', opts);
   },
 
+  // ── Retrouver sa place dans la liste ──────────────────────────
+  // Ouvrir un mot puis revenir ramenait en haut de la liste : au fond d'un
+  // livre de trois cents mots, c'est tout le défilement à refaire. On note
+  // donc où on était en partant, et on y revient au rendu suivant.
+  //
+  // La position est rendue UNE FOIS puis oubliée : sans ça, un rafraîchis-
+  // sement plus tard — la fin d'un import, par exemple — ferait sauter la
+  // liste à une place devenue fausse.
+  _kdScroll: null,
+
+  _kdCleVue() {
+    return [this._kdBookId || '', this._kdView, this._kdRepOnly ? '2x' : '',
+            this._kdEtude || ''].join('|');
+  },
+
+  _kdSouvenirScroll() {
+    const main = document.getElementById('main');
+    if (!main || !this._kdBookId) return;
+    if (!this._kdScroll) this._kdScroll = {};
+    this._kdScroll[this._kdCleVue()] = main.scrollTop;
+  },
+
+  _kdSouvenirOublier() {
+    if (this._kdScroll) delete this._kdScroll[this._kdCleVue()];
+  },
+
+  _kdRendreScroll() {
+    const y = this._kdScroll && this._kdScroll[this._kdCleVue()];
+    if (!y) return;
+    delete this._kdScroll[this._kdCleVue()];
+    const main = document.getElementById('main');
+    if (!main) return;
+    // #main est en scroll-behavior:smooth : sans ce détour, revenir en
+    // arrière déclencherait une longue glissade au lieu d'une restitution.
+    const poser = () => {
+      const anc = main.style.scrollBehavior;
+      main.style.scrollBehavior = 'auto';
+      main.scrollTop = y;
+      main.style.scrollBehavior = anc;
+    };
+    poser();
+    // Une seconde fois quand la mise en page est posée : au premier passage
+    // la liste peut n'avoir pas encore sa hauteur, et le défilement se
+    // trouverait alors tronqué.
+    requestAnimationFrame(poser);
+  },
+
   KD_IPA_MAX: 40,        // par rendu : de quoi remplir un écran, pas un livre
   KD_IPA_PAUSE: 150,     // ms entre deux mots — le Wiktionnaire est un invité
 
@@ -18867,6 +18918,17 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdBackToBooks() {
     this._kdSel = new Set();
     this._kdEtude = null;
+    // Les vues internes au livre — le mode 2×, un mot ouvert — ont chacune
+    // leur étape dans le fil. « Livres » doit toutes les défaire d'un coup,
+    // sinon le bouton ne ferait que reculer d'un cran dans le même livre.
+    const b = this._kdBookId;
+    const h = this.navHistory;
+    while (h.length > 1) {
+      const prec = h[h.length - 2];
+      if (!prec || prec.screen !== 'recolte'
+          || ((prec.params && prec.params.bookId) || null) !== b) break;
+      h.pop();
+    }
     this.goBack();
   },
 
@@ -18900,6 +18962,7 @@ Réponds UNIQUEMENT avec ce JSON :
       this._idbHydrateImages(body);
       const mot = lib.words.find(x => x.i === this._kdEtude);
       if (mot) this._kdRemplirIpa([mot]);
+      this._kdRendreScroll();
       return;
     }
 
@@ -18928,6 +18991,7 @@ Réponds UNIQUEMENT avec ce JSON :
       </div>
     `;
     this._kdRemplirIpa(list);
+    this._kdRendreScroll();
   },
 
   // ── Le mode 2× : réviser, pas trier ───────────────────────────
@@ -18969,15 +19033,22 @@ Réponds UNIQUEMENT avec ce JSON :
   },
 
   _kdEtudier(base) {
+    this._kdSouvenirScroll();          // pour retrouver sa place en revenant
     this._kdEtude = base;
     this._kdDefOuverte = false;
+    this._kdFilPousser({ bookId: this._kdBookId, rep: this._kdRepOnly || undefined, etude: base });
     this._kdRenderBook();
     const main = document.getElementById('main');
     if (main) main.scrollTop = 0;
   },
 
   _kdQuitterEtude() {
-    this._kdEtude = null;
+    const b = this._kdBookId;
+    this._kdSouvenirOublier();
+    if (!this._kdFilDefaire(p => !p.etude && (p.bookId || null) === b)) {
+      this._kdEtude = null;
+      this._kdFilRemplacer({ bookId: b, rep: this._kdRepOnly || undefined });
+    }
     this._kdRenderBook();
   },
 
@@ -19130,10 +19201,65 @@ Réponds UNIQUEMENT avec ce JSON :
       && (this._kdView !== 'hl' || w.h)).length;
   },
 
+  // ── Le fil de La Récolte ──────────────────────────────────────
+  // Entrer dans le mode 2×, puis dans un mot, ce sont deux pas en avant : le
+  // retour doit les défaire un par un. On pousse donc l'étape à la main
+  // plutôt que par navigate(), qui rejouerait l'animation d'écran alors
+  // qu'on ne quitte pas l'écran. Le bouton de l'appli comme celui d'Android
+  // dépilent ensuite normalement.
+  _kdFilPousser(params) {
+    this.navHistory.push({ screen: 'recolte', params });
+    if (this.navHistory.length > 20) this.navHistory.shift();
+    this.currentScreen = 'recolte';
+    this._navArmer();
+  },
+
+  _kdFilRemplacer(params) {
+    const h = this.navHistory;
+    if (h.length) h[h.length - 1] = { screen: 'recolte', params };
+    else h.push({ screen: 'recolte', params });
+  },
+
+  // Défaire notre étape, mais sans repasser par navigate() : on ne quitte
+  // pas l'écran, seule la vue change, et une animation de sortie suivie
+  // d'une d'entrée ferait clignoter l'en-tête pour rien. L'état est repris
+  // de l'étape précédente, exactement comme le ferait un retour.
+  //
+  // Et surtout : le rendu reste immédiat. Passer par navigate() le remettait
+  // à plus tard, si bien que fermer une vue puis en ouvrir une autre dans la
+  // foulée laissait le rendu différé effacer la seconde.
+  _kdFilDefaire(test) {
+    const h = this.navHistory;
+    const prec = h.length > 1 ? h[h.length - 2] : null;
+    if (!prec || prec.screen !== 'recolte' || !test(prec.params || {})) return false;
+    h.pop();
+    const p = h[h.length - 1].params || {};
+    this._kdBookId = p.bookId || null;
+    this._kdNoteId = p.noteId || null;
+    this._kdRepOnly = !!p.rep;
+    this._kdEtude = p.etude || null;
+    this._navArmer();
+    return true;
+  },
+
   _kdRepOnly2x() {
-    this._kdRepOnly = !this._kdRepOnly;
-    this._kdEtude = null;
+    const b = this._kdBookId;
+    if (!this._kdRepOnly) {
+      this._kdRepOnly = true;
+      this._kdEtude = null;
+      this._kdSel = new Set();
+      this._kdFilPousser({ bookId: b, rep: true });
+      this._kdRenderBook();
+      return;
+    }
+    // On en sort : si c'est bien par là qu'on est entré, on défait l'étape.
+    this._kdSouvenirOublier();
     this._kdSel = new Set();
+    if (!this._kdFilDefaire(p => !p.rep && !p.etude && (p.bookId || null) === b)) {
+      this._kdRepOnly = false;
+      this._kdEtude = null;
+      this._kdFilRemplacer({ bookId: b });
+    }
     this._kdRenderBook();
   },
 
@@ -19257,6 +19383,7 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdOpenWord(id) {
     const w = this._kdEntree(id);
     if (!w) return;
+    this._kdSouvenirScroll();
     this._wfFromBilan = false;
     this._kdPendingContext = w.c || '';
     this._wfSetLivre(w.b || this._kdBookId || null, w.w);

@@ -285,6 +285,27 @@ garder la chaîne dont on a la preuve qu'elle marche plutôt que d'en inventer
 une autre. Un test relit la feuille de style et refuse qu'une règle d'API
 reparte vers une police d'affichage.
 
+## Le fil et la place dans la liste
+
+Les vues de l'écran sont des **étapes de navigation à part entière** : les
+livres, les mots d'un livre, le mode 2×, un mot ouvert. Le retour les défait
+une par une — d'un mot étudié on revient à la liste 2×, puis à la liste
+entière, puis aux livres. Le bouton de l'appli et celui d'Android empruntent
+le même chemin, parce que l'état de la vue tient dans les paramètres de
+l'étape et non dans une mémoire à part.
+
+Le bouton **Livres** fait exception et c'est voulu : il défait **tout le
+livre d'un coup**, au lieu de reculer d'un cran.
+
+Ouvrir un mot puis revenir **rend la liste là où on l'avait laissée**. Au fond
+d'un livre de trois cents mots, repartir du haut, c'était tout le défilement
+à refaire. Chaque vue garde sa propre place — la liste entière et la liste 2×
+n'ont pas la même.
+
+La place n'est rendue **qu'une fois**, puis oubliée : sans cela, un
+rafraîchissement plus tard — la fin d'un import, par exemple — ferait sauter
+la liste à une place devenue fausse.
+
 ## Le mode 2× : étudier, pas trier
 
 Hors de ce mode, la liste sert à **trier** : on coche, on écarte, on envoie au
