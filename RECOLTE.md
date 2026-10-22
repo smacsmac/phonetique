@@ -306,6 +306,25 @@ La place n'est rendue **qu'une fois**, puis oubliée : sans cela, un
 rafraîchissement plus tard — la fin d'un import, par exemple — ferait sauter
 la liste à une place devenue fausse.
 
+### Quand le système reprend la main
+
+Android relance une application mise de côté pour récupérer de la mémoire.
+La page repartait alors de zéro : le fil était perdu, le premier retour
+renvoyait à l'accueil au lieu de l'écran précédent, et le suivant **fermait
+l'appli** puisqu'il n'y avait plus rien derrière.
+
+Le fil se range donc dans `sessionStorage`, qui vit le temps de la session :
+une relance du système le retrouve et l'appli reprend où elle était ; une
+vraie fermeture l'efface, et l'écran de démarrage choisi dans les réglages
+reprend ses droits.
+
+Le cran que l'appli pose pour intercepter le bouton retour d'Android est
+désormais relu dans `history.state` au lieu d'être supposé par un drapeau.
+Le drapeau pouvait dire « armé » alors que le cran avait disparu — page
+relancée, `pushState` refusé — et l'appli se croyait protégée pendant que la
+pression suivante la fermait. Il se repose aussi dès que la page reparaît,
+sans attendre une navigation qui pourrait ne jamais venir.
+
 ## Le mode 2× : étudier, pas trier
 
 Hors de ce mode, la liste sert à **trier** : on coche, on écarte, on envoie au

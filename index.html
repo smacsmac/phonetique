@@ -6589,7 +6589,16 @@ const KO_VOICES = [
     this._syncReconcile();
     this.applyTheme();
     this._grApplyTheme();
-    if (this.settings.launchScreen === 'labo') this.renderLabo();
+    // Une session interrompue par le système reprend où elle était ; une
+    // vraie fermeture a vidé sessionStorage, et l'écran de démarrage choisi
+    // dans les réglages reprend ses droits.
+    const filRepris = this._navReprendre();
+    if (filRepris) {
+      this.navHistory = filRepris;
+      const haut = filRepris[filRepris.length - 1];
+      this.navigate(haut.screen, haut.params || {}, true);
+    }
+    else if (this.settings.launchScreen === 'labo') this.renderLabo();
     else if (this.settings.launchScreen === 'word-focus') { this._wfFromBilan = false; this.currentScreen = 'word-focus'; this.renderWordFocus(); }
     else if (this.settings.launchScreen === 'grenier') { this.currentScreen = 'grenier'; this.renderGrenier(); }
     else this.renderHome();
@@ -6927,9 +6936,38 @@ const KO_VOICES = [
     return this.navHistory.length > 1 || this.currentScreen !== 'home';
   },
 
+  // On se fie à l'historique lui-même, jamais à un drapeau. Le cran posé
+  // pour Android peut se perdre en route — page relancée par le système,
+  // pushState refusé — et le drapeau, lui, continuait de dire « armé » :
+  // l'appli se croyait protégée alors que la pression suivante la fermait.
+  // Relire history.state rend cet écart impossible, et réarme tout seul.
   _navArmer() {
-    if (this._navArme || !this._navPeutRevenir()) return;
-    try { history.pushState({ pho: 1 }, ''); this._navArme = true; } catch (e) {}
+    if (!this._navPeutRevenir()) return;
+    try {
+      if (history.state && history.state.pho === 1) { this._navArme = true; return; }
+      history.pushState({ pho: 1 }, '');
+      this._navArme = true;
+    } catch (e) { this._navArme = false; }
+  },
+
+  // ── Le fil survit à une relance ───────────────────────────────
+  // Android relance une appli mise de côté pour récupérer de la mémoire. La
+  // page repart alors de zéro : le fil était perdu, et le premier retour
+  // renvoyait à l'accueil au lieu de l'écran précédent — le suivant fermait
+  // l'appli, puisqu'il n'y avait plus rien derrière. Le fil se range donc
+  // dans sessionStorage, qui vit le temps de la session : une vraie
+  // fermeture l'efface, une relance du système le retrouve.
+  _NAV_CLE: 'phonetique_nav',
+
+  _navSauver() {
+    try { sessionStorage.setItem(this._NAV_CLE, JSON.stringify(this.navHistory)); } catch (e) {}
+  },
+
+  _navReprendre() {
+    try {
+      const l = JSON.parse(sessionStorage.getItem(this._NAV_CLE) || 'null');
+      return Array.isArray(l) && l.length && l.every(e => e && e.screen) ? l : null;
+    } catch (e) { return null; }
   },
 
   _navBrancherRetour() {
@@ -6945,6 +6983,13 @@ const KO_VOICES = [
       try { this.goBack(); } finally { this._navDepuisPop = false; }
       this._navArmer();
     });
+    // Revenir d'une mise de côté, ou d'un retour en arrière du navigateur,
+    // peut rendre la page sans son cran. On le repose dès qu'elle reparaît,
+    // plutôt que d'attendre la navigation suivante — qui pourrait ne jamais
+    // venir, l'usager appuyant justement sur retour.
+    const reposer = () => { if (!document.hidden) this._navArmer(); };
+    window.addEventListener('pageshow', reposer);
+    document.addEventListener('visibilitychange', reposer);
     this._navArmer();
   },
 
@@ -6969,6 +7014,7 @@ const KO_VOICES = [
     if (!skipHistory) this.navHistory.push({ screen, params });
     if (this.navHistory.length > 20) this.navHistory.shift();
     this.currentScreen = screen;
+    this._navSauver();
     this._navArmer();
     const main = document.getElementById('main');
     main.classList.remove('main-flex');
@@ -19211,6 +19257,7 @@ Réponds UNIQUEMENT avec ce JSON :
     this.navHistory.push({ screen: 'recolte', params });
     if (this.navHistory.length > 20) this.navHistory.shift();
     this.currentScreen = 'recolte';
+    this._navSauver();
     this._navArmer();
   },
 
@@ -19218,6 +19265,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const h = this.navHistory;
     if (h.length) h[h.length - 1] = { screen: 'recolte', params };
     else h.push({ screen: 'recolte', params });
+    this._navSauver();
   },
 
   // Défaire notre étape, mais sans repasser par navigate() : on ne quitte
@@ -19238,6 +19286,7 @@ Réponds UNIQUEMENT avec ce JSON :
     this._kdNoteId = p.noteId || null;
     this._kdRepOnly = !!p.rep;
     this._kdEtude = p.etude || null;
+    this._navSauver();
     this._navArmer();
     return true;
   },
