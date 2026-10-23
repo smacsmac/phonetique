@@ -6598,10 +6598,23 @@ const KO_VOICES = [
       const haut = filRepris[filRepris.length - 1];
       this.navigate(haut.screen, haut.params || {}, true);
     }
-    else if (this.settings.launchScreen === 'labo') this.renderLabo();
-    else if (this.settings.launchScreen === 'word-focus') { this._wfFromBilan = false; this.currentScreen = 'word-focus'; this.renderWordFocus(); }
-    else if (this.settings.launchScreen === 'grenier') { this.currentScreen = 'grenier'; this.renderGrenier(); }
-    else this.renderHome();
+    else {
+      // Le fil doit toujours décrire ce qui est à l'écran. Il partait VIDE
+      // alors qu'un écran de démarrage était affiché : le premier retour
+      // tombait donc dans la branche « plus rien derrière », qui renvoie à
+      // l'accueil et laisse l'appli sans cran — et la pression d'après la
+      // fermait. Avec un écran de démarrage autre que l'accueil, il manquait
+      // ainsi une marche à tout le fil.
+      const depart = ['labo', 'word-focus', 'grenier'].includes(this.settings.launchScreen)
+        ? this.settings.launchScreen : 'home';
+      this.navHistory = [{ screen: depart, params: {} }];
+      this.currentScreen = depart;
+      this._navSauver();
+      if (depart === 'labo') this.renderLabo();
+      else if (depart === 'word-focus') { this._wfFromBilan = false; this.renderWordFocus(); }
+      else if (depart === 'grenier') this.renderGrenier();
+      else this.renderHome();
+    }
     this.setupSpeechSynthVoices();
     this._setupLongPress();
     this._navBrancherRetour();
@@ -6990,6 +7003,11 @@ const KO_VOICES = [
     const reposer = () => { if (!document.hidden) this._navArmer(); };
     window.addEventListener('pageshow', reposer);
     document.addEventListener('visibilitychange', reposer);
+    // Et avant chaque geste : le cran doit être là au moment où la main se
+    // porte sur le bouton retour, pas seulement après une navigation — qui
+    // pourrait ne jamais venir, puisque le geste suivant est justement un
+    // retour. Armer quand c'est déjà fait ne coûte qu'une lecture d'état.
+    document.addEventListener('pointerdown', reposer, { passive: true, capture: true });
     this._navArmer();
   },
 

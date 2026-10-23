@@ -318,12 +318,18 @@ une relance du système le retrouve et l'appli reprend où elle était ; une
 vraie fermeture l'efface, et l'écran de démarrage choisi dans les réglages
 reprend ses droits.
 
+Le fil **part aussi de l'écran de démarrage**. Il partait vide alors qu'un
+écran était déjà affiché : il manquait donc une marche à tout le parcours, et
+le retour qui aurait dû ramener à Mot en Focus tombait sur l'accueil — sans
+cran, si bien que la pression suivante fermait l'appli.
+
 Le cran que l'appli pose pour intercepter le bouton retour d'Android est
 désormais relu dans `history.state` au lieu d'être supposé par un drapeau.
 Le drapeau pouvait dire « armé » alors que le cran avait disparu — page
 relancée, `pushState` refusé — et l'appli se croyait protégée pendant que la
-pression suivante la fermait. Il se repose aussi dès que la page reparaît,
-sans attendre une navigation qui pourrait ne jamais venir.
+pression suivante la fermait. Il se repose dès que la page reparaît **et
+au moindre geste**, sans attendre une navigation qui pourrait ne jamais
+venir — le geste suivant étant justement, parfois, un retour.
 
 ## Le mode 2× : étudier, pas trier
 
