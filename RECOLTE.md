@@ -319,17 +319,35 @@ vraie fermeture l'efface, et l'écran de démarrage choisi dans les réglages
 reprend ses droits.
 
 Le fil **part aussi de l'écran de démarrage**. Il partait vide alors qu'un
-écran était déjà affiché : il manquait donc une marche à tout le parcours, et
-le retour qui aurait dû ramener à Mot en Focus tombait sur l'accueil — sans
-cran, si bien que la pression suivante fermait l'appli.
+écran était déjà affiché : il manquait donc une marche à tout le parcours.
 
-Le cran que l'appli pose pour intercepter le bouton retour d'Android est
-désormais relu dans `history.state` au lieu d'être supposé par un drapeau.
-Le drapeau pouvait dire « armé » alors que le cran avait disparu — page
-relancée, `pushState` refusé — et l'appli se croyait protégée pendant que la
-pression suivante la fermait. Il se repose dès que la page reparaît **et
-au moindre geste**, sans attendre une navigation qui pourrait ne jamais
-venir — le geste suivant étant justement, parfois, un retour.
+### Une vraie marche d'historique par étape
+
+L'appli gardait **un seul cran** d'avance dans l'historique du navigateur,
+reposé après chaque retour. Ça tenait en théorie, et ça tenait dans un
+navigateur piloté — mais pas sur un téléphone.
+
+Chrome **ignore une entrée d'historique posée par programme quand l'usager n'a
+plus touché l'écran depuis** : c'est sa parade contre les pages qui piègent le
+bouton retour. Or le cran reposé pendant le traitement d'un retour n'a, par
+construction, aucun geste derrière lui. Deux retours de suite, et le second
+passait par-dessus le cran ignoré — droit hors de l'appli.
+
+Chaque étape du fil a donc maintenant **sa propre marche**, posée au moment du
+geste qui l'ouvre : jamais ignorée, puisqu'un doigt vient de toucher l'écran.
+Le retour d'Android est géré par le navigateur lui-même ; l'appli n'a plus
+rien à reposer ni à réarmer, elle lit seulement la profondeur où l'on a
+atterri et s'y aligne.
+
+Trois conséquences :
+
+- **Le bouton de l'appli et celui d'Android empruntent le même chemin** : tous
+  deux reculent dans l'historique, et la profondeur ne peut plus se
+  désaccorder du fil.
+- **Une marche sautée n'est plus fatale.** Si le navigateur en ignore une, on
+  recule de deux écrans au lieu d'un — jamais hors de l'appli.
+- **Quand le fil est épuisé, l'appli se ferme.** C'est ce qu'on attend d'une
+  application Android arrivée à sa racine.
 
 ## Le mode 2× : étudier, pas trier
 

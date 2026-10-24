@@ -6930,9 +6930,6 @@ const KO_VOICES = [
   // d'avoir à faire coïncider deux historiques, celui de l'appli et celui du
   // navigateur, que plusieurs écrans manipulent directement.
 
-  _navArme: false,        // un cran est-il posé ?
-  _navDepuisPop: false,   // goBack() a-t-il été déclenché par Android ?
-  _navIgnorePop: false,   // le prochain popstate est de nous, pas de l'usager
 
   // Les fenêtres modales vivent sur document.body, pas dans #main : naviguer
   // sans les fermer les laisserait flotter par-dessus le nouvel écran.
@@ -6945,37 +6942,22 @@ const KO_VOICES = [
     return true;
   },
 
-  _navPeutRevenir() {
-    return this.navHistory.length > 1 || this.currentScreen !== 'home';
-  },
-
-  // On se fie à l'historique lui-même, jamais à un drapeau. Le cran posé
-  // pour Android peut se perdre en route — page relancée par le système,
-  // pushState refusé — et le drapeau, lui, continuait de dire « armé » :
-  // l'appli se croyait protégée alors que la pression suivante la fermait.
-  // Relire history.state rend cet écart impossible, et réarme tout seul.
-  _navArmer() {
-    if (!this._navPeutRevenir()) return;
-    try {
-      if (history.state && history.state.pho === 1) { this._navArme = true; return; }
-      history.pushState({ pho: 1 }, '');
-      // On relit APRÈS avoir posé : un navigateur qui limite les appels à
-      // pushState les ignore parfois sans rien dire, et se fier à l'appel
-      // plutôt qu'à son effet laissait l'appli se croire armée alors qu'elle
-      // était restée sur le cran d'en dessous — fermable au retour suivant.
-      // Resté faux, le drapeau fait réessayer au prochain geste.
-      this._navArme = !!(history.state && history.state.pho === 1);
-    } catch (e) { this._navArme = false; }
-  },
-
-  // ── Le fil survit à une relance ───────────────────────────────
-  // Android relance une appli mise de côté pour récupérer de la mémoire. La
-  // page repart alors de zéro : le fil était perdu, et le premier retour
-  // renvoyait à l'accueil au lieu de l'écran précédent — le suivant fermait
-  // l'appli, puisqu'il n'y avait plus rien derrière. Le fil se range donc
-  // dans sessionStorage, qui vit le temps de la session : une vraie
-  // fermeture l'efface, une relance du système le retrouve.
+  // ── Une vraie marche d'historique par étape ───────────────────
+  // L'appli gardait UN seul cran d'avance, reposé après chaque retour. Ça
+  // tenait en théorie et ça tenait dans un navigateur piloté — mais pas sur
+  // un téléphone : Chrome ignore une entrée posée par programme quand
+  // l'usager n'a plus touché l'écran depuis (c'est sa parade contre les
+  // pages qui piègent le retour). Le cran reposé pendant le traitement d'un
+  // retour n'avait, lui, aucun geste derrière : deux retours de suite et le
+  // second passait par-dessus, droit hors de l'appli.
+  //
+  // Désormais chaque étape du fil a SA marche dans l'historique, posée au
+  // moment du geste qui l'ouvre — donc jamais ignorée. Le retour d'Android
+  // est géré par le navigateur lui-même ; l'appli n'a plus à réagir à temps,
+  // elle lit seulement la profondeur où on a atterri. Et quand le fil est
+  // épuisé, l'appli se ferme : c'est ce qu'on attend d'elle.
   _NAV_CLE: 'phonetique_nav',
+  _navAbsorber: 0,        // retours déclenchés par nous, déjà traités
 
   _navSauver() {
     try { sessionStorage.setItem(this._NAV_CLE, JSON.stringify(this.navHistory)); } catch (e) {}
@@ -6988,57 +6970,80 @@ const KO_VOICES = [
     } catch (e) { return null; }
   },
 
+  // Pose la marche de l'étape courante. Appelée depuis le geste qui navigue.
+  _navMarche() {
+    try { history.pushState({ pho: this.navHistory.length }, ''); } catch (e) {}
+  },
+
+  // Aligne la marche courante sur la profondeur du fil, sans en ajouter.
+  _navCaler() {
+    try { history.replaceState({ pho: this.navHistory.length }, ''); } catch (e) {}
+  },
+
   _navBrancherRetour() {
     // Une copie ouverte en file:// refuse pushState : l'appli doit continuer
     // à marcher, simplement sans cette finesse.
-    try { history.replaceState({ pho: 0 }, ''); } catch (e) { return; }
-    window.addEventListener('popstate', () => {
-      if (this._navIgnorePop) { this._navIgnorePop = false; this._navArme = false; return; }
-      this._navArme = false;
-      if (this._navFermerModale()) { this._navArmer(); return; }
-      if (!this._navPeutRevenir()) return;   // à la racine : Android ferme l'appli
-      this._navDepuisPop = true;
-      try { this.goBack(); } finally { this._navDepuisPop = false; }
-      this._navArmer();
+    try { history.replaceState({ pho: 1 }, ''); }
+    catch (e) { return; }
+    // Un fil repris d'une session interrompue compte plus d'une étape : il
+    // lui faut autant de marches, sinon le premier retour sortirait de
+    // l'appli. Posées ici sans geste, elles peuvent être ignorées par le
+    // navigateur — on reculerait alors de plusieurs crans d'un coup, ce que
+    // le gestionnaire sait encaisser, au lieu de se fermer.
+    for (let k = 2; k <= this.navHistory.length; k++) {
+      try { history.pushState({ pho: k }, ''); } catch (e) { break; }
+    }
+    window.addEventListener('popstate', (e) => {
+      // Un retour que nous avons nous-mêmes déclenché : le travail est fait.
+      if (this._navAbsorber > 0) { this._navAbsorber--; return; }
+      // Une fenêtre modale se ferme d'abord, et consomme la pression.
+      if (this._navFermerModale()) { this._navMarche(); return; }
+      // On lit la profondeur où le navigateur nous a posés. C'est lui qui
+      // décide maintenant ; l'appli suit. Si une marche a été sautée, on
+      // recule d'autant — jamais plus loin que la racine.
+      const d = e.state && typeof e.state.pho === 'number' ? e.state.pho : 1;
+      const cible = Math.max(1, Math.min(d, this.navHistory.length));
+      if (cible >= this.navHistory.length) { this._navCaler(); return; }
+      this.navHistory.length = cible;
+      const etape = this.navHistory[cible - 1];
+      this._navSauver();
+      this.navigate(etape.screen, etape.params, true);
     });
-    // Revenir d'une mise de côté, ou d'un retour en arrière du navigateur,
-    // peut rendre la page sans son cran. On le repose dès qu'elle reparaît,
-    // plutôt que d'attendre la navigation suivante — qui pourrait ne jamais
-    // venir, l'usager appuyant justement sur retour.
-    const reposer = () => { if (!document.hidden) this._navArmer(); };
-    window.addEventListener('pageshow', reposer);
-    document.addEventListener('visibilitychange', reposer);
-    // Et avant chaque geste : le cran doit être là au moment où la main se
-    // porte sur le bouton retour, pas seulement après une navigation — qui
-    // pourrait ne jamais venir, puisque le geste suivant est justement un
-    // retour. Armer quand c'est déjà fait ne coûte qu'une lecture d'état.
-    document.addEventListener('pointerdown', reposer, { passive: true, capture: true });
-    this._navArmer();
+    // Une page relancée, ou ramenée du cache, revient avec un état qui ne
+    // dit plus la profondeur : on la recale plutôt que de la laisser mentir.
+    const recaler = () => {
+      if (document.hidden) return;
+      const d = history.state && history.state.pho;
+      if (d !== this.navHistory.length) this._navCaler();
+    };
+    window.addEventListener('pageshow', recaler);
+    document.addEventListener('visibilitychange', recaler);
   },
 
   goBack() {
-    if (this.navHistory.length > 1) {
-      this.navHistory.pop();
-      const prev = this.navHistory[this.navHistory.length - 1];
-      this.navigate(prev.screen, prev.params, true);
-    } else {
-      this.navHistory = [];
-      this.navigate('home', {}, true);
-    }
-    // Le bouton de l'appli consomme le cran posé pour Android quand il n'y a
-    // plus où revenir : sans ça, une pression de plus serait avalée à vide.
-    if (!this._navDepuisPop && this._navArme && !this._navPeutRevenir()) {
-      this._navIgnorePop = true;
-      try { history.back(); } catch (e) { this._navIgnorePop = false; }
-    }
+    // Un seul chemin pour revenir : celui du navigateur. Le bouton de
+    // l'appli et celui d'Android font donc exactement la même chose, et la
+    // profondeur de l'historique ne peut pas se désaccorder du fil.
+    if (this.navHistory.length > 1) { try { history.back(); return; } catch (e) {} }
+    this.navHistory = [{ screen: 'home', params: {} }];
+    this._navSauver();
+    this._navCaler();
+    this.navigate('home', {}, true);
   },
 
   navigate(screen, params = {}, skipHistory = false) {
-    if (!skipHistory) this.navHistory.push({ screen, params });
-    if (this.navHistory.length > 20) this.navHistory.shift();
+    if (!skipHistory) {
+      this.navHistory.push({ screen, params });
+      // Le plafond est haut exprès. Effacer la plus vieille étape décale
+      // toutes les profondeurs déjà annoncées d'un cran, et le retour
+      // viserait alors l'étape voisine. À cent, une séance n'y arrive pas ;
+      // et si elle y arrivait, le pire serait de reculer d'un écran de
+      // travers, jamais de sortir.
+      if (this.navHistory.length > 100) this.navHistory.shift();
+      this._navMarche();
+    }
     this.currentScreen = screen;
     this._navSauver();
-    this._navArmer();
     const main = document.getElementById('main');
     main.classList.remove('main-flex');
     main.classList.add('screen-exit');
@@ -9873,6 +9878,7 @@ const KO_VOICES = [
     // Ensure 'repertoire' is in navHistory so goBack() works from word-focus
     if (this.navHistory.length === 0 || this.navHistory[this.navHistory.length - 1].screen !== 'repertoire') {
       this.navHistory.push({ screen: 'repertoire', params: {} });
+      this._navMarche();
     }
     // Always reset selection when arriving at this screen
     this._repSelectedIds = [];
@@ -10728,6 +10734,7 @@ const KO_VOICES = [
     // We do NOT call navigate() to avoid a re-render; just push the breadcrumb manually
     const deepEntry = { screen: 'word-focus', params: { __deepSearch: true, query: existingText } };
     this.navHistory.push(deepEntry);
+    this._navMarche();
     // Light vibration feedback if available
     try { navigator.vibrate?.(30); } catch(e) {}
     // If there's already text, kick off a live search immediately
@@ -13958,6 +13965,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this._grApplyTheme();
     this.currentScreen = 'grenier';
     // Remove any stale grenier-study entries from history so back works cleanly
+    const avantMenage = this.navHistory.length;
     this.navHistory = this.navHistory.filter(e => e.screen !== 'grenier-study');
     // navigate('grenier') empile déjà une entrée AVANT d'appeler ce rendu.
     // Une fois la révision retirée ci-dessus, il reste donc deux « grenier »
@@ -13972,6 +13980,10 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     const top = this.navHistory[this.navHistory.length - 1];
     if (!top || top.screen !== 'grenier') {
       this.navHistory.push({ screen: 'grenier', params: {} });
+      this._navMarche();
+    }
+    // Le ménage a pu retirer des étapes : la profondeur annoncée doit suivre.
+    if (this.navHistory.length !== avantMenage) { this._navCaler();
     }
     this._grSortDecks();
     const decks = this._grenier.decks;
@@ -14402,6 +14414,7 @@ Génère un nouveau passage de longueur similaire. Réponds avec UNIQUEMENT le t
     this._grenierCardAudioBlob = null;
     this._grenierCardSettingsOpen = false;
     this.navHistory.push({ screen: 'grenier-study', params: { deckId: this._grenierStudySession.deckId } });
+    this._navMarche();
     this.currentScreen = 'grenier-study';
     this._grRenderStudyCard();
   },
@@ -15839,6 +15852,7 @@ Réponds UNIQUEMENT avec ce JSON :
     this._wfFromBilan = false;
     // Manually push current session screen so goBack() returns to it
     this.navHistory.push({ screen: 'grenier-study', params: { deckId: this._grenierStudySession?.deckId } });
+    this._navMarche();
     // Navigate directly without adding another history entry
     this.currentScreen = 'word-focus';
     const main = document.getElementById('main');
@@ -18988,16 +19002,20 @@ Réponds UNIQUEMENT avec ce JSON :
     this._kdSel = new Set();
     this._kdEtude = null;
     // Les vues internes au livre — le mode 2×, un mot ouvert — ont chacune
-    // leur étape dans le fil. « Livres » doit toutes les défaire d'un coup,
-    // sinon le bouton ne ferait que reculer d'un cran dans le même livre.
+    // leur étape, donc leur marche. « Livres » les redescend toutes d'un
+    // seul mouvement : c'est le navigateur qui recule, et le gestionnaire
+    // remet le fil à la profondeur où l'on atterrit.
     const b = this._kdBookId;
     const h = this.navHistory;
-    while (h.length > 1) {
-      const prec = h[h.length - 2];
-      if (!prec || prec.screen !== 'recolte'
-          || ((prec.params && prec.params.bookId) || null) !== b) break;
-      h.pop();
+    let k = h.length;
+    while (k > 1) {
+      const e = h[k - 1];
+      if (!e || e.screen !== 'recolte'
+          || ((e.params && e.params.bookId) || null) !== b) break;
+      k--;
     }
+    const recul = h.length - k;
+    if (recul > 0) { try { history.go(-recul); return; } catch (e) {} }
     this.goBack();
   },
 
@@ -19278,10 +19296,12 @@ Réponds UNIQUEMENT avec ce JSON :
   // dépilent ensuite normalement.
   _kdFilPousser(params) {
     this.navHistory.push({ screen: 'recolte', params });
-    if (this.navHistory.length > 20) this.navHistory.shift();
+    if (this.navHistory.length > 100) this.navHistory.shift();
     this.currentScreen = 'recolte';
     this._navSauver();
-    this._navArmer();
+    // La marche est posée ici, pendant le geste qui ouvre la vue : c'est à
+    // cette condition que le navigateur la respecte.
+    this._navMarche();
   },
 
   _kdFilRemplacer(params) {
@@ -19289,6 +19309,7 @@ Réponds UNIQUEMENT avec ce JSON :
     if (h.length) h[h.length - 1] = { screen: 'recolte', params };
     else h.push({ screen: 'recolte', params });
     this._navSauver();
+    this._navCaler();
   },
 
   // Défaire notre étape, mais sans repasser par navigate() : on ne quitte
@@ -19310,7 +19331,10 @@ Réponds UNIQUEMENT avec ce JSON :
     this._kdRepOnly = !!p.rep;
     this._kdEtude = p.etude || null;
     this._navSauver();
-    this._navArmer();
+    // On a défait l'étape nous-mêmes : la marche correspondante se retire,
+    // et le retour qu'elle déclenche est absorbé puisque le travail est fait.
+    this._navAbsorber++;
+    try { history.back(); } catch (e) { this._navAbsorber--; this._navCaler(); }
     return true;
   },
 
