@@ -6959,7 +6959,12 @@ const KO_VOICES = [
     try {
       if (history.state && history.state.pho === 1) { this._navArme = true; return; }
       history.pushState({ pho: 1 }, '');
-      this._navArme = true;
+      // On relit APRÈS avoir posé : un navigateur qui limite les appels à
+      // pushState les ignore parfois sans rien dire, et se fier à l'appel
+      // plutôt qu'à son effet laissait l'appli se croire armée alors qu'elle
+      // était restée sur le cran d'en dessous — fermable au retour suivant.
+      // Resté faux, le drapeau fait réessayer au prochain geste.
+      this._navArme = !!(history.state && history.state.pho === 1);
     } catch (e) { this._navArme = false; }
   },
 
