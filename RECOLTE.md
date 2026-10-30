@@ -295,6 +295,12 @@ l'infobulle, ils n'encombrent pas la grille.
 Un livre ne paraît que s'il a au moins **un mot surligné** : c'est ce qui
 prouve qu'il a été lu ici.
 
+Les vignettes sont désormais gardées à **192 px de large** au lieu de 96, et
+jamais affichées au-delà de **72 px** : au-dessus, un pixel stocké pour trois
+affichés se voyait. Une couverture d'avant, trop petite, **se redemande
+d'elle-même** au prochain passage sur l'écran des livres, le PC allumé — il
+n'y a rien à faire.
+
 ### Où se range un livre
 
 À l'année de sa **rencontre la plus récente** — le dernier mot surligné. Un
@@ -335,6 +341,22 @@ Fermer sans rien saisir un livre qu'on vient de créer le retire : un « + »
 touché par mégarde ne laisse pas de vignette vide. *Retirer* pose une pierre
 tombale plutôt que d'effacer, sans quoi l'autre appareil renverrait le livre
 à la synchro suivante.
+
+### Un identifiant qui porte une apostrophe
+
+Les boutons de ces listes appellent leur action dans un attribut `onclick`,
+avec l'identifiant du livre entre apostrophes. Or **le navigateur décode
+l'attribut avant de lire le JavaScript** : une apostrophe échappée en `&#39;`
+y redevient une apostrophe, ferme la chaîne et casse l'appel.
+
+Le bouton s'allumait sous le doigt et rien ne s'ouvrait — ni dans la liste,
+ni dans la chronologie — et **rien n'apparaissait dans le journal** : une
+erreur de syntaxe dans un attribut `onclick` ne remonte pas comme une erreur
+de page. Seuls les livres dont l'identifiant portait une apostrophe droite,
+ou une contre-oblique, étaient touchés.
+
+Tout identifiant posé dans un appel en ligne passe maintenant par `_kdJs`,
+qui échappe **d'abord pour le JavaScript, ensuite pour l'HTML**.
 
 ## Le fil et la place dans la liste
 

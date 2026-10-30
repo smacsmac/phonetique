@@ -4909,14 +4909,18 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
    téléphone étroit, davantage dès qu'il y a la place. */
 .kd-chrono-grille {
   display: grid; gap: 10px;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
 }
 .kd-chrono-livre {
   background: none; border: none; padding: 0; cursor: pointer;
-  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
   position: relative; -webkit-tap-highlight-color: transparent;
 }
-.kd-chrono-livre .kd-cover { width: 100%; height: auto; aspect-ratio: 2 / 3; }
+/* Plafonnée : sur une tablette, une case large étirerait la vignette et la
+   rendrait floue. Elle reste de la taille qu'elle a dans La Récolte. */
+.kd-chrono-livre .kd-cover {
+  width: 100%; max-width: 72px; height: auto; aspect-ratio: 2 / 3;
+}
 .kd-chrono-livre:active { transform: scale(0.96); }
 .kd-chrono-mots {
   position: absolute; top: 4px; right: 4px;
@@ -4929,7 +4933,7 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .kd-chrono-plus {
-  aspect-ratio: 2 / 3; border-radius: 5px; cursor: pointer;
+  width: 100%; max-width: 72px; aspect-ratio: 2 / 3; border-radius: 5px; cursor: pointer;
   background: rgba(139,92,246,0.06); border: 1px dashed rgba(139,92,246,0.45);
   color: #A78BFA; font-size: 26px; line-height: 1; font-family: var(--font-body);
 }
@@ -17571,6 +17575,18 @@ Réponds UNIQUEMENT avec ce JSON :
   },
   _kdAttr(s) { return this._kdEsc(s).replace(/\n/g, ' '); },
 
+  // Dans onclick="App.f('X')", le navigateur DÉCODE l'attribut avant de lire
+  // le JavaScript : une apostrophe échappée en &#39; y redevient une
+  // apostrophe, ferme la chaîne et casse l'appel. Le bouton s'allumait sous
+  // le doigt et rien ne se passait — c'est arrivé à un livre dont
+  // l'identifiant en portait une. On échappe donc d'abord pour le
+  // JavaScript, ensuite pour l'HTML : après décodage il reste « \' », qui
+  // est une apostrophe et non une fin de chaîne.
+  _kdJs(s) {
+    return this._kdAttr(String(s == null ? '' : s)
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+  },
+
   loadLiseur() {
     if (this.settings && this.settings.kdOrdre) this._kdOrdre = this.settings.kdOrdre;
     this._kdLib = { books: [], words: [], dismissed: {}, sent: {}, sources: {}, at: 0 };
@@ -18490,7 +18506,9 @@ Réponds UNIQUEMENT avec ce JSON :
       if ((b.at || 0) > (cur.at || 0)) cur.at = b.at;
       if (b.asin && !cur.asin) cur.asin = b.asin;
       // Une couverture reçue évite à cet appareil d'avoir les fichiers.
-      if (b.cover && !cur.cover) cur.cover = b.cover;
+      if (b.cover && (!cur.cover || (b.coverL || 96) > (cur.coverL || 96))) {
+        cur.cover = b.cover; cur.coverL = b.coverL || 96;
+      }
       // Le nombre de mots du livre est saisi à la main : le plus récemment
       // tapé fait foi, sur l'appareil où on l'a tapé comme sur l'autre.
       if (b.mots && (b.motsAt || 0) > (cur.motsAt || 0)) { cur.mots = b.mots; cur.motsAt = b.motsAt; }
@@ -18576,12 +18594,19 @@ Réponds UNIQUEMENT avec ce JSON :
     return m ? m[1] : '';
   },
 
-  // Une vignette de liseuse pèse ~20 Ko. Réduite à la taille réellement
-  // affichée, elle tombe à ~3 Ko — assez léger pour voyager avec la synchro
-  // et arriver sur le téléphone sans que les fichiers y soient.
+  // Une vignette de liseuse pèse ~20 Ko. Réduite, elle tombe à quelques Ko —
+  // assez léger pour voyager avec la synchro et arriver sur le téléphone
+  // sans que les fichiers y soient.
+  //
+  // 96 px suffisaient tant qu'elles ne paraissaient qu'à 63 px de large. La
+  // chronologie les montre plus grandes, et sur un écran dense le flou se
+  // voyait : un pixel stocké pour trois affichés. À 192, la couverture reste
+  // nette partout où l'appli la pose, pour trois fois moins de dix kilos.
+  KD_COUV_L: 192,
+
   async _kdShrinkCover(blob) {
     const bmp = await createImageBitmap(blob);
-    const W = 96;
+    const W = this.KD_COUV_L;
     const H = Math.max(1, Math.round(W * bmp.height / bmp.width)) || 144;
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
@@ -18602,9 +18627,12 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // N'habille que les livres visibles dans La Récolte : inutile de garder la
   // couverture d'un livre dont aucun mot n'est surligné.
+  // Sans couverture — ou avec une couverture d'avant, trop petite pour la
+  // chronologie : elle se redemande d'elle-même au prochain passage, sans
+  // que personne ait à y penser.
   _kdBooksNeedingCover() {
     const lib = this._kdLib;
-    return lib.books.filter(b => b.asin && !b.cover
+    return lib.books.filter(b => b.asin && (!b.cover || (b.coverL || 96) < this.KD_COUV_L)
       && lib.words.some(w => w.b === b.id && w.h));
   },
 
@@ -18628,6 +18656,7 @@ Réponds UNIQUEMENT avec ce JSON :
         const blob = await fetchOne(nom);
         if (!blob || !blob.size) continue;
         b.cover = await this._kdShrinkCover(blob);
+        b.coverL = this.KD_COUV_L;
         pris++;
       } catch (e) { /* une couverture manquante n'est jamais bloquante */ }
     }
@@ -18749,7 +18778,7 @@ Réponds UNIQUEMENT avec ce JSON :
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Livres
         </button>
-        <button class="kd-btn kd-btn-ghost" onclick="App._kdNoteSave(true); App._kdOpenBook('${this._kdAttr(book.id)}')">
+        <button class="kd-btn kd-btn-ghost" onclick="App._kdNoteSave(true); App._kdOpenBook('${this._kdJs(book.id)}')">
           Ses mots
         </button>
       </div>
@@ -19109,7 +19138,7 @@ Réponds UNIQUEMENT avec ce JSON :
             <span class="kd-chrono-an-n">${d.l.length || ''}</span></div>
           <div class="kd-chrono-grille">
             ${d.l.map(l => `
-              <button class="kd-chrono-livre" onclick="App._kdChronoOuvrir('${this._kdAttr(l.id)}')"
+              <button class="kd-chrono-livre" onclick="App._kdChronoOuvrir('${this._kdJs(l.id)}')"
                       title="${this._kdAttr(l.titre)}${l.mots ? ` — ${this._kdNombre(l.mots)} mots` : ''}">
                 ${this._kdCoverHTML({ title: l.titre, cover: l.cover })}
                 ${l.mots ? `<span class="kd-chrono-mots">${this._kdNombre(l.mots)}</span>` : ''}
@@ -19174,9 +19203,9 @@ Réponds UNIQUEMENT avec ce JSON :
         </div>
         <div class="grenier-modal-actions">
           ${perso ? `<button class="grenier-btn-secondary" style="color:#F87171"
-            onclick="App._kdPersoEffacer('${this._kdAttr(l.id)}')">Retirer</button>` : ''}
+            onclick="App._kdPersoEffacer('${this._kdJs(l.id)}')">Retirer</button>` : ''}
           <button class="grenier-btn-secondary" onclick="App._kdChronoFermer()">Fermer</button>
-          <button class="grenier-btn-primary" onclick="App._kdChronoEnregistrer('${this._kdAttr(l.id)}')">Enregistrer</button>
+          <button class="grenier-btn-primary" onclick="App._kdChronoEnregistrer('${this._kdJs(l.id)}')">Enregistrer</button>
         </div>
       </div>`;
     bg.onclick = () => this._kdChronoFermer();
@@ -19361,12 +19390,12 @@ Réponds UNIQUEMENT avec ce JSON :
           const aNote = !!(lib.notes[b.id] && (lib.notes[b.id].t || '').trim());
           return `
           <div class="kd-book">
-            <button class="kd-cover-btn" onclick="App._kdOpenNote('${this._kdAttr(b.id)}')"
+            <button class="kd-cover-btn" onclick="App._kdOpenNote('${this._kdJs(b.id)}')"
                     title="Tes notes sur ce livre">
               ${this._kdCoverHTML(b)}
               ${aNote ? '<span class="kd-note-dot" title="Tu as écrit des notes"></span>' : ''}
             </button>
-            <button class="kd-book-open" onclick="App._kdOpenBook('${this._kdAttr(b.id)}')">
+            <button class="kd-book-open" onclick="App._kdOpenBook('${this._kdJs(b.id)}')">
               <div class="kd-book-main">
                 <div class="kd-book-title">${this._kdEsc(b.title)}</div>
                 ${b.author ? `<div class="kd-book-author">${this._kdEsc(b.author)}</div>` : ''}
@@ -19788,12 +19817,12 @@ Réponds UNIQUEMENT avec ce JSON :
     const page = w.p ? `p.${this._kdEsc(w.p)}`
       : (rep && w.pp && w.pp.length > 1 ? `p.${this._kdEsc(w.pp.join(', '))}` : '');
     const clic = arc
-      ? (arc.ouvrir ? `App._kdOpenWord('${this._kdAttr(w.i)}')` : `App._kdEtudier('${this._kdAttr(arc.base)}')`)
-      : `App._kdOpenWord('${this._kdAttr(w.i)}')`;
+      ? (arc.ouvrir ? `App._kdOpenWord('${this._kdJs(w.i)}')` : `App._kdEtudier('${this._kdJs(arc.base)}')`)
+      : `App._kdOpenWord('${this._kdJs(w.i)}')`;
     return `
       <div class="kd-word ${ecarte ? 'kd-word-done' : ''} ${arc ? 'kd-word-arc' : rep ? 'kd-word-rep' : ''}"
            data-mot="${this._kdAttr(this._kdBase(w.i))}" ${arc ? `style="${arc.style}"` : ''}>
-        ${arc ? '' : `<button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdAttr(w.i)}')" title="Sélectionner" ${ecarte ? 'disabled' : ''}>
+        ${arc ? '' : `<button class="kd-check ${on ? 'on' : ''}" onclick="App._kdToggleSel('${this._kdJs(w.i)}')" title="Sélectionner" ${ecarte ? 'disabled' : ''}>
           ${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </button>`}
         <div class="kd-word-main" onclick="${clic}">
@@ -19815,8 +19844,8 @@ Réponds UNIQUEMENT avec ce JSON :
           <div class="kd-word-ctx">${ctx}</div>
         </div>
         ${arc ? '' : ecarte
-          ? `<button class="kd-x" onclick="App._kdRestore('${this._kdAttr(w.i)}')" title="Remettre en attente">↺</button>`
-          : `<button class="kd-x" onclick="App._kdDismiss('${this._kdAttr(w.i)}')" title="Écarter ce mot">✕</button>`}
+          ? `<button class="kd-x" onclick="App._kdRestore('${this._kdJs(w.i)}')" title="Remettre en attente">↺</button>`
+          : `<button class="kd-x" onclick="App._kdDismiss('${this._kdJs(w.i)}')" title="Écarter ce mot">✕</button>`}
       </div>`;
   },
 
