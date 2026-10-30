@@ -322,6 +322,10 @@ livre — la liseuse ne le connaît pas. Le total de tout ce qui a été lu
 s'affiche **en haut**, avec le nombre de livres qui attendent encore leur
 compte.
 
+Le bouton **123** montre ou cache le compte de **chaque** livre, pour revenir
+aux couvertures seules quand on veut. Le total du haut, lui, reste : c'est ce
+qu'on vient voir. Ce choix est retenu lui aussi.
+
 Le compte est gardé sur le livre, voyage avec la synchro, et en cas de
 conflit **le plus récemment tapé gagne** : c'est une saisie, pas une mesure.
 

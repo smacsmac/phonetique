@@ -19020,6 +19020,8 @@ Réponds UNIQUEMENT avec ce JSON :
     return this.settings.kdChronoOrdre === 'anciens' ? 'anciens' : 'recents';
   },
   _kdChronoMois() { return this.settings.kdChronoMois === true; },
+  // Visible par défaut : c'est ce que la vue montrait jusqu'ici.
+  _kdChronoMots() { return this.settings.kdChronoMots !== false; },
 
   _kdChronoInverser() {
     this.settings.kdChronoOrdre = this._kdChronoOrdre() === 'recents' ? 'anciens' : 'recents';
@@ -19028,6 +19030,11 @@ Réponds UNIQUEMENT avec ce JSON :
   },
   _kdChronoBasculeMois() {
     this.settings.kdChronoMois = !this._kdChronoMois();
+    this.saveSettings();
+    this._kdRenderChrono();
+  },
+  _kdChronoBasculeMots() {
+    this.settings.kdChronoMots = !this._kdChronoMots();
     this.saveSettings();
     this._kdRenderChrono();
   },
@@ -19088,6 +19095,7 @@ Réponds UNIQUEMENT avec ce JSON :
     const total = livres.reduce((n, l) => n + (l.mots || 0), 0);
     const sans = livres.filter(l => !l.mots).length;
     const mois = this._kdChronoMois();
+    const compte = this._kdChronoMots();
     const recents = this._kdChronoOrdre() === 'recents';
 
     // Regroupement par année de la dernière rencontre, dans l'ordre choisi.
@@ -19129,6 +19137,9 @@ Réponds UNIQUEMENT avec ce JSON :
                                         : S('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>'))}
         ${chip(mois, mois ? 'Masquer les mois' : 'Afficher les mois',
           '_kdChronoBasculeMois()', S('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'))}
+        ${chip(compte, compte ? 'Masquer le nombre de mots de chaque livre'
+                               : 'Afficher le nombre de mots de chaque livre',
+          '_kdChronoBasculeMots()', '<span class="kd-chip-2x">123</span>')}
         ${chip(this._kdChronoAjout, this._kdChronoAjout ? 'Masquer les ajouts' : 'Ajouter un livre de papier',
           '_kdChronoBasculeAjout()', S('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'))}
       </div>
@@ -19141,7 +19152,7 @@ Réponds UNIQUEMENT avec ce JSON :
               <button class="kd-chrono-livre" onclick="App._kdChronoOuvrir('${this._kdJs(l.id)}')"
                       title="${this._kdAttr(l.titre)}${l.mots ? ` — ${this._kdNombre(l.mots)} mots` : ''}">
                 ${this._kdCoverHTML({ title: l.titre, cover: l.cover })}
-                ${l.mots ? `<span class="kd-chrono-mots">${this._kdNombre(l.mots)}</span>` : ''}
+                ${compte && l.mots ? `<span class="kd-chrono-mots">${this._kdNombre(l.mots)}</span>` : ''}
                 ${mois ? `<span class="kd-chrono-mois">${this._kdEsc(this._kdChronoMoisTexte(l))}</span>` : ''}
               </button>`).join('')}
             ${this._kdChronoAjout ? `
