@@ -285,6 +285,57 @@ garder la chaîne dont on a la preuve qu'elle marche plutôt que d'en inventer
 une autre. Un test relit la feuille de style et refuse qu'une règle d'API
 reparte vers une police d'affichage.
 
+## La chronologie
+
+**La Récolte › Chronologie**, à droite de *Fichiers…*. Tous les livres lus,
+année par année, réduits à leurs **couvertures** : ce qu'on vient voir ici,
+c'est une vie de lecture d'un coup d'œil, pas une liste. Les titres sont dans
+l'infobulle, ils n'encombrent pas la grille.
+
+Un livre ne paraît que s'il a au moins **un mot surligné** : c'est ce qui
+prouve qu'il a été lu ici.
+
+### Où se range un livre
+
+À l'année de sa **rencontre la plus récente** — le dernier mot surligné. Un
+livre commencé en novembre et fini en février se range donc sur l'année où il
+s'achève, et deux livres menés de front se rangent chacun à sa propre fin.
+
+L'ordre des années se renverse d'un bouton, et le choix est retenu.
+
+### Les mois
+
+Un bouton les fait paraître **sous chaque couverture**, dans sa largeur :
+*avr–mai*, ou *avr* si la lecture a tenu dans le mois. Le choix est retenu
+lui aussi.
+
+### Le nombre de mots
+
+Toucher une couverture ouvre une boîte où on tape le **nombre de mots** du
+livre — la liseuse ne le connaît pas. Le total de tout ce qui a été lu
+s'affiche **en haut**, avec le nombre de livres qui attendent encore leur
+compte.
+
+Le compte est gardé sur le livre, voyage avec la synchro, et en cas de
+conflit **le plus récemment tapé gagne** : c'est une saisie, pas une mesure.
+
+### Les livres de papier
+
+Le bouton **+** en haut fait paraître un « + » dans chaque année. Il ouvre la
+même boîte, en demandant en plus ce que la liseuse aurait donné : une
+**couverture** (prise dans les photos), un **titre**, et les **mois et
+années** de lecture — début et fin.
+
+La couverture choisie est **réduite à 200 × 300 pixels** avant d'être gardée.
+Une photo de téléphone pèse plusieurs mégaoctets : telle quelle, elle
+remplirait le stockage du navigateur et la synchro avec. Elle est rognée, pas
+étirée — un visage écrasé se voit tout de suite.
+
+Fermer sans rien saisir un livre qu'on vient de créer le retire : un « + »
+touché par mégarde ne laisse pas de vignette vide. *Retirer* pose une pierre
+tombale plutôt que d'effacer, sans quoi l'autre appareil renverrait le livre
+à la synchro suivante.
+
 ## Le fil et la place dans la liste
 
 Les vues de l'écran sont des **étapes de navigation à part entière** : les

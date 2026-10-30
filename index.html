@@ -4890,6 +4890,62 @@ button { font-family: var(--font-body); -webkit-tap-highlight-color: transparent
   color: hsl(var(--arc-h) 80% 76%);
 }
 .kd-defbox-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* — la chronologie : une vie de lecture, en couvertures — */
+.kd-chrono-total {
+  margin-left: auto; text-align: right; font-size: 12px; color: var(--text2, #aaa);
+  line-height: 1.3;
+}
+.kd-chrono-total b { font-size: 17px; color: #C4B5FD; font-weight: 700; }
+.kd-chrono-sans { display: block; font-size: 10px; color: var(--text3, #777); }
+.kd-chrono-an { margin-top: 16px; }
+.kd-chrono-an-tete {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; color: #A78BFA;
+}
+.kd-chrono-an-tete i { flex: 1; height: 1px; background: rgba(139,92,246,0.25); }
+.kd-chrono-an-n { font-size: 10px; color: var(--text3, #777); font-weight: 400; }
+/* Une grille qui se remplit toute seule : trois couvertures sur un
+   téléphone étroit, davantage dès qu'il y a la place. */
+.kd-chrono-grille {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+}
+.kd-chrono-livre {
+  background: none; border: none; padding: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  position: relative; -webkit-tap-highlight-color: transparent;
+}
+.kd-chrono-livre .kd-cover { width: 100%; height: auto; aspect-ratio: 2 / 3; }
+.kd-chrono-livre:active { transform: scale(0.96); }
+.kd-chrono-mots {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+  background: rgba(13,11,20,0.78); color: #C4B5FD;
+}
+/* Les mois tiennent dans la largeur de la couverture, pas une ligne de plus. */
+.kd-chrono-mois {
+  font-size: 9.5px; color: var(--text3, #777); text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kd-chrono-plus {
+  aspect-ratio: 2 / 3; border-radius: 5px; cursor: pointer;
+  background: rgba(139,92,246,0.06); border: 1px dashed rgba(139,92,246,0.45);
+  color: #A78BFA; font-size: 26px; line-height: 1; font-family: var(--font-body);
+}
+.kd-chrono-plus:active { background: rgba(139,92,246,0.14); }
+.kd-perso-form { display: flex; gap: 12px; align-items: flex-start; }
+.kd-perso-cover, .kd-perso-cover-fixe {
+  flex-shrink: 0; width: 76px; background: none; border: none; padding: 0;
+  display: flex; flex-direction: column; gap: 4px; cursor: pointer;
+}
+.kd-perso-cover-fixe { cursor: default; }
+.kd-perso-cover .kd-cover, .kd-perso-cover-fixe .kd-cover { width: 76px; height: 114px; }
+.kd-perso-cover-txt { font-size: 9.5px; color: #A78BFA; text-align: center; }
+.kd-perso-champs { flex: 1; min-width: 0; }
+.kd-perso-date { display: flex; gap: 6px; }
+.kd-perso-date select { flex: 1; min-width: 0; }
+.kd-perso-date input { width: 88px; flex-shrink: 0; }
 .kd-nocontext { color: var(--text3, #777); font-size: 11px; }
 .kd-x {
   flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
@@ -7099,6 +7155,7 @@ const KO_VOICES = [
           this._kdNoteId = params?.noteId || null;
           this._kdRepOnly = !!params?.rep;
           this._kdEtude = params?.etude || null;
+          this._kdChrono = !!params?.chrono;
           this.renderRecolte();
           break;
         case 'hands-free': this.renderHandsFree(); break;
@@ -17496,6 +17553,8 @@ Réponds UNIQUEMENT avec ce JSON :
   _kdOrdre: 'anciens',   // 'anciens' = dans l'ordre de lecture · 'recents' = les derniers d'abord
   _kdShowDone: false,    // afficher aussi les mots déjà traités
   _kdRepOnly: false,     // ne montrer que les mots rencontrés plusieurs fois
+  _kdChrono: false,      // la vue chronologique des livres lus
+  _kdChronoAjout: false, // les « + » pour ajouter un livre de papier
   _kdEtude: null,        // en mode 2× : le mot ouvert seul, avec ses rencontres
   _kdDefOuverte: false,  // sa définition dépliée ou repliée
   _kdSel: null,          // Set des identifiants cochés
@@ -17519,7 +17578,7 @@ Réponds UNIQUEMENT avec ce JSON :
       const raw = localStorage.getItem('phonetique_liseur');
       if (raw) Object.assign(this._kdLib, JSON.parse(raw));
     } catch (e) {}
-    for (const k of ['books', 'words']) if (!Array.isArray(this._kdLib[k])) this._kdLib[k] = [];
+    for (const k of ['books', 'words', 'perso']) if (!Array.isArray(this._kdLib[k])) this._kdLib[k] = [];
     for (const k of ['dismissed', 'sent', 'sources', 'notes'])
       if (!this._kdLib[k] || typeof this._kdLib[k] !== 'object') this._kdLib[k] = {};
     if (this._kdMigrerRencontres()) this.saveLiseur();
@@ -18405,6 +18464,7 @@ Réponds UNIQUEMENT avec ce JSON :
       dismissed: lib.dismissed,
       sent: lib.sent,
       notes: lib.notes,
+      perso: lib.perso || [],
       at: lib.at || 0,
     };
   },
@@ -18431,6 +18491,10 @@ Réponds UNIQUEMENT avec ce JSON :
       if (b.asin && !cur.asin) cur.asin = b.asin;
       // Une couverture reçue évite à cet appareil d'avoir les fichiers.
       if (b.cover && !cur.cover) cur.cover = b.cover;
+      // Le nombre de mots du livre est saisi à la main : le plus récemment
+      // tapé fait foi, sur l'appareil où on l'a tapé comme sur l'autre.
+      if (b.mots && (b.motsAt || 0) > (cur.motsAt || 0)) { cur.mots = b.mots; cur.motsAt = b.motsAt; }
+      else if (b.mots && !cur.mots) cur.mots = b.mots;
     }
     lib.books = Array.from(books.values());
 
@@ -18465,6 +18529,16 @@ Réponds UNIQUEMENT avec ce JSON :
       if (n > 1) cur.n = n;
     }
     lib.words = Array.from(words.values());
+
+    // Les livres de papier n'ont pas d'autre source qu'ici : ils se
+    // réunissent par identifiant, le plus récemment modifié gagnant.
+    if (!Array.isArray(lib.perso)) lib.perso = [];
+    const perso = new Map(lib.perso.map(l => [l.id, l]));
+    for (const l of (remote.perso || [])) {
+      const cur = perso.get(l.id);
+      if (!cur || (l.at || 0) > (cur.at || 0)) perso.set(l.id, l);
+    }
+    lib.perso = Array.from(perso.values()).filter(l => !l.efface);
 
     // Les notes de lecture sont de l'écriture : la version la plus récemment
     // modifiée gagne, entière. Elles se rédigent sur un appareil à la fois,
@@ -18885,16 +18959,328 @@ Réponds UNIQUEMENT avec ce JSON :
       <div id="kdBody" class="kd-body"></div>
       <input type="file" id="kdFileInput" multiple accept=".txt,.db,.sqlite,.jpg,.jpeg,.png" style="display:none"
              onchange="App._kdImportFiles(this.files); this.value='';">
+      <input type="file" id="kdCoverInput" accept="image/*" style="display:none"
+             onchange="App._kdPersoCouverture(this.files && this.files[0]); this.value='';">
     `;
-    this._kdNoteId ? this._kdRenderNote()
+    this._kdChrono ? this._kdRenderChrono()
+      : this._kdNoteId ? this._kdRenderNote()
       : this._kdBookId ? this._kdRenderBook() : this._kdRenderBooks();
     // Si le serveur expose les fichiers, on se met à jour sans rien demander.
     // Seulement en arrivant sur la liste des livres : passer d'un livre à
     // l'autre n'a pas à relancer une recherche réseau.
-    if (!this._kdBusy && !this._kdBookId && !this._kdNoteId) setTimeout(async () => {
+    if (!this._kdBusy && !this._kdBookId && !this._kdNoteId && !this._kdChrono) setTimeout(async () => {
       await this._kdFetchFromServer(true);
       await this._kdFetchCoversFromServer(true);
     }, 300);
+  },
+
+  // ══ La chronologie ════════════════════════════════════════════
+  // Tous les livres lus, année par année, réduits à leurs couvertures : ce
+  // qu'on veut voir ici, c'est une vie de lecture d'un coup d'œil, pas une
+  // liste. Les titres sont dans l'infobulle, ils n'encombrent pas la grille.
+  //
+  // Un livre lu à cheval sur deux années, ou deux livres menés de front, se
+  // rangent par leur rencontre la PLUS RÉCENTE : c'est la date qui dit
+  // « j'en avais fini là ».
+
+  _kdOuvrirChrono() {
+    this.navigate('recolte', { chrono: 1 });
+  },
+
+  _kdChronoOrdre() {
+    return this.settings.kdChronoOrdre === 'anciens' ? 'anciens' : 'recents';
+  },
+  _kdChronoMois() { return this.settings.kdChronoMois === true; },
+
+  _kdChronoInverser() {
+    this.settings.kdChronoOrdre = this._kdChronoOrdre() === 'recents' ? 'anciens' : 'recents';
+    this.saveSettings();
+    this._kdRenderChrono();
+  },
+  _kdChronoBasculeMois() {
+    this.settings.kdChronoMois = !this._kdChronoMois();
+    this.saveSettings();
+    this._kdRenderChrono();
+  },
+  _kdChronoBasculeAjout() {
+    this._kdChronoAjout = !this._kdChronoAjout;
+    this._kdRenderChrono();
+  },
+
+  // Les deux sortes de livres réunies sous la même forme : la liseuse en
+  // donne les dates, le papier les reçoit à la main.
+  _kdChronoLivres() {
+    const lib = this._kdLib;
+    const bornes = new Map();                 // livre → [première, dernière]
+    for (const w of lib.words) {
+      if (!w.h || !w.t) continue;
+      const b = bornes.get(w.b);
+      if (!b) bornes.set(w.b, [w.t, w.t]);
+      else { if (w.t < b[0]) b[0] = w.t; if (w.t > b[1]) b[1] = w.t; }
+    }
+    const out = [];
+    for (const b of lib.books) {
+      const d = bornes.get(b.id);
+      if (!d) continue;                       // aucun mot surligné : pas un livre lu
+      out.push({ id: b.id, titre: b.title || '', auteur: b.author || '', cover: b.cover || '',
+                 livre: b, debut: d[0], fin: Math.max(d[1], b.at || 0), mots: b.mots || 0 });
+    }
+    for (const l of (lib.perso || [])) {
+      if (l.efface) continue;
+      out.push({ id: l.id, titre: l.titre || 'Livre de papier', auteur: '', cover: l.cover || '',
+                 perso: l, debut: l.d || l.f || 0, fin: l.f || l.d || 0, mots: l.mots || 0 });
+    }
+    const sens = this._kdChronoOrdre() === 'recents' ? -1 : 1;
+    return out.sort((a, b) => sens * ((a.fin || 0) - (b.fin || 0)));
+  },
+
+  _kdMoisCourt(ts) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleDateString('fr-CA', { month: 'short' }).replace('.', '');
+  },
+
+  // « avr–déc » quand la lecture a duré, « avr » quand elle a tenu dans le
+  // mois. Le tiret est un vrai tiret demi-cadratin : il se lit mieux petit.
+  _kdChronoMoisTexte(l) {
+    const a = this._kdMoisCourt(l.debut), b = this._kdMoisCourt(l.fin);
+    if (!a && !b) return '';
+    if (!a || a === b) return b || a;
+    return a + '–' + b;
+  },
+
+  _kdNombre(n) {
+    return String(n || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  },
+
+  _kdRenderChrono() {
+    const body = document.getElementById('kdBody');
+    if (!body) return;
+    const livres = this._kdChronoLivres();
+    const total = livres.reduce((n, l) => n + (l.mots || 0), 0);
+    const sans = livres.filter(l => !l.mots).length;
+    const mois = this._kdChronoMois();
+    const recents = this._kdChronoOrdre() === 'recents';
+
+    // Regroupement par année de la dernière rencontre, dans l'ordre choisi.
+    const annees = [];
+    for (const l of livres) {
+      const a = l.fin ? new Date(l.fin).getFullYear() : '—';
+      const d = annees.length && annees[annees.length - 1].an === a
+        ? annees[annees.length - 1] : (annees.push({ an: a, l: [] }), annees[annees.length - 1]);
+      d.l.push(l);
+    }
+    // Une année sans livre où l'on voudrait quand même ajouter du papier :
+    // l'année courante paraît toujours quand on est en mode ajout.
+    const ici = new Date().getFullYear();
+    if (this._kdChronoAjout && !annees.some(d => d.an === ici)) {
+      const vide = { an: ici, l: [] };
+      recents ? annees.unshift(vide) : annees.push(vide);
+    }
+
+    const chip = (actif, titre, action, dedans) =>
+      `<button class="kd-chip kd-chip-icone ${actif ? 'on' : ''}" title="${titre}"
+        aria-label="${titre}" onclick="App.${action}">${dedans}</button>`;
+    const S = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+
+    body.innerHTML = `
+      <div class="kd-bookbar">
+        <button class="kd-btn kd-btn-ghost" onclick="App.goBack()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Livres
+        </button>
+        <div class="kd-chrono-total">
+          <b>${this._kdNombre(total)}</b> mots lus
+          ${sans ? `<span class="kd-chrono-sans">${sans} livre${sans > 1 ? 's' : ''} sans compte</span>` : ''}
+        </div>
+      </div>
+      <div class="kd-filters">
+        ${chip(false, recents ? 'Voir des plus anciens aux plus récents' : 'Voir des plus récents aux plus anciens',
+          '_kdChronoInverser()', recents ? S('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>')
+                                        : S('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>'))}
+        ${chip(mois, mois ? 'Masquer les mois' : 'Afficher les mois',
+          '_kdChronoBasculeMois()', S('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'))}
+        ${chip(this._kdChronoAjout, this._kdChronoAjout ? 'Masquer les ajouts' : 'Ajouter un livre de papier',
+          '_kdChronoBasculeAjout()', S('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'))}
+      </div>
+      ${annees.length ? annees.map(d => `
+        <div class="kd-chrono-an">
+          <div class="kd-chrono-an-tete"><span>${d.an}</span><i></i>
+            <span class="kd-chrono-an-n">${d.l.length || ''}</span></div>
+          <div class="kd-chrono-grille">
+            ${d.l.map(l => `
+              <button class="kd-chrono-livre" onclick="App._kdChronoOuvrir('${this._kdAttr(l.id)}')"
+                      title="${this._kdAttr(l.titre)}${l.mots ? ` — ${this._kdNombre(l.mots)} mots` : ''}">
+                ${this._kdCoverHTML({ title: l.titre, cover: l.cover })}
+                ${l.mots ? `<span class="kd-chrono-mots">${this._kdNombre(l.mots)}</span>` : ''}
+                ${mois ? `<span class="kd-chrono-mois">${this._kdEsc(this._kdChronoMoisTexte(l))}</span>` : ''}
+              </button>`).join('')}
+            ${this._kdChronoAjout ? `
+              <button class="kd-chrono-plus" onclick="App._kdPersoNouveau(${d.an === '—' ? 'null' : d.an})"
+                      title="Ajouter un livre de papier en ${d.an}">+</button>` : ''}
+          </div>
+        </div>`).join('') : `<div class="kd-note">Aucun livre pour l'instant.</div>`}
+    `;
+  },
+
+  // ── La fiche d'un livre ───────────────────────────────────────
+  // Un seul formulaire pour les deux sortes : la liseuse donne ses dates et
+  // sa couverture, le papier les demande.
+  _kdChronoOuvrir(id) {
+    const l = this._kdChronoLivres().find(x => x.id === id);
+    if (!l) return;
+    const perso = !!l.perso;
+    const d = l.debut ? new Date(l.debut) : new Date();
+    const f = l.fin ? new Date(l.fin) : new Date();
+    const mois = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+    const opt = (sel) => mois.map((m, i) =>
+      `<option value="${i}" ${i === sel ? 'selected' : ''}>${m}</option>`).join('');
+    document.querySelector('.grenier-modal-bg')?.remove();
+    const bg = document.createElement('div');
+    bg.className = 'grenier-modal-bg';
+    bg.innerHTML = `
+      <div class="grenier-modal" onclick="event.stopPropagation()">
+        <div class="grenier-modal-title">${this._kdEsc(l.titre || 'Livre')}</div>
+        <div class="kd-perso-form">
+          ${perso ? `
+            <button class="kd-perso-cover" onclick="App._kdPersoChoisirImage()" title="Changer la couverture">
+              <span id="kdPersoApercu">${this._kdCoverHTML({ title: l.titre, cover: l.cover })}</span>
+              <span class="kd-perso-cover-txt">Couverture…</span>
+            </button>` : `<div class="kd-perso-cover-fixe">${this._kdCoverHTML({ title: l.titre, cover: l.cover })}</div>`}
+          <div class="kd-perso-champs">
+            ${perso ? `
+              <label class="grenier-modal-label">Titre</label>
+              <input class="grenier-modal-input" id="kdPersoTitre" type="text"
+                     value="${this._kdAttr(l.titre === 'Livre de papier' ? '' : l.titre)}" placeholder="Titre du livre">` : ''}
+            <label class="grenier-modal-label">Nombre de mots</label>
+            <input class="grenier-modal-input" id="kdPersoMots" type="number" inputmode="numeric"
+                   min="0" step="1000" value="${l.mots || ''}" placeholder="par exemple 95000">
+            ${perso ? `
+              <label class="grenier-modal-label">Lu de</label>
+              <div class="kd-perso-date">
+                <select class="grenier-modal-input" id="kdPersoMoisD">${opt(d.getMonth())}</select>
+                <input class="grenier-modal-input" id="kdPersoAnD" type="number" inputmode="numeric"
+                       value="${d.getFullYear()}" min="1900" max="2200">
+              </div>
+              <label class="grenier-modal-label">à</label>
+              <div class="kd-perso-date">
+                <select class="grenier-modal-input" id="kdPersoMoisF">${opt(f.getMonth())}</select>
+                <input class="grenier-modal-input" id="kdPersoAnF" type="number" inputmode="numeric"
+                       value="${f.getFullYear()}" min="1900" max="2200">
+              </div>` : `
+              <div class="kd-modal-note">Lu ${this._kdEsc(this._kdChronoMoisTexte(l))} ${f.getFullYear()},
+                d'après tes surlignements.</div>`}
+          </div>
+        </div>
+        <div class="grenier-modal-actions">
+          ${perso ? `<button class="grenier-btn-secondary" style="color:#F87171"
+            onclick="App._kdPersoEffacer('${this._kdAttr(l.id)}')">Retirer</button>` : ''}
+          <button class="grenier-btn-secondary" onclick="App._kdChronoFermer()">Fermer</button>
+          <button class="grenier-btn-primary" onclick="App._kdChronoEnregistrer('${this._kdAttr(l.id)}')">Enregistrer</button>
+        </div>
+      </div>`;
+    bg.onclick = () => this._kdChronoFermer();
+    document.body.appendChild(bg);
+    this._kdPersoImage = null;
+    setTimeout(() => document.getElementById('kdPersoMots')?.focus(), 60);
+  },
+
+  // Fermer sans rien saisir un livre qu'on vient de créer le retire : sinon
+  // un « + » touché par mégarde laisserait une vignette vide dans la grille.
+  _kdChronoFermer() {
+    document.querySelector('.grenier-modal-bg')?.remove();
+    this._kdPersoImage = null;
+    const neuf = this._kdPersoNeuf;
+    this._kdPersoNeuf = null;
+    if (!neuf) return;
+    const l = (this._kdLib.perso || []).find(x => x.id === neuf);
+    if (!l || l.titre || l.mots || l.cover) return;
+    this._kdLib.perso = this._kdLib.perso.filter(x => x.id !== neuf);
+    this.saveLiseur();
+    if (this._kdChrono) this._kdRenderChrono();
+  },
+
+  _kdPersoNouveau(annee) {
+    const an = Number(annee) || new Date().getFullYear();
+    const m = new Date().getMonth();
+    const l = { id: 'p' + this._gid(), titre: '', cover: '', mots: 0,
+                d: new Date(an, m, 1).getTime(), f: new Date(an, m, 1).getTime(), at: Date.now() };
+    if (!Array.isArray(this._kdLib.perso)) this._kdLib.perso = [];
+    this._kdLib.perso.push(l);
+    this.saveLiseur();
+    this._kdRenderChrono();
+    this._kdPersoNeuf = l.id;
+    this._kdChronoOuvrir(l.id);
+  },
+
+  _kdPersoChoisirImage() { document.getElementById('kdCoverInput')?.click(); },
+
+  // Une photo de téléphone pèse plusieurs mégaoctets : telle quelle, elle
+  // remplirait le stockage du navigateur et la synchro avec. On la réduit
+  // donc à la taille d'une couverture avant de la garder.
+  async _kdPersoCouverture(fichier) {
+    if (!fichier) return;
+    try {
+      const url = URL.createObjectURL(fichier);
+      const img = await new Promise((ok, non) => {
+        const i = new Image();
+        i.onload = () => ok(i); i.onerror = non; i.src = url;
+      });
+      const L = 200, H = 300;
+      const c = document.createElement('canvas');
+      c.width = L; c.height = H;
+      const x = c.getContext('2d');
+      // On remplit le cadre sans déformer : la couverture est rognée, pas
+      // étirée — un visage écrasé se voit tout de suite.
+      const r = Math.max(L / img.width, H / img.height);
+      const l = img.width * r, h = img.height * r;
+      x.drawImage(img, (L - l) / 2, (H - h) / 2, l, h);
+      URL.revokeObjectURL(url);
+      this._kdPersoImage = c.toDataURL('image/jpeg', 0.78);
+      const ap = document.getElementById('kdPersoApercu');
+      if (ap) ap.innerHTML = `<img class="kd-cover" src="${this._kdPersoImage}" alt="">`;
+    } catch (e) { this.showToast('Image illisible'); }
+  },
+
+  _kdChronoEnregistrer(id) {
+    const lib = this._kdLib;
+    const n = Math.max(0, parseInt(document.getElementById('kdPersoMots')?.value, 10) || 0);
+    const perso = (lib.perso || []).find(l => l.id === id);
+    if (perso) {
+      const t = (document.getElementById('kdPersoTitre')?.value || '').trim();
+      const an = (q) => Math.min(2200, Math.max(1900,
+        parseInt(document.getElementById(q)?.value, 10) || new Date().getFullYear()));
+      const mo = (q) => Math.min(11, Math.max(0, parseInt(document.getElementById(q)?.value, 10) || 0));
+      perso.titre = t;
+      perso.mots = n;
+      perso.d = new Date(an('kdPersoAnD'), mo('kdPersoMoisD'), 1).getTime();
+      perso.f = new Date(an('kdPersoAnF'), mo('kdPersoMoisF'), 1).getTime();
+      // Lu « de décembre à janvier » : on ne corrige pas, on remet dans
+      // l'ordre, sinon le livre se rangerait à l'envers.
+      if (perso.f < perso.d) { const x = perso.d; perso.d = perso.f; perso.f = x; }
+      if (this._kdPersoImage) perso.cover = this._kdPersoImage;
+      perso.at = Date.now();
+    } else {
+      const b = lib.books.find(x => x.id === id);
+      if (!b) return this._kdChronoFermer();
+      b.mots = n;
+      b.motsAt = Date.now();
+    }
+    this.saveLiseur();
+    this._kdPersoNeuf = null;
+    this._kdChronoFermer();
+    this._kdRenderChrono();
+  },
+
+  // Une pierre tombale plutôt qu'un retrait sec : sans elle, l'autre
+  // appareil renverrait le livre à la synchro suivante.
+  _kdPersoEffacer(id) {
+    const l = (this._kdLib.perso || []).find(x => x.id === id);
+    if (!l) return;
+    l.efface = 1; l.at = Date.now();
+    this.saveLiseur();
+    this._kdChronoFermer();
+    this._kdRenderChrono();
   },
 
   _kdImportBar() {
@@ -18908,6 +19294,10 @@ Réponds UNIQUEMENT avec ce JSON :
         <button class="kd-btn" onclick="document.getElementById('kdFileInput').click()" ${this._kdBusy ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Fichiers…
+        </button>
+        <button class="kd-btn" onclick="App._kdOuvrirChrono()" title="Tous tes livres, année par année">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          Chronologie
         </button>
       </div>
       ${this._kdBusy ? `<div class="kd-note">Lecture en cours…</div>` : last ? `
