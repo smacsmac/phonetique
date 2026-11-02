@@ -285,7 +285,84 @@ qu'un bogue dans l'autre appli ne remplisse pas le disque.
 
 ---
 
-## 10. Pour vérifier que ça marche
+## 10. Joindre le serveur depuis l'autre application
+
+### L'adresse et le port
+
+Le serveur écoute sur **deux ports à la fois**, avec exactement les mêmes
+routes sur les deux :
+
+| | |
+|---|---|
+| **http** | port `8790` par défaut |
+| **https** | le port juste au-dessus, `8791` — pas réglable séparément |
+| **Interface** | `0.0.0.0`, donc toutes les cartes réseau du PC |
+
+Si l'autre application tourne **sur le PC lui-même**, le plus simple est
+`http://127.0.0.1:8790` : pas de certificat, pas de question. Sur le réseau
+local, `http://<adresse-du-pc>:8790` marche tout aussi bien.
+
+**À compléter** : l'adresse exacte sur ton réseau. Le serveur l'affiche au
+démarrage, et `GET /health` la rend aussi (`{"addresses":[…]}`).
+
+### Le certificat, et quand il ne sert à rien
+
+Le https est servi par un certificat **fabriqué par le serveur lui-même**.
+Donc :
+
+- en **http**, rien à faire — c'est le cas conseillé pour l'autre application ;
+- en **https**, il faut installer `phonetique-ca.crt` (servi sur `/ca.crt`) ou
+  passer outre la vérification (`curl -k`, `rejectUnauthorized: false` en Node).
+
+Tu n'as besoin du https que si l'autre application est une page servie
+elle-même en https : un navigateur refuse qu'une page https appelle du http.
+Dans ce cas, installe l'autorité — c'est la même que pour Phonétique, à
+installer une fois par appareil.
+
+### Si l'autre application est une page web
+
+Elle peut parler au serveur depuis **n'importe quelle origine** : toutes les
+réponses portent `Access-Control-Allow-Origin: *`, et le préliminaire
+`OPTIONS` est accepté pour n'importe quelle route, avec
+`Access-Control-Allow-Methods: GET, PUT, OPTIONS` et `Allow-Headers:
+Content-Type` (`phonetique-sync.mjs:338-355` et `436-442`).
+
+Les réponses portent aussi `Access-Control-Allow-Private-Network: true`, sans
+quoi Chrome sur Android refuserait qu'une page « publique » appelle une adresse
+`192.168.x.x`.
+
+Mesuré : une page servie sur un autre port dépose une image puis son catalogue,
+et relit la boîte, sans rien de particulier à configurer.
+
+### Si la couverture est en mémoire, pas sur le disque
+
+C'est le cas courant pour une appli web : l'image est dans IndexedDB, dans un
+`<canvas>` ou dans une `data:` URL. Il faut l'envoyer en **binaire**, pas en
+texte :
+
+```js
+// depuis un canvas
+const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+// ou depuis une data: URL
+const blob = await (await fetch(dataUrl)).blob();
+
+await fetch(base + '/recolte/couvertures/bd-1.png', {
+  method: 'PUT', headers: { 'content-type': 'image/png' }, body: blob,
+});
+```
+
+Puis déposer le catalogue avec `"couverture": "bd-1.png"`.
+
+### Il n'y a aucun mot de passe
+
+Le serveur ne demande rien à personne. Quiconque atteint le port sur le réseau
+local peut lire et remplacer la boîte, et lire les couvertures. C'est le même
+niveau que le reste de Phonétique, pensé pour un réseau domestique — mais il
+vaut mieux le savoir : **rien de confidentiel n'a sa place dans la boîte**.
+
+---
+
+## 11. Pour vérifier que ça marche
 
 1. Démarrer le serveur. La console doit afficher une ligne `entrées` avec le
    chemin de la boîte.
@@ -300,3 +377,7 @@ qu'un bogue dans l'autre appli ne remplisse pas le disque.
    le titre change, le compte de mots et les dates restent.
 
 Les tests automatiques qui couvrent tout ceci sont décrits dans `RECOLTE.md`.
+
+Si rien n'arrive : vérifie d'abord que le serveur affiche bien la ligne
+`entrées` à son démarrage. Si elle manque, il tourne encore sur l'ancien code
+et aucune de ces routes n'existe.

@@ -84,9 +84,12 @@ Toutes facultatives (`phonetique-sync.mjs:28-55`).
 | `PHON_IMAGES` | `<dossier de PHON_DATA>/phonetique-images` | où ranger les images reçues |
 | `PHON_KINDLE` | `<dossier de PHON_APP>` | où chercher `My Clippings.txt` et `vocab.db` |
 | `PHON_COUVERTURES` | `<PHON_KINDLE>/kindle-couvertures` | les vignettes de couverture |
+| `PHON_ENTREES` | `<dossier de PHON_DATA>/phonetique-entrees.json` | la boîte aux lettres où une autre application dépose des livres — voir `PASSERELLE.md` |
+| `PHON_ENTREES_IMG` | `<dossier de PHON_APP>/entrees-couvertures` | les couvertures qui vont avec. Créé au premier dépôt, n'a pas à exister d'avance |
 
 Constantes non réglables : corps de requête plafonné à **64 Mio** (`MAX_BODY`),
-**30** copies de sauvegarde gardées (`KEEP`).
+**30** copies de sauvegarde gardées (`KEEP`), **2000** entrées au plus dans la
+boîte aux lettres (`MAX_ENTREES`).
 
 ### À préparer au premier lancement
 
@@ -94,7 +97,7 @@ Constantes non réglables : corps de requête plafonné à **64 Mio** (`MAX_BODY
    et s'arrête proprement sinon — **à compléter** : version présente sur le PC.
 2. `index.html` à côté du serveur (ou `PHON_APP` posé). Sans lui le serveur
    démarre quand même : `/` répond 404 « index.html introuvable à côté de ce
-   script » (`phonetique-sync.mjs:535`).
+   script » (`phonetique-sync.mjs:629`).
 3. **Le pare-feu Windows** demande l'autorisation réseau au tout premier
    lancement : accepter pour les réseaux **privés**. Sans ça, seul le PC voit
    le serveur.
@@ -115,14 +118,14 @@ Il n'y a **aucun gestionnaire de signal** dans le code — pas de
 
 Pour un hub, cela veut dire qu'**un arrêt brutal est sans danger pour les
 données** : toute écriture passe par un fichier temporaire suivi d'un
-renommage (`writeAtomic`, `phonetique-sync.mjs:59`), et une copie datée est
+renommage (`writeAtomic`, `phonetique-sync.mjs:68`), et une copie datée est
 prise avant chaque écrasement. Au pire, un fichier `…tmp-<pid>` orphelin reste
 à côté des données ou dans le dossier des images. Il est inoffensif et le
-comptage des images l'ignore déjà (`phonetique-sync.mjs:617`).
+comptage des images l'ignore déjà (`phonetique-sync.mjs:711`).
 
 ### Ce qu'il écrit sur la console (et qu'on perdrait sans fenêtre)
 
-Au démarrage (`phonetique-sync.mjs:612-648`) :
+Au démarrage (`phonetique-sync.mjs:701-746`) :
 
 - le chemin du fichier de données et **le nombre de cartes** qu'il contient ;
 - le chemin des copies et combien sont gardées ;
@@ -175,7 +178,7 @@ n'est pas planté, il attend une touche.** Voir section 8.
 | **Interface d'écoute** | `0.0.0.0` — toutes les cartes réseau |
 
 Le serveur https n'est monté **qu'après** la préparation des certificats, à
-l'intérieur du rappel d'écoute du serveur http (`phonetique-sync.mjs:620-628`).
+l'intérieur du rappel d'écoute du serveur http (`phonetique-sync.mjs:717-725`).
 Les deux servent **exactement le même gestionnaire** : toutes les routes
 existent sur les deux ports.
 
@@ -223,6 +226,13 @@ L'installation de l'autorité, elle, se fait en clair : **`http://smac:8790/ca.c
 | `GET` | `/images/<clé>` | l'image. `400` si la clé n'est pas `[A-Za-z0-9._-]{1,120}` |
 | `PUT` | `/images/<clé>` | enregistre l'image. `415` si le type n'est pas png/jpeg/webp/gif/avif |
 | *autre* | `/images/<clé>` | `405` |
+| `GET` | `/recolte` | la boîte aux lettres d'une autre application. `{"entrees":[]}` si le fichier n'existe pas — jamais `404` |
+| `PUT` | `/recolte` | remplace la boîte après vérification. `400` si JSON invalide, sans tableau `entrees`, entrée sans identifiant, ou plus de 2000 entrées |
+| *autre* | `/recolte` | `405` |
+| `GET` | `/recolte/couvertures` | `{dossier, files:[{name,size}]}` |
+| `GET` | `/recolte/couvertures/<nom>` | l'image, **seulement si son nom figure dans le recensement** |
+| `PUT` | `/recolte/couvertures/<nom>` | enregistre l'image. `400` si le nom n'est pas `[A-Za-z0-9._-]{1,120}`, `415` si le type n'est pas png/jpeg/webp |
+| *autre* | `/recolte/couvertures/<nom>` | `405` |
 | *n'importe laquelle* | `/health` | voir section 6 |
 | | tout le reste | `404 {"error":"introuvable"}` |
 
@@ -250,7 +260,7 @@ dans la box pour qu'elle ne change pas.
 ### Le manifeste
 
 Servi sur `/manifest.webmanifest`, construit en mémoire
-(`phonetique-sync.mjs:164-179`) :
+(`phonetique-sync.mjs:173-188`) :
 
 | champ | valeur |
 |---|---|
@@ -331,7 +341,7 @@ section 8, c'est une erreur qui a coûté cher.
 
 ### Les adresses couvertes
 
-Dans cet ordre (`certHosts()`, `phonetique-sync.mjs:587-594`) :
+Dans cet ordre (`certHosts()`, `phonetique-sync.mjs:681-688`) :
 
 1. `PHON_HOST` s'il est posé — donc **`smac`** ;
 2. toutes les adresses IPv4 non internes des cartes réseau ;
@@ -366,7 +376,7 @@ GET https://smac:8791/health
 Disponible sur les deux ports, et sans vérification de méthode — mais un `GET`
 est ce qu'il faut.
 
-Réponse (`phonetique-sync.mjs:559-568`) :
+Réponse (`phonetique-sync.mjs:653-661`) :
 
 ```json
 {
@@ -412,12 +422,14 @@ ou demander `/` et regarder le code de retour.
 | **Les copies** | `phonetique-copies/` à côté des données | à la première sauvegarde |
 | **Les images** | `phonetique-images/` (`PHON_IMAGES`) | à la première image reçue |
 | **Les certificats** | `phonetique-certs/` à côté des données | au premier démarrage |
+| **La boîte aux lettres** | `phonetique-entrees.json` (`PHON_ENTREES`) | au premier dépôt d'une autre application |
+| **Ses couvertures** | `entrees-couvertures/` (`PHON_ENTREES_IMG`) | idem |
 
 Le serveur **ne fusionne rien** : il garde le dernier état complet envoyé par
 un appareil, qui a déjà fusionné le distant avec son local.
 
 Avant d'écrire, il vérifie que le contenu **ressemble à des données de
-Phonétique** (`looksLikePhonetique`, `phonetique-sync.mjs:354`) : un objet,
+Phonétique** (`looksLikePhonetique`, `phonetique-sync.mjs:363`) : un objet,
 avec `grenier.cards`, `grenier.decks`, `repertoire.words`, `repertoire.folders`
 en tableaux, et un `_app` qui ne soit pas celui d'une autre application. Un
 JSON valide mais étranger est refusé avec `400` et **n'écrase rien**.
@@ -441,6 +453,21 @@ en écriture atomique elles aussi. Elles existent parce que, côté navigateur,
 les images vivent dans IndexedDB : une base **liée à l'adresse d'ouverture**,
 que ni l'export ni la synchro des cartes n'emportent.
 
+### La boîte aux lettres
+
+Une **entrée**, pas une sortie partagée : une autre application y dépose des
+titres et des couvertures par `PUT /recolte`, Phonétique les relève et les
+range chez elle. Les deux côtés ne se mélangent jamais — l'autre application
+n'écrit pas dans `phonetique-donnees.json`, et Phonétique n'écrit pas dans la
+boîte.
+
+Pour le hub, cela veut dire : **deux fichiers de plus à ne pas perdre** si
+l'autre application compte dessus, mais aucun n'est vital pour Phonétique.
+Supprimer la boîte ne supprime pas les livres déjà relevés ; ils sont dans les
+données, comme les livres de papier ajoutés à la main.
+
+Le protocole complet est dans `PASSERELLE.md`.
+
 ### Les fichiers de la liseuse
 
 Entrées, pas sorties : `My Clippings.txt` et `vocab.db` dans `PHON_KINDLE`,
@@ -462,9 +489,10 @@ Les quatre premiers sont exclus du dépôt par `.gitignore`, donc **aucune
 opération git ne les restaurera**.
 
 Recréables sans drame : `kindle-couvertures/` (relancer
-`phonetique-kindle.cmd`), les fichiers `…tmp-<pid>` orphelins, `server.crt` /
-`server.key` / `meta.json` (refaits au démarrage suivant — mais **pas**
-`ca.key` ni `phonetique-ca.crt`).
+`phonetique-kindle.cmd`), `phonetique-entrees.json` et `entrees-couvertures/`
+(l'autre application les redépose), les fichiers `…tmp-<pid>` orphelins,
+`server.crt` / `server.key` / `meta.json` (refaits au démarrage suivant —
+mais **pas** `ca.key` ni `phonetique-ca.crt`).
 
 ---
 
