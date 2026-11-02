@@ -362,6 +362,30 @@ ou une contre-oblique, étaient touchés.
 Tout identifiant posé dans un appel en ligne passe maintenant par `_kdJs`,
 qui échappe **d'abord pour le JavaScript, ensuite pour l'HTML**.
 
+### Les livres venus d'une autre application
+
+Un liseur de bandes dessinées peut déposer ses titres et ses couvertures sur
+le serveur ; La Récolte les relève toute seule en arrivant sur la liste des
+livres, et ils prennent leur place dans la chronologie.
+
+L'autre appli n'envoie que ce qu'elle sait : **le titre et la couverture**. Le
+nombre de mots et les dates restent à toi — une relève ne les touche jamais,
+même si le même livre est redéposé cent fois. Un bouton de la barre d'outils,
+qui ne paraît que s'il y a des bandes dessinées, les montre ou les cache ; en
+les cachant, le total de mots en haut descend d'autant, pour qu'il décrive
+toujours ce qui est affiché.
+
+Le protocole complet — routes, forme des entrées, propriété des champs, ce qui
+le casserait — est dans `PASSERELLE.md`. Il demande la version récente de
+`phonetique-sync.mjs` : les routes vivent dans le serveur, pas dans la page.
+
+### Une mise à jour en retard ne quitte plus la vue
+
+En arrivant sur La Récolte, l'appli va voir le serveur en arrière-plan. Si tu
+ouvrais la chronologie dans la seconde qui suivait, la réponse finissait
+**après** ton geste et redessinait la liste des livres par-dessus. Le
+rafraîchissement redessine maintenant la vue réellement ouverte.
+
 ## Le fil et la place dans la liste
 
 Les vues de l'écran sont des **étapes de navigation à part entière** : les
@@ -633,6 +657,8 @@ réimportant les fichiers, qui vivent sur le PC.
 | Rien ne se passe au bouton « Depuis le serveur » | l'appli n'est pas ouverte depuis le serveur — vois Paramètres › Synchro |
 | Une pastille au lieu d'une couverture | le bouton **Depuis le serveur** le dit : serveur à relancer, dossier vide, ou livre sans identifiant |
 | « Serveur à relancer » | `phonetique-sync.mjs` a été remplacé mais le serveur tourne encore sur l'ancien code — ferme la fenêtre et relance le lanceur |
+| Aucune bande dessinée n'arrive | serveur resté sur l'ancien code : la ligne `entrées` manque à son démarrage. La relève est silencieuse, elle ne dira rien |
+| Une bande dessinée sans vignette | nom de fichier avec un accent, un espace ou une barre oblique — vois `PASSERELLE.md` section 9 |
 
 ## Ce que La Récolte ne fait pas
 

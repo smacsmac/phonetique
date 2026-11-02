@@ -39,6 +39,15 @@ const IMGDIR     = resolve(process.env.PHON_IMAGES || join(dirname(DATA), 'phone
 const KINDLEDIR  = resolve(process.env.PHON_KINDLE || dirname(APP));
 // Les vignettes de couverture que la liseuse garde dans system/thumbnails.
 const COVERDIR   = resolve(process.env.PHON_COUVERTURES || join(KINDLEDIR, 'kindle-couvertures'));
+// ── La boîte aux lettres d'une autre application ─────────────────────────
+// Une appli voisine — un lecteur de bandes dessinées, par exemple — dépose
+// ici les livres qu'elle a fait lire. Phonétique les relève et les range
+// dans sa chronologie. Une boîte à part, et non le document commun : deux
+// applis qui réécrivent le même fichier se perdent mutuellement des
+// écritures, alors qu'une boîte n'appartient qu'à celle qui y dépose.
+const RECOLTE    = resolve(process.env.PHON_ENTREES || join(dirname(DATA), 'phonetique-entrees.json'));
+const BDDIR      = resolve(process.env.PHON_ENTREES_IMG || join(dirname(APP), 'entrees-couvertures'));
+const MAX_ENTREES = 2000;
 const MAX_BODY   = 64 * 1024 * 1024;
 const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
@@ -360,6 +369,33 @@ function looksLikePhonetique(o){
   return null;
 }
 
+// Même esprit que pour /donnees : on vérifie la forme avant d'écrire, pour
+// qu'un envoi malformé ne remplace pas une boîte valide.
+function looksLikeEntrees(o){
+  if(!o || typeof o !== 'object') return 'ce n\'est pas un objet';
+  if(!Array.isArray(o.entrees)) return 'il manque le tableau « entrees »';
+  if(o.entrees.length > MAX_ENTREES) return `trop d'entrées (${o.entrees.length} > ${MAX_ENTREES})`;
+  for(const e of o.entrees){
+    if(!e || typeof e !== 'object') return 'une entrée n\'est pas un objet';
+    if(typeof e.id !== 'string' || !e.id.trim()) return 'une entrée n\'a pas d\'identifiant';
+  }
+  return null;
+}
+
+async function bdFiles(){
+  const out = [];
+  let noms;
+  try{ noms = await readdir(BDDIR); }catch{ return out; }
+  for(const name of noms){
+    if(!/\.(jpe?g|png|webp)$/i.test(name)) continue;
+    try{
+      const st = await stat(join(BDDIR, name));
+      if(st.isFile()) out.push({ name, size: st.size });
+    }catch{}
+  }
+  return out;
+}
+
 // ── images ───────────────────────────────────────────────────────────────
 const IMG_TYPES = { 'image/png':'png', 'image/jpeg':'jpg', 'image/webp':'webp',
                     'image/gif':'gif', 'image/avif':'avif' };
@@ -519,6 +555,64 @@ const server = http.createServer(async (req, res) => {
     return send(res, 405, '{"error":"méthode non permise"}');
   }
 
+  // ── la boîte aux lettres ──
+  if(path === '/recolte'){
+    if(req.method === 'GET'){
+      try{ return send(res, 200, await readFile(RECOLTE, 'utf8')); }
+      catch{ return send(res, 200, '{"entrees":[]}'); }
+    }
+    if(req.method === 'PUT'){
+      try{
+        const text = (await readBody(req, MAX_BODY)).toString('utf8');
+        let parsed;
+        try{ parsed = JSON.parse(text); }
+        catch{ return send(res, 400, '{"error":"JSON invalide"}'); }
+        const why = looksLikeEntrees(parsed);
+        if(why) return send(res, 400, JSON.stringify({ error: why }));
+        parsed._at = Date.now();
+        await writeAtomic(RECOLTE, JSON.stringify(parsed, null, 1));
+        const n = parsed.entrees.length;
+        console.log(`  ← ${new Date().toLocaleTimeString('fr-FR')}  ${n} entrée${n !== 1 ? 's' : ''} déposée${n !== 1 ? 's' : ''}`);
+        return send(res, 200, JSON.stringify({ ok:true, entrees:n }));
+      }catch(err){ return send(res, 500, JSON.stringify({ error: err.message })); }
+    }
+    return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
+  // Les couvertures qui vont avec. Recensées comme celles de la liseuse :
+  // seuls les noms trouvés sur le disque peuvent être demandés.
+  if(path === '/recolte/couvertures' && req.method === 'GET'){
+    return send(res, 200, JSON.stringify({ dossier: BDDIR, files: await bdFiles() }));
+  }
+  if(path.startsWith('/recolte/couvertures/')){
+    const want = decodeURIComponent(path.slice('/recolte/couvertures/'.length));
+    if(req.method === 'PUT'){
+      const key = safeKey(want);
+      if(!key) return send(res, 400, '{"error":"nom invalide"}');
+      const type = (req.headers['content-type'] || '').split(';')[0].trim();
+      if(!IMG_TYPES[type]) return send(res, 415, JSON.stringify({ error: `type non accepté : ${type || 'absent'}` }));
+      try{
+        const body = await readBody(req, MAX_BODY);
+        await mkdir(BDDIR, { recursive: true });
+        const tmp = join(BDDIR, key + '.tmp-' + process.pid);
+        await writeFile(tmp, body);
+        await rename(tmp, join(BDDIR, key));
+        console.log(`  ← ${new Date().toLocaleTimeString('fr-FR')}  couverture ${key} (${Math.round(body.length/1024)} Ko)`);
+        return send(res, 200, JSON.stringify({ ok:true, fichier:key }));
+      }catch(err){ return send(res, 500, JSON.stringify({ error: err.message })); }
+    }
+    if(req.method === 'GET'){
+      const hit = (await bdFiles()).find(f => f.name === want);
+      if(!hit) return send(res, 404, '{"error":"couverture inconnue"}');
+      try{
+        const buf = await readFile(join(BDDIR, hit.name));
+        const ext = hit.name.slice(hit.name.lastIndexOf('.') + 1).toLowerCase();
+        return send(res, 200, buf, EXT_TYPES[ext === 'jpeg' ? 'jpg' : ext] || 'application/octet-stream');
+      }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+    }
+    return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
   // ── l'application ──
   if(req.method === 'GET' && (path === '/' || path === '/index.html')){
     try{
@@ -616,6 +710,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   let nImg = 0;
   try{ nImg = (await readdir(IMGDIR)).filter(f => !f.includes('.tmp-')).length; }catch{}
   console.log(`  images     ${IMGDIR}${nImg ? `  (${nImg})` : '  (vide)'}`);
+  let nEnt = 0;
+  try{ nEnt = (JSON.parse(await readFile(RECOLTE,'utf8')).entrees || []).length; }catch{}
+  console.log(`  entrées    ${RECOLTE}${nEnt ? `  (${nEnt})` : '  (vide)'}`);
 
   let sec = null;
   try{

@@ -18491,6 +18491,11 @@ Réponds UNIQUEMENT avec ce JSON :
 
   _kdRefresh() {
     if (this.currentScreen !== 'recolte') return;
+    // Une mise à jour qui arrive en retard doit redessiner la vue OUVERTE.
+    // Sans cette ligne, ouvrir la chronologie dans la seconde qui suit
+    // l'arrivée sur La Récolte te renvoyait à la liste des livres : le
+    // réseau finissait après le geste et reprenait la main.
+    if (this._kdChrono) return this._kdRenderChrono();
     // Jamais pendant qu'on écrit : un rendu arracherait le champ sous les
     // doigts, avec le curseur et la frappe en cours.
     if (this._kdNoteId) {
@@ -19033,7 +19038,93 @@ Réponds UNIQUEMENT avec ce JSON :
     if (!this._kdBusy && !this._kdBookId && !this._kdNoteId && !this._kdChrono) setTimeout(async () => {
       await this._kdFetchFromServer(true);
       await this._kdFetchCoversFromServer(true);
+      await this._kdReleverEntrees(true);
     }, 300);
+  },
+
+  // ── La boîte aux lettres d'une autre application ──────────────
+  // Une appli voisine dépose ses livres sur le serveur ; on les relève ici.
+  // Elle n'envoie que ce qu'elle sait : le titre et la couverture. Le compte
+  // de mots et les dates restent à toi, et c'est pourquoi la fusion est
+  // CHAMP PAR CHAMP — remplacer l'entrée en bloc effacerait à chaque relève
+  // ce que tu viens de taper.
+  _kdEntreeId(id) { return 'bd:' + String(id); },
+
+  async _kdReleverEntrees(silent) {
+    const base = (this._syncCfg && this._syncCfg.url) || '';
+    if (!base) return 0;
+    const root = base.replace(/\/$/, '');
+    let boite;
+    try {
+      const r = await this._kdFetch(root + '/recolte');
+      if (!r.ok) return 0;
+      boite = await r.json();
+    } catch (e) { return 0; }
+    if (!boite || !Array.isArray(boite.entrees)) return 0;
+
+    if (!Array.isArray(this._kdLib.perso)) this._kdLib.perso = [];
+    const parId = new Map(this._kdLib.perso.map(l => [l.id, l]));
+    const maintenant = new Date();
+    const mois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1).getTime();
+    let neufs = 0, changes = 0;
+
+    for (const e of boite.entrees) {
+      if (!e || typeof e.id !== 'string') continue;
+      const id = this._kdEntreeId(e.id);
+      const at = Number(e.at) || 0;
+      let l = parId.get(id);
+
+      if (e.efface) {
+        if (l && !l.efface) { l.efface = 1; l.at = Date.now(); changes++; }
+        continue;
+      }
+      if (!l) {
+        // Le mois courant par défaut : on vient de la lire. Tu corriges
+        // ensuite si ce n'est pas le cas.
+        l = { id, titre: '', cover: '', mots: 0, d: mois, f: mois,
+              source: 'bd', bdAt: 0, at: at || Date.now() };
+        this._kdLib.perso.push(l);
+        parId.set(id, l);
+        neufs++;
+      }
+      // Rien de neuf dans la boîte : on ne touche à rien. Sans ce garde-fou,
+      // chaque relève réécrirait le titre par-dessus le tien.
+      if (at && at <= (l.bdAt || 0)) continue;
+      const titre = String(e.titre || '').trim();
+      const couv = String(e.couverture || '').trim();
+      if (titre && titre !== l.titre) { l.titre = titre; changes++; }
+      if (couv && couv !== l.couv) { l.couv = couv; l.cover = ''; changes++; }
+      l.bdAt = at || Date.now();
+      l.source = 'bd';
+      l.at = Date.now();
+    }
+
+    const n = await this._kdEntreesCouvertures(root);
+    if (neufs || changes || n) {
+      this.saveLiseur();
+      if (!silent) this.showToast(
+        neufs ? `${neufs} livre${neufs > 1 ? 's' : ''} reçu${neufs > 1 ? 's' : ''}` : 'Entrées à jour');
+      if (this._kdChrono) this._kdRenderChrono();
+    } else if (!silent) this.showToast('Rien de neuf dans la boîte');
+    return neufs + changes;
+  },
+
+  // Les couvertures restent des fichiers sur le PC : on les télécharge une
+  // fois, réduites comme celles de la liseuse, et elles vivent ensuite dans
+  // le navigateur — donc visibles hors réseau, comme tout le reste.
+  async _kdEntreesCouvertures(root) {
+    const manque = (this._kdLib.perso || []).filter(l => !l.efface && l.couv && !l.cover);
+    if (!manque.length) return 0;
+    let n = 0;
+    for (const l of manque) {
+      try {
+        const r = await this._kdFetch(root + '/recolte/couvertures/' + encodeURIComponent(l.couv), {}, 8000);
+        if (!r.ok) continue;
+        l.cover = await this._kdShrinkCover(await r.blob());
+        n++;
+      } catch (e) { /* on retentera à la prochaine relève */ }
+    }
+    return n;
   },
 
   // ══ La chronologie ════════════════════════════════════════════
@@ -19053,6 +19144,9 @@ Réponds UNIQUEMENT avec ce JSON :
     return this.settings.kdChronoOrdre === 'anciens' ? 'anciens' : 'recents';
   },
   _kdChronoMois() { return this.settings.kdChronoMois === true; },
+  // Les bandes dessinées viennent d'une autre appli : on peut les mettre de
+  // côté pour ne compter que la lecture longue.
+  _kdChronoBd() { return this.settings.kdChronoBd !== false; },
   // Visible par défaut : c'est ce que la vue montrait jusqu'ici.
   _kdChronoMots() { return this.settings.kdChronoMots !== false; },
 
@@ -19071,6 +19165,11 @@ Réponds UNIQUEMENT avec ce JSON :
     this.saveSettings();
     this._kdRenderChrono();
   },
+  _kdChronoBasculeBd() {
+    this.settings.kdChronoBd = !this._kdChronoBd();
+    this.saveSettings();
+    this._kdRenderChrono();
+  },
   _kdChronoBasculeAjout() {
     this._kdChronoAjout = !this._kdChronoAjout;
     this._kdRenderChrono();
@@ -19078,8 +19177,9 @@ Réponds UNIQUEMENT avec ce JSON :
 
   // Les deux sortes de livres réunies sous la même forme : la liseuse en
   // donne les dates, le papier les reçoit à la main.
-  _kdChronoLivres() {
+  _kdChronoLivres(tous) {
     const lib = this._kdLib;
+    const bd = tous || this._kdChronoBd();
     const bornes = new Map();                 // livre → [première, dernière]
     for (const w of lib.words) {
       if (!w.h || !w.t) continue;
@@ -19096,8 +19196,10 @@ Réponds UNIQUEMENT avec ce JSON :
     }
     for (const l of (lib.perso || [])) {
       if (l.efface) continue;
+      if (l.source === 'bd' && !bd) continue;
       out.push({ id: l.id, titre: l.titre || 'Livre de papier', auteur: '', cover: l.cover || '',
-                 perso: l, debut: l.d || l.f || 0, fin: l.f || l.d || 0, mots: l.mots || 0 });
+                 perso: l, bd: l.source === 'bd', debut: l.d || l.f || 0,
+                 fin: l.f || l.d || 0, mots: l.mots || 0 });
     }
     const sens = this._kdChronoOrdre() === 'recents' ? -1 : 1;
     return out.sort((a, b) => sens * ((a.fin || 0) - (b.fin || 0)));
@@ -19130,6 +19232,9 @@ Réponds UNIQUEMENT avec ce JSON :
     const mois = this._kdChronoMois();
     const compte = this._kdChronoMots();
     const recents = this._kdChronoOrdre() === 'recents';
+    const bd = this._kdChronoBd();
+    // Le bouton ne paraît que s'il y a quelque chose à cacher.
+    const desBd = (this._kdLib.perso || []).some(l => !l.efface && l.source === 'bd');
 
     // Regroupement par année de la dernière rencontre, dans l'ordre choisi.
     const annees = [];
@@ -19173,6 +19278,8 @@ Réponds UNIQUEMENT avec ce JSON :
         ${chip(compte, compte ? 'Masquer le nombre de mots de chaque livre'
                                : 'Afficher le nombre de mots de chaque livre',
           '_kdChronoBasculeMots()', '<span class="kd-chip-2x">123</span>')}
+        ${desBd ? chip(bd, bd ? 'Masquer les bandes dessinées' : 'Afficher les bandes dessinées',
+          '_kdChronoBasculeBd()', S('<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="12"/>')) : ''}
         ${chip(this._kdChronoAjout, this._kdChronoAjout ? 'Masquer les ajouts' : 'Ajouter un livre de papier',
           '_kdChronoBasculeAjout()', S('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'))}
       </div>
@@ -19200,7 +19307,7 @@ Réponds UNIQUEMENT avec ce JSON :
   // Un seul formulaire pour les deux sortes : la liseuse donne ses dates et
   // sa couverture, le papier les demande.
   _kdChronoOuvrir(id) {
-    const l = this._kdChronoLivres().find(x => x.id === id);
+    const l = this._kdChronoLivres(true).find(x => x.id === id);
     if (!l) return;
     const perso = !!l.perso;
     const d = l.debut ? new Date(l.debut) : new Date();
