@@ -33,6 +33,21 @@ const BACKUPS    = join(dirname(DATA), 'phonetique-copies');
 // l'adresse d'où l'appli est ouverte, et que rien ne sauvegarde. Ici, elles
 // deviennent de vrais fichiers que tu peux voir, copier et archiver.
 const IMGDIR     = resolve(process.env.PHON_IMAGES || join(dirname(DATA), 'phonetique-images'));
+// Les deux fichiers d'une liseuse Kindle. Par défaut on les cherche dans le
+// dossier de l'appli : y déposer « My Clippings.txt » et « vocab.db » suffit
+// alors à mettre Le Liseur à jour, sans rien téléverser depuis le téléphone.
+const KINDLEDIR  = resolve(process.env.PHON_KINDLE || dirname(APP));
+// Les vignettes de couverture que la liseuse garde dans system/thumbnails.
+const COVERDIR   = resolve(process.env.PHON_COUVERTURES || join(KINDLEDIR, 'kindle-couvertures'));
+// ── La boîte aux lettres d'une autre application ─────────────────────────
+// Une appli voisine — un lecteur de bandes dessinées, par exemple — dépose
+// ici les livres qu'elle a fait lire. Phonétique les relève et les range
+// dans sa chronologie. Une boîte à part, et non le document commun : deux
+// applis qui réécrivent le même fichier se perdent mutuellement des
+// écritures, alors qu'une boîte n'appartient qu'à celle qui y dépose.
+const RECOLTE    = resolve(process.env.PHON_ENTREES || join(dirname(DATA), 'phonetique-entrees.json'));
+const BDDIR      = resolve(process.env.PHON_ENTREES_IMG || join(dirname(APP), 'entrees-couvertures'));
+const MAX_ENTREES = 2000;
 const MAX_BODY   = 64 * 1024 * 1024;
 const KEEP       = 30;
 const HTTPS_PORT = PORT + 1;
@@ -176,10 +191,20 @@ const MANIFEST = JSON.stringify({
 // est là), cache en secours quand tu es dehors. Les données ne sont jamais
 // mises en cache : elles doivent venir du serveur ou pas du tout.
 const SERVICE_WORKER = `
-const CACHE = 'phonetique-shell-v2';
+const CACHE = 'phonetique-shell-v5';
 const SHELL = ['/', '/manifest.webmanifest', '/icon-512.png'];
+// Delai d'ETABLISSEMENT de la reponse, pas de transfert : fetch() se resout
+// des que les en-tetes arrivent, et le corps continue ensuite a son rythme.
+// Un telechargement lent n'est donc pas penalise ; seule une connexion qui ne
+// s'etablit jamais l'est.
+const ATTENTE = 3000;
+
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // 'reload' court-circuite le cache HTTP du navigateur : l'installation doit
+  // capturer le fichier du disque, pas une copie que le navigateur garderait.
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
@@ -193,26 +218,122 @@ self.addEventListener('fetch', e => {
   // passer sans y toucher. Les mettre en cache n'apporterait rien et les
   // reponses opaques ne s'y stockent pas.
   if(url.origin !== location.origin) return;
-  if(url.pathname === '/donnees' || url.pathname === '/health') return;   // jamais en cache
+  // Jamais en cache. Pour /kindle, ce sont des fichiers volumineux (vocab.db
+  // pese plus d'un megaoctet, et il peut y avoir des centaines de vignettes)
+  // que l'appli digere aussitot et garde sous une autre forme : les cacher
+  // doublerait le stockage sans rien apporter.
+  if(url.pathname === '/donnees' || url.pathname === '/health'
+     || url.pathname === '/kindle' || url.pathname.startsWith('/kindle/')) return;
+
   const key = (e.request.mode === 'navigate' || url.pathname === '/index.html') ? '/' : e.request;
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        const copy = r.clone();
-        caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {});
-        return r;
-      })
-      .catch(() => caches.match(key).then(r => {
-        if(r) return r;
+
+  e.respondWith((async () => {
+    const copie = await caches.match(key);
+
+    // Le reseau met la copie a jour des qu'il repond, meme si la course
+    // ci-dessous est deja perdue : la prochaine ouverture aura le neuf.
+    //
+    // waitUntil est ce qui rend cette phrase vraie. Sans lui, le navigateur
+    // peut arreter le service worker des que respondWith a rendu sa reponse,
+    // c'est-a-dire AVANT que l'ecriture dans le cache soit finie — et sur un
+    // telephone il ne s'en prive pas. La copie gardee restait alors celle de
+    // l'installation, indefiniment : on remplacait index.html sans que rien
+    // ne change hors reseau.
+    const reseau = fetch(e.request).then(async r => {
+      if(r && r.ok){
+        const c = await caches.open(CACHE);
+        await c.put(key, r.clone());
+      }
+      return r;
+    });
+    e.waitUntil(reseau.catch(() => {}));   // et pas de rejet non gere
+
+    if(!copie){
+      // Rien en reserve : il faut bien attendre le reseau.
+      try { return await reseau; }
+      catch(err){
         // Ne renvoyer la page d'accueil QUE pour une navigation. La renvoyer
         // a la place d'un script ferait executer du HTML comme du JavaScript
         // ("Unexpected token '<'") au lieu d'un simple echec reseau.
-        if(e.request.mode === 'navigate') return caches.match('/');
+        if(e.request.mode === 'navigate'){
+          const shell = await caches.match('/');
+          if(shell) return shell;
+        }
         return Response.error();
-      }))
-  );
+      }
+    }
+
+    // Le navigateur se sait hors ligne : inutile de tenter quoi que ce soit.
+    if(self.navigator && self.navigator.onLine === false) return copie;
+
+    // On a une copie. On tente le reseau, mais brievement : un PC absent du
+    // reseau ne REFUSE pas la connexion, il ne repond pas. Sans ce delai,
+    // l'appli attendait la minute entiere du systeme avant de se rabattre.
+    try {
+      const r = await Promise.race([
+        reseau,
+        new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), ATTENTE)),
+      ]);
+      if(r && r.ok) return r;
+    } catch(err){ /* trop lent ou injoignable : la copie fera l'affaire */ }
+    return copie;
+  })());
 });
 `;
+
+// Reconnaît les deux fichiers quel que soit le nom exact donné par Windows
+// (« My Clippings.txt », « MyClippings.txt », une copie renommée…), dans le
+// dossier de l'appli ou dans un sous-dossier « kindle ».
+async function kindleFiles(){
+  const out = [];
+  for(const dir of [KINDLEDIR, join(KINDLEDIR, 'kindle')]){
+    let noms;
+    try{ noms = await readdir(dir); }catch{ continue; }
+    for(const name of noms){
+      const low = name.toLowerCase();
+      const kind = /^my[ _-]?clippings.*\.txt$/.test(low) ? 'clippings'
+                 : /vocab.*\.db$/.test(low)               ? 'vocab' : null;
+      if(!kind) continue;
+      try{
+        const st = await stat(join(dir, name));
+        if(!st.isFile()) continue;
+        out.push({ name, kind, dir, size: st.size, mtime: Math.round(st.mtimeMs) });
+      }catch{}
+    }
+  }
+  // Un même nom dans les deux dossiers : le sous-dossier « kindle » gagne.
+  const vus = new Map();
+  for(const f of out) vus.set(f.name, f);
+  return [...vus.values()];
+}
+
+async function coverFiles(){
+  const out = [];
+  let noms;
+  try{ noms = await readdir(COVERDIR); }catch{ return out; }
+  for(const name of noms){
+    if(!/\.(jpe?g|png)$/i.test(name)) continue;
+    try{
+      const st = await stat(join(COVERDIR, name));
+      if(st.isFile()) out.push({ name, size: st.size });
+    }catch{}
+  }
+  return out;
+}
+
+// La date du index.html servi, en clair. L'appli l'affiche dans Paramètres ;
+// c'est ainsi qu'on sait, sans deviner, si la version chargée est bien celle
+// du disque ou une copie gardée hors réseau.
+async function appBuild(){
+  try{
+    const d = (await stat(APP)).mtime;
+    const p = n => String(n).padStart(2, '0');
+    // Les secondes comptent : deux remplacements dans la même minute doivent
+    // se distinguer, sinon la comparaison dirait « à jour » à tort.
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`
+         + ` ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }catch{ return 'inconnue'; }
+}
 
 function send(res, code, body, type='application/json; charset=utf-8', extra={}){
   res.writeHead(code, {
@@ -246,6 +367,33 @@ function looksLikePhonetique(o){
   if(!g || !Array.isArray(g.cards) || !Array.isArray(g.decks)) return 'il manque le Grenier';
   if(!r || !Array.isArray(r.words) || !Array.isArray(r.folders)) return 'il manque le Répertoire';
   return null;
+}
+
+// Même esprit que pour /donnees : on vérifie la forme avant d'écrire, pour
+// qu'un envoi malformé ne remplace pas une boîte valide.
+function looksLikeEntrees(o){
+  if(!o || typeof o !== 'object') return 'ce n\'est pas un objet';
+  if(!Array.isArray(o.entrees)) return 'il manque le tableau « entrees »';
+  if(o.entrees.length > MAX_ENTREES) return `trop d'entrées (${o.entrees.length} > ${MAX_ENTREES})`;
+  for(const e of o.entrees){
+    if(!e || typeof e !== 'object') return 'une entrée n\'est pas un objet';
+    if(typeof e.id !== 'string' || !e.id.trim()) return 'une entrée n\'a pas d\'identifiant';
+  }
+  return null;
+}
+
+async function bdFiles(){
+  const out = [];
+  let noms;
+  try{ noms = await readdir(BDDIR); }catch{ return out; }
+  for(const name of noms){
+    if(!/\.(jpe?g|png|webp)$/i.test(name)) continue;
+    try{
+      const st = await stat(join(BDDIR, name));
+      if(st.isFile()) out.push({ name, size: st.size });
+    }catch{}
+  }
+  return out;
 }
 
 // ── images ───────────────────────────────────────────────────────────────
@@ -329,6 +477,43 @@ const server = http.createServer(async (req, res) => {
     return send(res, 405, '{"error":"méthode non permise"}');
   }
 
+  // ── les fichiers de la liseuse ──
+  // On recense, on ne devine pas : l'appli ne peut demander qu'un nom trouvé
+  // ici, donc aucun chemin venu du réseau n'atteint le disque.
+  if(path === '/kindle' && req.method === 'GET'){
+    // On ne publie pas le chemin de chaque fichier : l'appli n'en a pas besoin,
+    // et le dossier où ils sont rangés ne regarde pas le réseau.
+    const files = (await kindleFiles()).map(({ name, kind, size, mtime }) => ({ name, kind, size, mtime }));
+    return send(res, 200, JSON.stringify({ dossier: KINDLEDIR, files }));
+  }
+  // Les couvertures, recensées de la même facon : seuls les noms trouvés
+  // sur le disque peuvent être demandés.
+  if(path === '/kindle/couvertures' && req.method === 'GET'){
+    const files = (await coverFiles()).map(({ name, size }) => ({ name, size }));
+    return send(res, 200, JSON.stringify({ dossier: COVERDIR, files }));
+  }
+  if(path.startsWith('/kindle/couvertures/') && req.method === 'GET'){
+    const want = decodeURIComponent(path.slice('/kindle/couvertures/'.length));
+    const hit = (await coverFiles()).find(f => f.name === want);
+    if(!hit) return send(res, 404, '{"error":"vignette inconnue"}');
+    try{
+      const buf = await readFile(join(COVERDIR, hit.name));
+      return send(res, 200, buf, hit.name.toLowerCase().endsWith('.png')
+        ? 'image/png' : 'image/jpeg');
+    }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+  }
+
+  if(path.startsWith('/kindle/') && req.method === 'GET'){
+    const want = decodeURIComponent(path.slice('/kindle/'.length));
+    const hit = (await kindleFiles()).find(f => f.name === want);
+    if(!hit) return send(res, 404, '{"error":"fichier inconnu"}');
+    try{
+      const buf = await readFile(join(hit.dir, hit.name));
+      return send(res, 200, buf, hit.kind === 'vocab'
+        ? 'application/octet-stream' : 'text/plain; charset=utf-8');
+    }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+  }
+
   // ── les images ──
   // La liste, pour que l'appli sache lesquelles restent à envoyer.
   if(path === '/images' && req.method === 'GET'){
@@ -370,10 +555,69 @@ const server = http.createServer(async (req, res) => {
     return send(res, 405, '{"error":"méthode non permise"}');
   }
 
+  // ── la boîte aux lettres ──
+  if(path === '/recolte'){
+    if(req.method === 'GET'){
+      try{ return send(res, 200, await readFile(RECOLTE, 'utf8')); }
+      catch{ return send(res, 200, '{"entrees":[]}'); }
+    }
+    if(req.method === 'PUT'){
+      try{
+        const text = (await readBody(req, MAX_BODY)).toString('utf8');
+        let parsed;
+        try{ parsed = JSON.parse(text); }
+        catch{ return send(res, 400, '{"error":"JSON invalide"}'); }
+        const why = looksLikeEntrees(parsed);
+        if(why) return send(res, 400, JSON.stringify({ error: why }));
+        parsed._at = Date.now();
+        await writeAtomic(RECOLTE, JSON.stringify(parsed, null, 1));
+        const n = parsed.entrees.length;
+        console.log(`  ← ${new Date().toLocaleTimeString('fr-FR')}  ${n} entrée${n !== 1 ? 's' : ''} déposée${n !== 1 ? 's' : ''}`);
+        return send(res, 200, JSON.stringify({ ok:true, entrees:n }));
+      }catch(err){ return send(res, 500, JSON.stringify({ error: err.message })); }
+    }
+    return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
+  // Les couvertures qui vont avec. Recensées comme celles de la liseuse :
+  // seuls les noms trouvés sur le disque peuvent être demandés.
+  if(path === '/recolte/couvertures' && req.method === 'GET'){
+    return send(res, 200, JSON.stringify({ dossier: BDDIR, files: await bdFiles() }));
+  }
+  if(path.startsWith('/recolte/couvertures/')){
+    const want = decodeURIComponent(path.slice('/recolte/couvertures/'.length));
+    if(req.method === 'PUT'){
+      const key = safeKey(want);
+      if(!key) return send(res, 400, '{"error":"nom invalide"}');
+      const type = (req.headers['content-type'] || '').split(';')[0].trim();
+      if(!IMG_TYPES[type]) return send(res, 415, JSON.stringify({ error: `type non accepté : ${type || 'absent'}` }));
+      try{
+        const body = await readBody(req, MAX_BODY);
+        await mkdir(BDDIR, { recursive: true });
+        const tmp = join(BDDIR, key + '.tmp-' + process.pid);
+        await writeFile(tmp, body);
+        await rename(tmp, join(BDDIR, key));
+        console.log(`  ← ${new Date().toLocaleTimeString('fr-FR')}  couverture ${key} (${Math.round(body.length/1024)} Ko)`);
+        return send(res, 200, JSON.stringify({ ok:true, fichier:key }));
+      }catch(err){ return send(res, 500, JSON.stringify({ error: err.message })); }
+    }
+    if(req.method === 'GET'){
+      const hit = (await bdFiles()).find(f => f.name === want);
+      if(!hit) return send(res, 404, '{"error":"couverture inconnue"}');
+      try{
+        const buf = await readFile(join(BDDIR, hit.name));
+        const ext = hit.name.slice(hit.name.lastIndexOf('.') + 1).toLowerCase();
+        return send(res, 200, buf, EXT_TYPES[ext === 'jpeg' ? 'jpg' : ext] || 'application/octet-stream');
+      }catch{ return send(res, 404, '{"error":"fichier introuvable"}'); }
+    }
+    return send(res, 405, '{"error":"méthode non permise"}');
+  }
+
   // ── l'application ──
   if(req.method === 'GET' && (path === '/' || path === '/index.html')){
     try{
-      const html = await readFile(APP, 'utf8');
+      const html = (await readFile(APP, 'utf8'))
+        .replace('content="__BUILD__"', 'content="' + await appBuild() + '"');
       // ?download=1 → garde une copie sur l'appareil. Indispensable pour le
       // téléphone : une adresse http://192.168… n'est pas un contexte
       // sécurisé, donc pas de service worker, donc rien ne s'ouvre hors du
@@ -410,6 +654,7 @@ const server = http.createServer(async (req, res) => {
     const secure = !!req.socket.encrypted;
     return send(res, 200, JSON.stringify({
       ok: true, name: hostname(), app: 'phonetique', secure,
+      build: await appBuild(),               // ce que le disque contient maintenant
       images: IMGDIR,
       addresses: candidateURLs(secure),      // même protocole : une page https
       https: candidateURLs(true),            // ne peut pas parler à du http
@@ -465,6 +710,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   let nImg = 0;
   try{ nImg = (await readdir(IMGDIR)).filter(f => !f.includes('.tmp-')).length; }catch{}
   console.log(`  images     ${IMGDIR}${nImg ? `  (${nImg})` : '  (vide)'}`);
+  let nEnt = 0;
+  try{ nEnt = (JSON.parse(await readFile(RECOLTE,'utf8')).entrees || []).length; }catch{}
+  console.log(`  entrées    ${RECOLTE}${nEnt ? `  (${nEnt})` : '  (vide)'}`);
 
   let sec = null;
   try{

@@ -36,6 +36,8 @@ Tous facultatifs, à poser dans `phonetique-sync.cmd` :
 | `PHON_HOST` | l'adresse ou le nom mis en avant, et ajouté au certificat |
 | `PHON_DISPLAY` | `standalone` (défaut) ou `fullscreen` une fois installée |
 | `PHON_IMAGES` | où ranger les images sauvegardées |
+| `PHON_KINDLE` | où chercher `My Clippings.txt` et `vocab.db` (défaut : le dossier de l'appli) |
+| `PHON_COUVERTURES` | où chercher les vignettes de couverture (défaut : `kindle-couvertures/`) |
 | `PHON_APP` / `PHON_DATA` | chemins du `.html` servi et du json partagé |
 
 ## Sur chaque appareil
@@ -53,6 +55,11 @@ appareil** fait autorité et que le serveur ne sert que de coffre.
 ⚠️ La sauvegarde **écrase** ce que le serveur contenait. Un seul appareil doit
 donc envoyer — sinon le dernier à parler efface le précédent. Sur les autres,
 décoche la sauvegarde automatique.
+
+La sauvegarde automatique n'envoie que si **quelque chose a changé** : sans
+cela elle écrirait toutes les 45 secondes, et comme le serveur archive une
+copie horodatée à chaque écriture en n'en gardant que 30, l'historique
+entier tournerait en vingt minutes. Un envoi manuel, lui, part toujours.
 
 Deux boutons de retour en arrière : **restaurer depuis le serveur** et
 **restaurer depuis un fichier** (pour piocher dans `phonetique-copies/`). Les
@@ -132,6 +139,15 @@ autre appareil (clé USB, dossier partagé, nuage) et le **fusionne** au lieu
 d'écraser — contrairement à l'import classique. Puis **exporter l'état
 fusionné** pour le rapporter.
 
+## Les fichiers de la liseuse
+
+Dépose `My Clippings.txt` et `vocab.db` à côté de `index.html` : le serveur les
+recense sur `/kindle`, et **Le Labo › La Récolte › Depuis le serveur** met tes
+mots surlignés à jour sans rien téléverser depuis le téléphone.
+
+Le serveur ne publie que les fichiers qu'il a lui-même recensés, jamais un
+chemin venu du réseau. Voir [RECOLTE.md](RECOLTE.md).
+
 ## Les images
 
 Les images générées par l'appli **ne sont pas dans un dossier** : elles vivent
@@ -178,6 +194,66 @@ l'arrivée : les images reviennent d'elles-mêmes au fil de l'affichage.
 > Une page servie depuis une adresse publique (GitHub Pages) vers un serveur
 > du réseau local se heurte parfois au blocage « réseau privé » d'Android.
 > D'où la voie par fichier, qui ne dépend d'aucun réseau.
+
+## Hors du réseau
+
+L'appli s'ouvre et fonctionne sans le PC : les données vivent sur l'appareil,
+la synchro n'est qu'une étape séparée.
+
+Encore faut-il qu'elle n'attende pas le serveur pour s'afficher. Un PC absent
+du réseau ne **refuse** pas la connexion — il ne répond pas. Les paquets
+partent, rien ne revient, et le système attend sa minute entière avant
+d'abandonner. Le service worker s'arrête donc au bout de **trois secondes** et
+sert sa copie.
+
+Ces trois secondes couvrent l'**établissement** de la réponse, pas le
+transfert : `fetch` rend la main dès que les en-têtes arrivent, et le corps
+continue ensuite à son rythme. Un téléchargement lent n'est pas pénalisé ;
+seule une connexion qui ne s'établit jamais l'est. Remplacer `index.html` et
+rouvrir montre donc toujours le neuf du premier coup.
+
+La requête partie continue en arrière-plan et rafraîchit la copie : même
+quand le délai a joué, l'ouverture suivante aura la dernière version.
+
+Ce que cette phrase suppose mérite d'être dit, parce que c'est là que ça
+cassait. Le navigateur peut arrêter un service worker dès que sa réponse est
+rendue — et sur un téléphone il ne s'en prive pas. L'écriture dans la réserve,
+lancée après coup, était alors interrompue avant d'aboutir : la copie gardée
+restait celle de l'installation, **indéfiniment**. On remplaçait `index.html`
+sans que rien ne change hors réseau. L'écriture est désormais déclarée au
+navigateur (`waitUntil`), qui garde le service worker en vie jusqu'à ce
+qu'elle soit finie.
+
+## Quelle version ai-je sous les yeux ?
+
+Le serveur inscrit dans la page la **date du fichier** qu'il vient de servir,
+et `Paramètres › Synchro` l'affiche :
+
+```
+Version : 2026-09-30 14:12:05
+```
+
+Si le PC en a une plus récente, la ligne passe en jaune et le dit ; l'appli le
+signale aussi une fois par session. « Copie locale » signifie que la page a
+été ouverte sans serveur — un fichier `.html` gardé sur l'appareil, qui ne
+peut pas savoir ce qu'il y a sur le PC.
+
+C'est le moyen de trancher en un coup d'œil entre « l'appli n'a pas la
+fonctionnalité » et « l'appli n'a pas la dernière version ».
+
+> ⚠️ Le service worker ne se met à jour qu'au chargement suivant. Après avoir
+> remplacé `phonetique-sync.mjs`, **relance le serveur et ouvre l'appli une
+> fois en étant chez toi** : sans ça, l'ancien service worker reste aux
+> commandes et l'attente sans limite avec lui.
+
+## Le bouton Retour d'Android
+
+Il fait exactement ce que fait le bouton Retour de l'appli : revenir à l'écran
+précédent. Une fenêtre ouverte (nouveau paquet, choix de dossier) se ferme
+d'abord — sinon elle flotterait par-dessus l'écran suivant, vivant hors de la
+zone que l'appli redessine.
+
+Une fois à l'accueil, l'appli lâche prise et Android la ferme comme avant.
 
 ## Comment la fusion décide
 
@@ -227,7 +303,10 @@ jamais un fichier à moitié écrit.
 | Avertissement de certificat sur `https://smac:8791` | le nom n'est pas encore dans le certificat : mets `PHON_HOST=smac` et relance |
 | « ⚠ image introuvable » sur des cartes | l'image appartient à une autre adresse — voir « Récupérer des images d'une ancienne adresse » |
 | Le port 8790 est pris | `PORT=8792 node phonetique-sync.mjs` |
+| La Récolte ne trouve aucun fichier | `My Clippings.txt` et `vocab.db` ne sont pas dans le dossier servi — voir `PHON_KINDLE` |
 | `'ode' n'est pas reconnu` au lancement | le `.cmd` a perdu ses fins de ligne Windows ; reprends le fichier fourni sans le réenregistrer depuis un éditeur Unix |
+| L'appli met une minute à s'ouvrir hors de chez toi | l'ancien service worker est encore actif : relance le serveur et ouvre l'appli une fois chez toi |
+| Le bouton Retour d'Android ferme l'appli | même cause — l'ancienne version est encore en place |
 
 ## Sauvegardes
 

@@ -1,0 +1,671 @@
+# La Récolte — tes mots surlignés en lisant
+
+Tu surlignes un mot en lisant. Il arrive dans Phonétique avec **la phrase du
+livre** où tu l'as rencontré, prête à devenir le contexte d'une carte.
+
+```
+Kindle ──┬── documents/My Clippings.txt      ce que tu as SURLIGNÉ  (intention)
+         └── system/vocabulary/vocab.db      ce que tu as CHERCHÉ   (matière)
+                      │
+                      ▼
+             La Récolte  ──►  Mot en Focus  ──►  Le Grenier
+```
+
+> Le nom fait pendant au **Grenier** : on récolte en lisant, on engrange
+> ensuite. C'est exactement le trajet d'un mot dans l'appli.
+
+## Pourquoi deux fichiers
+
+Chercher un mot est un réflexe : tu le fais des milliers de fois, pour tout et
+n'importe quoi — y compris `que`, `autant`, `dessus`. Surligner est un choix.
+
+`My Clippings.txt` porte donc l'**intention**, mais il ne contient que le mot
+nu. `vocab.db` porte la **matière** — le lemme, la langue, le livre, et la
+phrase exacte du texte — mais sans distinguer ce qui compte.
+
+La Récolte croise les deux. Sur une bibliothèque réelle, 97 % des mots
+surlignés en français retrouvent ainsi leur phrase.
+
+> Le croisement rattrape l'élision : tu surlignes « l'objectif », le Kindle a
+> rangé « objectif ». Les deux sortes d'apostrophe (`'` et `’`) sont traitées.
+
+## Mettre les fichiers à disposition
+
+Branche la liseuse en USB et copie les deux fichiers dans le dossier de
+Phonétique sur le PC, à côté de `index.html` :
+
+| fichier | où le trouver sur la liseuse |
+|---|---|
+| `My Clippings.txt` | `documents\` |
+| `vocab.db` | `system\vocabulary\` — **dossier masqué**, à afficher dans l'Explorateur |
+
+Puis, dans l'appli : **Le Labo › La Récolte › Depuis le serveur**. C'est tout.
+À la semaine suivante, tu remplaces les deux fichiers et tu réappuies.
+
+### Le faire en un double-clic
+
+`phonetique-kindle.cmd`, posé **dans le dossier de Phonétique**, fait la copie
+tout seul : branche la liseuse, double-clique, ouvre La Récolte.
+
+Il ne contient aucun chemin en dur. Il copie vers **son propre dossier**, donc
+tu peux renommer ou déplacer le dossier sans y toucher — et l'accent de
+`Phonétique` ne risque pas de casser le script selon l'encodage.
+
+Il **cherche la liseuse** au lieu de supposer `D:` : la lettre change selon ce
+qui est branché. Il scanne `D:` à `Z:` en quête de `system\vocabulary\vocab.db`.
+
+Enfin, il **archive l'ancien `vocab.db`** dans `kindle-archives\` avant de
+l'écraser, et seulement si son contenu a changé. Comme la liseuse élague, ces
+copies datées sont ce qui te rendra un jour des phrases perdues : réimporte-les
+par **Fichiers…**, elles s'additionnent.
+
+Le nom exact importe peu : `MyClippings.txt`, `My_Clippings.txt` ou une copie
+renommée `vocab-2026.db` sont reconnus. Un sous-dossier `kindle\` marche aussi.
+Pour ranger les fichiers ailleurs, pose `PHON_KINDLE` dans le lanceur.
+
+## Les couvertures
+
+Chaque livre s'affiche avec sa couverture, à gauche de son titre.
+
+Elle ne vient pas d'Internet : **la liseuse la garde déjà**, dans
+`system\thumbnails\`, nommée d'après l'identifiant du livre —
+`thumbnail_B0CB1V3PW7_EBOK_portrait.jpg` pour un livre acheté,
+`thumbnail_<guid>_PDOC_portrait.jpg` pour un livre chargé à la main. Et
+`vocab.db` porte ce même identifiant pour chaque livre : le rapprochement est
+exact, pas une recherche approximative par titre. C'est donc bien la couverture
+de ton exemplaire.
+
+`phonetique-kindle.cmd` les copie dans `kindle-couvertures\` (`xcopy /d` : seuls
+les nouveaux fichiers passent, les lancements suivants sont rapides). Le serveur
+les expose, l'appli prend celles qui lui manquent et s'arrête là.
+
+Une vignette de liseuse pèse ~20 Ko. L'appli la **réduit à la taille affichée**,
+soit ~3 Ko, avant de la garder : assez léger pour voyager avec la synchro, donc
+le téléphone voit les couvertures **sans avoir les fichiers**.
+
+Seuls les livres visibles dans La Récolte sont habillés — inutile de garder la
+couverture d'un livre dont aucun mot n'est surligné.
+
+Un livre sans couverture reçoit une **pastille** portant ses initiales, dans une
+couleur tirée de son titre. Elle occupe exactement la même place, pour que la
+liste garde son alignement.
+
+Pour ranger les vignettes ailleurs, pose `PHON_COUVERTURES` dans le lanceur.
+
+**Sans serveur** — le bouton **Fichiers…** ouvre un sélecteur ordinaire. Utile
+sur le Chromebook, ou quand le PC est éteint.
+
+## Les imports s'additionnent
+
+La liseuse **élague** `vocab.db` : les entrées anciennes finissent par
+disparaître. Un import ne remplace donc jamais le précédent, il s'y ajoute.
+Garder les vieux exports quelque part et les réimporter un jour rend les
+phrases perdues.
+
+## Trier
+
+La Récolte montre d'abord tes **livres**, le plus récemment lu en haut. Tu peux
+trier par nombre de mots ou par titre, et ne garder qu'une année.
+
+Dans un livre, deux onglets :
+
+- **Surlignés** — ce que tu as choisi. C'est la vue par défaut.
+- **Tous les mots** — tout ce que tu as cherché dans ce livre, phrase comprise.
+  Des centaines de mots : à ouvrir quand tu veux miner un livre à fond.
+
+Le bouton à droite de **Tout cocher** renverse l'ordre : d'abord l'ordre de
+lecture (les premiers surlignés en haut), puis **les plus récents d'abord**,
+pour reprendre là où tu t'es arrêté. Le choix tient jusqu'à la fin de la séance.
+
+Trois gestes :
+
+| geste | effet |
+|---|---|
+| toucher le mot | l'ouvre dans **Mot en Focus**, sa phrase déjà en place |
+| cocher | prépare un envoi groupé |
+| **✕** | écarte le mot — il ne reviendra plus |
+
+Le **✕** est ce qui rend l'outil tenable. `My Clippings.txt` ne s'efface
+jamais : il grossit. Sans mémoire des refus, chaque import te represente tout,
+pour toujours. Avec elle, le deuxième import ne montre que le nouveau.
+
+Rien ne disparaît vraiment : **Afficher les mots traités** remet les mots
+écartés et envoyés sous les yeux, avec un **↺** pour les remettre en attente.
+
+## Revenir en arrière
+
+Les trois vues — livres, mots d'un livre, carnet — sont des étapes de
+navigation à part entière. Le bouton Retour de l'appli comme le geste d'Android
+remontent donc **d'un cran**, et non de l'écran entier : depuis les mots d'un
+livre, tu reviens à la liste des livres, pas au Labo.
+
+## Le carnet d'un livre
+
+Toucher **la couverture** ouvre une page propre à ce livre ; toucher le reste
+de la ligne mène toujours à ses mots.
+
+En haut, ce que les fichiers du Kindle savent réellement : l'auteur, la langue,
+**les dates de ta lecture** (première et dernière rencontre d'un mot), combien
+de mots tu as surlignés, cherchés, et combien sont partis au Grenier.
+
+La **date de parution n'est nulle part** dans les fichiers du Kindle. Plutôt que
+de la deviner, le champ est à toi : tape-la si tu la veux.
+
+Le reste de la page est une feuille réglée, pour résumer ce que tu as lu.
+
+- Le texte se **replie tout seul** sur la ligne suivante, sans que tu aies à
+  faire quoi que ce soit.
+- Toucher **n'importe quelle ligne plus bas** y amène le curseur : la page se
+  complète du nombre de retours à la ligne qu'il faut, comme sur un vrai carnet.
+- L'écriture s'enregistre seule, une demi-seconde après la dernière frappe.
+
+> L'alignement tient à une seule chose : la hauteur de ligne du texte vaut
+> exactement la période de la trame de fond (30 px des deux côtés). Changer
+> l'une sans l'autre ferait dériver l'écriture ligne après ligne.
+
+Un livre annoté porte une **pastille verte** sur sa couverture dans la liste.
+
+Les notes voyagent avec la synchro. Elles se rédigent sur un appareil à la
+fois, donc en cas de conflit **la version modifiée le plus récemment gagne**,
+entière — fusionner deux textes ferait plus de dégâts que de bien.
+
+## Les mots rencontrés plusieurs fois
+
+Un mot surligné deux fois dans le même livre t'a résisté deux fois. Il paraît
+alors **deux fois dans la liste**, chacune à sa place chronologique — souvent
+très loin l'une de l'autre — et chacune **avec sa propre phrase** et sa propre
+page. Les deux passent du violet au **vert** (le cadre, la case, la flèche de
+l'infinitif, le mot dans sa phrase) et portent une pastille **×2**.
+
+Cocher, écarter ou envoyer une rencontre ne touche pas l'autre : ce sont deux
+lignes indépendantes, et envoyer la seconde envoie **sa** phrase. Une décision
+prise avant que les rencontres soient séparées vaut encore pour toutes.
+
+Une rencontre est un **surlignement** — le geste par lequel tu dis « ce
+mot-là ». Les consultations du dictionnaire n'en sont pas : les compter aussi
+donnait 502 mots « rencontrés plusieurs fois » sur 2 166 au lieu de 15, et un
+repère qui marque un mot sur quatre ne repère plus rien. Elles servent en
+revanche à donner sa phrase à chaque rencontre : on cherche un mot au moment
+où on le surligne, donc la consultation la plus proche dans le temps est la
+bonne, et chacune ne sert qu'une fois.
+
+Deux surlignements se distinguent par leur page, sinon par leur date ; deux
+lignes à la même position ne comptent que pour une rencontre. Les positions
+déjà connues s'accumulent d'un import à l'autre — la liseuse élague ses
+fichiers, et ce qu'on a vu ne doit pas se perdre.
+
+### Les bibliothèques d'avant
+
+Une bibliothèque importée avant cette version ne gardait d'un mot rencontré
+plusieurs fois que **son compte et ses pages**, pas chaque rencontre. Deux
+choses la remettent d'aplomb :
+
+- **Au chargement**, l'appli reconstruit ce qu'elle peut : une rencontre par
+  page connue, la phrase connue allant à la première. C'est une
+  reconstitution, pas une mesure — la seule date disponible est celle du mot,
+  donc ces rencontres se tiennent côte à côte dans la liste au lieu d'être
+  chacune à son moment. Elles sont vertes, numérotées, et se trient
+  séparément. Cela marche sans la liseuse et sans le PC.
+- **Au prochain import**, chacune retrouve sa date et sa phrase. Et comme la
+  lecture des fichiers porte désormais un numéro de version, un dossier
+  **inchangé est relu malgré tout** quand ce numéro a monté : sans cela, une
+  bibliothèque ancienne resterait sur sa reconstitution pour toujours — le
+  dossier n'ayant pas bougé, l'appli ne le relisait jamais.
+
+À la synchro, les deux descriptions d'un même mot **ne se cousent pas**
+ensemble : les deux appareils parlent des mêmes surlignements, l'un parfois
+mieux que l'autre. On garde la plus riche — d'abord celle qui compte le plus
+de rencontres, puis, à nombre égal, celle qui porte le plus de phrases.
+
+## La barre d'outils
+
+Quatre pictogrammes, chacun avec sa phrase entière en infobulle — en toutes
+lettres, la barre ne tenait pas sur un téléphone.
+
+| | |
+|---|---|
+| 👁 | afficher ou masquer les mots **écartés** |
+| **2×** | n'afficher que les mots rencontrés plusieurs fois, pour les étudier (absent s'il n'y en a aucun) |
+| ☑ | tout cocher / tout décocher — ne vise que ce qui reste à traiter (absent en mode 2×, où il n'y a plus de cases) |
+| ↓ ↑ | ordre de lecture, ou les derniers surlignés d'abord |
+
+Le sens de lecture est **retenu d'une fois sur l'autre** : on relit rarement un
+livre dans un sens puis dans l'autre.
+
+## Ce qui reste dans la liste, et ce qui en sort
+
+**Seule la croix fait sortir un mot.** L'écarter, c'est dire « pas celui-là » ;
+l'œil le ramène quand on veut revoir ce qu'on a mis de côté, grisé et marqué
+*écarté*, sa croix devenue un retour en arrière.
+
+**Un mot envoyé reste.** Il reste à sa place, de plein droit, et porte une
+**coche verte** avant sa date. Le faire disparaître obligeait à lever l'œil
+pour vérifier ce qu'on venait de faire.
+
+La coche ne lit pas une marque locale : elle regarde **la collection
+elle-même** — le mot est-il au Répertoire, ou sur une carte du Grenier ? Donc
+un mot parti par Mot en Focus la porte aussi, et un mot envoyé depuis l'autre
+appareil la porte dès la synchro suivante.
+
+Le compte affiché sur la couverture, lui, reste **ce qui est à traiter** : ni
+les envoyés ni les écartés n'y figurent. Il est donc normal qu'il soit plus
+petit que le nombre de lignes.
+
+## Ce que porte chaque ligne
+
+Entre le mot et le bout de la ligne, dans l'ordre : la **transcription**,
+puis, groupés à droite, la **coche**, la **date du surlignement** et la
+**page**.
+
+La date est courte — *4 avr.* — et ne montre l'année que si ce n'est pas celle
+qui court.
+
+La transcription, elle, ne vient pas de la liseuse : celle-ci n'en garde
+aucune. L'appli prend d'abord celle qu'elle connaît déjà — celle du mot, de
+son entrée au Répertoire ou de sa carte — et **va chercher les autres au
+Wiktionnaire**, après le rendu, pour les lignes affichées seulement, quarante
+au plus par écran et une à la fois. Elle est ensuite **gardée sur le mot** :
+elle voyage avec la synchro et ne se redemande jamais. Hors réseau, rien n'est
+demandé et les lignes s'affichent simplement sans elle.
+
+### La police de l'alphabet phonétique
+
+`ɑ̃` n'est pas une lettre mais **deux caractères** : U+0251 (alpha latin) et
+U+0303 (tilde combinant). Une police qui n'a ni l'un ni l'autre affiche donc
+**deux carrés vides** — `aʁ.dXX` au lieu de `aʁ.dɑ̃`. C'est ce qui arrivait
+partout où l'API s'affichait en `--font-display` : *Space Mono* est une police
+d'affichage, et la pile finissait sur `monospace`, dont le repli système est
+maigre. Dans Mot en Focus, où la transcription héritait de la police du corps
+de texte, elle a toujours été lisible.
+
+Toute l'API passe donc par `--font-ipa`, qui est **exactement** la pile du
+corps de texte. Ni plus ni moins : *DM Sans* n'a pas l'alpha non plus, ce sont
+les polices du système, derrière `sans-serif`, qui le fournissent — autant
+garder la chaîne dont on a la preuve qu'elle marche plutôt que d'en inventer
+une autre. Un test relit la feuille de style et refuse qu'une règle d'API
+reparte vers une police d'affichage.
+
+## La chronologie
+
+**La Récolte › Chronologie**, à droite de *Fichiers…*. Tous les livres lus,
+année par année, réduits à leurs **couvertures** : ce qu'on vient voir ici,
+c'est une vie de lecture d'un coup d'œil, pas une liste. Les titres sont dans
+l'infobulle, ils n'encombrent pas la grille.
+
+Un livre ne paraît que s'il a au moins **un mot surligné** : c'est ce qui
+prouve qu'il a été lu ici.
+
+Les vignettes sont désormais gardées à **192 px de large** au lieu de 96, et
+jamais affichées au-delà de **72 px** : au-dessus, un pixel stocké pour trois
+affichés se voyait. Une couverture d'avant, trop petite, **se redemande
+d'elle-même** au prochain passage sur l'écran des livres, le PC allumé — il
+n'y a rien à faire.
+
+### Où se range un livre
+
+À l'année de sa **rencontre la plus récente** — le dernier mot surligné. Un
+livre commencé en novembre et fini en février se range donc sur l'année où il
+s'achève, et deux livres menés de front se rangent chacun à sa propre fin.
+
+L'ordre des années se renverse d'un bouton, et le choix est retenu.
+
+### Les mois
+
+Un bouton les fait paraître **sous chaque couverture**, dans sa largeur :
+*avr–mai*, ou *avr* si la lecture a tenu dans le mois. Le choix est retenu
+lui aussi.
+
+### Le nombre de mots
+
+Toucher une couverture ouvre une boîte où on tape le **nombre de mots** du
+livre — la liseuse ne le connaît pas. Le total de tout ce qui a été lu
+s'affiche **en haut**, avec le nombre de livres qui attendent encore leur
+compte.
+
+Le bouton **123** montre ou cache le compte de **chaque** livre, pour revenir
+aux couvertures seules quand on veut. Le total du haut, lui, reste : c'est ce
+qu'on vient voir. Ce choix est retenu lui aussi.
+
+Le compte est gardé sur le livre, voyage avec la synchro, et en cas de
+conflit **le plus récemment tapé gagne** : c'est une saisie, pas une mesure.
+
+### Les livres de papier
+
+Le bouton **+** en haut fait paraître un « + » dans chaque année. Il ouvre la
+même boîte, en demandant en plus ce que la liseuse aurait donné : une
+**couverture** (prise dans les photos), un **titre**, et les **mois et
+années** de lecture — début et fin.
+
+La couverture choisie est **réduite à 200 × 300 pixels** avant d'être gardée.
+Une photo de téléphone pèse plusieurs mégaoctets : telle quelle, elle
+remplirait le stockage du navigateur et la synchro avec. Elle est rognée, pas
+étirée — un visage écrasé se voit tout de suite.
+
+Fermer sans rien saisir un livre qu'on vient de créer le retire : un « + »
+touché par mégarde ne laisse pas de vignette vide. *Retirer* pose une pierre
+tombale plutôt que d'effacer, sans quoi l'autre appareil renverrait le livre
+à la synchro suivante.
+
+### Un identifiant qui porte une apostrophe
+
+Les boutons de ces listes appellent leur action dans un attribut `onclick`,
+avec l'identifiant du livre entre apostrophes. Or **le navigateur décode
+l'attribut avant de lire le JavaScript** : une apostrophe échappée en `&#39;`
+y redevient une apostrophe, ferme la chaîne et casse l'appel.
+
+Le bouton s'allumait sous le doigt et rien ne s'ouvrait — ni dans la liste,
+ni dans la chronologie — et **rien n'apparaissait dans le journal** : une
+erreur de syntaxe dans un attribut `onclick` ne remonte pas comme une erreur
+de page. Seuls les livres dont l'identifiant portait une apostrophe droite,
+ou une contre-oblique, étaient touchés.
+
+Tout identifiant posé dans un appel en ligne passe maintenant par `_kdJs`,
+qui échappe **d'abord pour le JavaScript, ensuite pour l'HTML**.
+
+### Les livres venus d'une autre application
+
+Un liseur de bandes dessinées peut déposer ses titres et ses couvertures sur
+le serveur ; La Récolte les relève toute seule en arrivant sur la liste des
+livres, et ils prennent leur place dans la chronologie.
+
+L'autre appli n'envoie que ce qu'elle sait : **le titre et la couverture**. Le
+nombre de mots et les dates restent à toi — une relève ne les touche jamais,
+même si le même livre est redéposé cent fois. Un bouton de la barre d'outils,
+qui ne paraît que s'il y a des bandes dessinées, les montre ou les cache ; en
+les cachant, le total de mots en haut descend d'autant, pour qu'il décrive
+toujours ce qui est affiché.
+
+Le protocole complet — routes, forme des entrées, propriété des champs, ce qui
+le casserait — est dans `PASSERELLE.md`. Il demande la version récente de
+`phonetique-sync.mjs` : les routes vivent dans le serveur, pas dans la page.
+
+### Une mise à jour en retard ne quitte plus la vue
+
+En arrivant sur La Récolte, l'appli va voir le serveur en arrière-plan. Si tu
+ouvrais la chronologie dans la seconde qui suivait, la réponse finissait
+**après** ton geste et redessinait la liste des livres par-dessus. Le
+rafraîchissement redessine maintenant la vue réellement ouverte.
+
+## Le fil et la place dans la liste
+
+Les vues de l'écran sont des **étapes de navigation à part entière** : les
+livres, les mots d'un livre, le mode 2×, un mot ouvert. Le retour les défait
+une par une — d'un mot étudié on revient à la liste 2×, puis à la liste
+entière, puis aux livres. Le bouton de l'appli et celui d'Android empruntent
+le même chemin, parce que l'état de la vue tient dans les paramètres de
+l'étape et non dans une mémoire à part.
+
+Le bouton **Livres** fait exception et c'est voulu : il défait **tout le
+livre d'un coup**, au lieu de reculer d'un cran.
+
+Ouvrir un mot puis revenir **rend la liste là où on l'avait laissée**. Au fond
+d'un livre de trois cents mots, repartir du haut, c'était tout le défilement
+à refaire. Chaque vue garde sa propre place — la liste entière et la liste 2×
+n'ont pas la même.
+
+La place n'est rendue **qu'une fois**, puis oubliée : sans cela, un
+rafraîchissement plus tard — la fin d'un import, par exemple — ferait sauter
+la liste à une place devenue fausse.
+
+### Quand le système reprend la main
+
+Android relance une application mise de côté pour récupérer de la mémoire.
+La page repartait alors de zéro : le fil était perdu, le premier retour
+renvoyait à l'accueil au lieu de l'écran précédent, et le suivant **fermait
+l'appli** puisqu'il n'y avait plus rien derrière.
+
+Le fil se range donc dans `sessionStorage`, qui vit le temps de la session :
+une relance du système le retrouve et l'appli reprend où elle était ; une
+vraie fermeture l'efface, et l'écran de démarrage choisi dans les réglages
+reprend ses droits.
+
+Le fil **part aussi de l'écran de démarrage**. Il partait vide alors qu'un
+écran était déjà affiché : il manquait donc une marche à tout le parcours.
+
+### Une vraie marche d'historique par étape
+
+L'appli gardait **un seul cran** d'avance dans l'historique du navigateur,
+reposé après chaque retour. Ça tenait en théorie, et ça tenait dans un
+navigateur piloté — mais pas sur un téléphone.
+
+Chrome **ignore une entrée d'historique posée par programme quand l'usager n'a
+plus touché l'écran depuis** : c'est sa parade contre les pages qui piègent le
+bouton retour. Or le cran reposé pendant le traitement d'un retour n'a, par
+construction, aucun geste derrière lui. Deux retours de suite, et le second
+passait par-dessus le cran ignoré — droit hors de l'appli.
+
+Chaque étape du fil a donc maintenant **sa propre marche**, posée au moment du
+geste qui l'ouvre : jamais ignorée, puisqu'un doigt vient de toucher l'écran.
+Le retour d'Android est géré par le navigateur lui-même ; l'appli n'a plus
+rien à reposer ni à réarmer, elle lit seulement la profondeur où l'on a
+atterri et s'y aligne.
+
+Trois conséquences :
+
+- **Le bouton de l'appli et celui d'Android empruntent le même chemin** : tous
+  deux reculent dans l'historique, et la profondeur ne peut plus se
+  désaccorder du fil.
+- **Une marche sautée n'est plus fatale.** Si le navigateur en ignore une, on
+  recule de deux écrans au lieu d'un — jamais hors de l'appli.
+- **Quand le fil est épuisé, l'appli se ferme.** C'est ce qu'on attend d'une
+  application Android arrivée à sa racine.
+
+## Le mode 2× : étudier, pas trier
+
+Hors de ce mode, la liste sert à **trier** : on coche, on écarte, on envoie au
+Grenier. En mode 2× elle sert à **réviser**, et change donc de comportement.
+
+**Pas de cases à cocher ni de croix.** Une ligne entière se touche, et ouvre
+le mot.
+
+**Une ligne par mot**, pas une par rencontre : celle de la **rencontre la plus
+récente**. Les autres sont à un doigt — toucher la ligne ouvre le mot avec
+toutes les siennes. Dans la liste ordinaire, au contraire, chaque rencontre
+garde sa ligne : c'est là qu'on trie, et on ne trie pas un mot en bloc.
+
+**Une teinte d'arc-en-ciel par mot, une nuance par rencontre.** Le vert
+repérait les mots répétés au milieu des autres ; quand il n'y a qu'eux, il ne
+distingue plus rien. Les teintes vont du rouge au violet, réparties sur tout
+l'arc : prendre les couleurs à la file — rouge, orange, jaune — les rendrait
+voisines et donc confuses sur fond sombre. Avec cinq mots : rouge, jaune,
+vert, azur, magenta. Les rencontres d'un même mot partagent sa teinte et se
+distinguent par la clarté, la première claire, la dernière sombre.
+
+**Toucher un mot l'ouvre seul**, avec toutes ses rencontres et rien d'autre,
+dans sa couleur — chacune numérotée *1/3*, *2/3*, *3/3*. De là, toucher une
+rencontre ouvre Mot en Focus sur elle, avec *sa* phrase.
+
+### La définition
+
+Sous les rencontres, une boîte **repliée par défaut** sur trois ou quatre
+lignes ; le chevron la déplie. Repliée, le bas du texte s'efface en dégradé
+plutôt que d'être coupé net.
+
+Elle montre, dans l'ordre : la définition enregistrée pour ce mot, sinon celle
+de sa carte au Grenier s'il en a une, sinon rien — avec un bouton pour en
+faire écrire une.
+
+**Ce n'est pas la définition du Kindle.** Elle n'est pas dans les fichiers :
+`vocab.db` ne garde que les mots, leurs phrases et leurs dates ; le texte des
+définitions vit dans le dictionnaire de la liseuse, un fichier que le dossier
+de synchro ne contient pas. Celle-ci est donc écrite par l'IA, et demandée
+sous forme de **sens numérotés** (jusqu'à cinq) : un mot croisé trois fois
+n'avait pas forcément le même sens chaque fois, et c'est précisément ce qu'on
+vient vérifier.
+
+Elle est enregistrée sur le mot, voyage avec la synchro, et en cas de conflit
+**la plus récente gagne** — une définition se réécrit en entier quand on la
+régénère, donc la plus longue ne veut rien dire.
+
+## Passer d'un écran à l'autre
+
+Mot en Focus, Le Grenier et La Récolte se rejoignent directement : chacun
+porte en haut les deux autres — la loupe (Mot en Focus), le coffre (Le
+Grenier), le livre (La Récolte).
+
+Deux boutons de plus, c'est un en-tête plus chargé : sur un téléphone étroit,
+le titre de l'écran **passe à la ligne entier** au lieu de se casser en « Le /
+Grenier ». Les boutons y gagnent aussi leur taille pleine, qu'ils perdaient en
+se serrant.
+
+## Écrire dans le carnet
+
+La feuille se comporte comme du papier : la zone de saisie épouse le texte,
+et toucher une ligne vide plus bas y pose le curseur.
+
+Trois choses la rendent stable sous le doigt :
+
+- **Le défilement ne s'anime pas pendant la frappe.** `#main` est en
+  `scroll-behavior: smooth` : le défilement que le navigateur déclenche pour
+  suivre le curseur s'animait donc, et l'animation courait encore longtemps
+  après la dernière touche — mesuré sur la version d'avant, **1591 px de
+  dérive 700 ms après le relâchement**. D'où l'impression que la ligne
+  « redescendait toute seule » dès qu'on s'arrêtait.
+- **La ligne qu'on écrit garde ses distances** : deux lignes de respiration
+  sous elle, au lieu d'être collée au bas du visible. Une barre de suggestions
+  du clavier qui paraît ou disparaît ne la coupe donc plus en deux. La hauteur
+  réellement visible est lue sur `visualViewport`, c'est-à-dire au-dessus du
+  clavier, et non au bas de la fenêtre.
+- **La zone ne rétrécit plus pour se mesurer.** Elle grandissait en passant par
+  `height: auto`, ce qui la réduisait à une ligne le temps d'un calcul ; la
+  mesure à vide ne sert plus que si le texte a raccourci, et le défilement y
+  est rendu où il était.
+
+## Envoyer au Grenier
+
+Coche, puis **Envoyer au Grenier**. Le paquet proposé porte le nom du livre
+(créé au besoin, avec son dossier miroir dans Le Répertoire) ; tu peux viser un
+paquet existant à la place.
+
+Chaque carte reçoit :
+
+- le mot ;
+- **la phrase du livre**, en contexte — visible au verso, et reprise par la
+  génération de définition et d'image ;
+- **le livre d'où il vient**, dont la couverture s'affiche au verso, à gauche
+  de la phrase ;
+- le titre du livre en étiquette.
+
+La carte ne garde que l'**identifiant** du livre, jamais son image : une
+couverture pèse 3 Ko, et cinquante cartes du même livre la porteraient
+cinquante fois, dans le stockage comme dans la synchro.
+
+Le chemin compte peu : cocher puis **Envoyer**, ou toucher un mot pour
+l'ouvrir dans Mot en Focus et l'envoyer de là — dans les deux cas la carte
+garde son livre. La provenance est attachée **au mot**, pas à l'écran : taper
+un autre mot dans Mot en Focus avant d'envoyer ne lui colle pas la couverture
+du précédent.
+
+Les cartes parties avant cette version retrouvent leur livre toutes seules :
+au démarrage, l'appli rapproche mot et phrase de La Récolte. C'est la phrase
+qui tranche — si la carte en porte une qu'aucun livre ne contient, l'appli
+s'abstient, puisque c'est la preuve que le mot ne vient pas de là. Sans
+phrase, il faut qu'un seul livre soit possible. Mieux vaut pas de couverture
+qu'une fausse.
+
+C'est ce rattrapage qui peut coller un livre à une carte que tu n'as jamais
+envoyée depuis La Récolte : le mot s'y trouve, dans un seul livre, et rien ne
+le contredisait. L'option **Afficher le livre** (options de la carte) coupe
+l'affichage pour cette carte-là ; la rangée nomme le livre concerné, donc on
+voit d'où vient la couverture avant de décider.
+
+Les définitions ne sont pas générées en masse : tu les fais carte par carte,
+quand tu y viens.
+
+Un mot déjà présent dans le paquet n'est pas dupliqué — il est simplement
+marqué comme traité.
+
+### Le verso
+
+Le Grenier et Mot en Focus montrent la même chose au verso — le mot, la
+phrase du livre avec sa couverture, la définition — et le montrent donc
+pareil : une seule construction sert les deux écrans, chacun gardant sa
+couleur.
+
+Le bandeau du haut porte **le mot seul** ; trop long, il est coupé par « … »
+avant d'atteindre le bouton **Aa**, dont la place est réservée en permanence —
+c'est pour ça qu'il ne bouge pas d'un pixel quand les − et + paraissent.
+
+**Aa** règle la taille de la définition. **Appui long sur Aa** : ce sont la
+phrase et sa boîte qu'on règle à la place — le bouton passe au violet pour le
+dire. Les deux tailles sont retenues séparément : sur la carte au Grenier,
+puisque chaque carte a la sienne ; dans les réglages généraux pour Mot en
+Focus, où il n'y a pas de carte.
+
+La phrase de contexte fait **16 px** par défaut, et ce défaut se règle dans
+*Paramètres › Apparence › Taille du texte (phrases de contexte)* : il vaut
+pour **toutes** les phrases de contexte, carte du Grenier comme Mot en Focus.
+Une carte réglée à part par l'appui long garde sa taille à elle — c'est à cela
+que sert ce geste — et ne suit plus le réglage général.
+
+La couverture est **fixée en haut à gauche** de la boîte, et le texte
+l'enrobe : il court à sa droite, puis reprend toute la largeur **sous** elle.
+Avant, la phrase restait cantonnée dans une colonne à droite de l'image, ce
+qui laissait un grand vide sous la couverture dès qu'elle était longue.
+
+Une image demandée en même temps que la définition arrive sur la carte **et**
+dans Mot en Focus, dès qu'elle est prête — au même titre que la définition, et
+sous la même condition : que l'écran montre encore ce mot-là.
+
+### Renvoyer un mot déjà au Grenier
+
+Rouvrir **Au Grenier** sur un mot qui y est déjà sert à retoucher ses
+étiquettes — et à le **changer de paquet** : les autres paquets annoncent
+alors « Déplacer ici », et choisir l'un d'eux déménage la carte au lieu d'en
+créer une seconde. La carte garde son historique de révision, sa définition
+et son image ; le mot suit dans son dossier du Répertoire.
+
+Si le mot traînait dans plusieurs paquets, ils sont réunis dans celui qu'on
+choisit, et la carte la plus travaillée l'emporte — la règle que l'appli
+applique déjà à ses doublons.
+
+### Corriger un texte déjà envoyé
+
+Quand on rallonge ou corrige une phrase qu'on vient d'envoyer, **Au Grenier**
+propose en haut **Mettre à jour « … »** : la carte prend le nouveau texte et
+garde sa définition, son image, ses étiquettes et son historique de révision.
+Le bouton ne paraît que si l'envoi date de moins d'une heure, que la carte
+existe encore et que le texte a changé — sinon il n'y aurait rien à mettre à
+jour. Créer une seconde carte reste possible juste en dessous.
+
+### Une définition appartient à son mot
+
+Une génération dure, et on n'attend pas devant l'écran. Tout ce qui revient
+après coup vérifie donc que Mot en Focus parle **toujours du même mot** :
+sinon la définition va sur sa carte du Grenier et l'écran n'y touche pas. Le
+verso, de son côté, n'affiche que la définition du mot qu'il annonce en
+en-tête. Sans ces deux règles, une définition demandée pour une phrase
+s'affichait sous un mot tapé depuis.
+
+## Ce qui se synchronise
+
+Seuls les **mots surlignés** voyagent entre appareils, avec les livres et tes
+décisions de tri (écarté / envoyé) : environ 130 Ko. L'archive complète des
+mots cherchés reste locale — elle pèse cinq fois plus et se reconstruit en
+réimportant les fichiers, qui vivent sur le PC.
+
+Écarter un mot sur le téléphone l'écarte donc partout.
+
+## Si ça ne marche pas
+
+| symptôme | cause probable |
+|---|---|
+| « Aucun fichier Kindle dans le dossier du serveur » | les fichiers ne sont pas à côté de `index.html`, ou `vocab.db` est resté dans le dossier masqué de la liseuse |
+| « Déjà à jour » alors que tu viens de copier | Windows a gardé la date de l'ancien fichier : recopie-le, ou passe par **Fichiers…** |
+| Des mots sans phrase | `vocab.db` a été élagué depuis : réimporte un export plus ancien si tu en as gardé un |
+| Un livre anglais dans la liste | normal s'il porte des surlignements ; le filtre par année l'écarte |
+| Rien ne se passe au bouton « Depuis le serveur » | l'appli n'est pas ouverte depuis le serveur — vois Paramètres › Synchro |
+| Une pastille au lieu d'une couverture | le bouton **Depuis le serveur** le dit : serveur à relancer, dossier vide, ou livre sans identifiant |
+| « Serveur à relancer » | `phonetique-sync.mjs` a été remplacé mais le serveur tourne encore sur l'ancien code — ferme la fenêtre et relance le lanceur |
+| Aucune bande dessinée n'arrive | serveur resté sur l'ancien code : la ligne `entrées` manque à son démarrage. La relève est silencieuse, elle ne dira rien |
+| Une bande dessinée sans vignette | nom de fichier avec un accent, un espace ou une barre oblique — vois `PASSERELLE.md` section 9 |
+
+## Ce que La Récolte ne fait pas
+
+Il ne lit pas les **notes** ni les **signets**, ni les passages de plus de
+trois mots : ce sont des repères de lecture, pas du vocabulaire.
+
+Il ne devine pas non plus ce qui mérite une carte. Les mots que tu as cherchés
+plusieurs fois sont surtout des mots **ambigus** (`que`, `faut`, `dessus`), pas
+des mots difficiles — un classement automatique par ce critère trierait mal.
+Le surlignement, lui, dit ce que tu veux vraiment. C'est toi qui tries.
